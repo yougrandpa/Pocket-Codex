@@ -36,6 +36,7 @@ Open `http://localhost:3000`.
 - `app/tasks/[id]/page.tsx`: task detail screen.
 - `components/login-panel.tsx`: sign-in form.
 - `components/task-dashboard.tsx`: dashboard state, SSE subscription, notification feed.
+- `components/audit-panel.tsx`: recent audit records panel.
 - `components/task-creator.tsx`: create-task form (client component).
 - `components/task-list.tsx`: task list rendering.
 - `components/task-detail-live.tsx`: detail page realtime controls and logs.

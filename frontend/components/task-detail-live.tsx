@@ -243,6 +243,10 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
           <dd>{task.priority ?? "-"}</dd>
         </div>
         <div>
+          <dt>Timeout</dt>
+          <dd>{task.timeout_seconds ? `${task.timeout_seconds}s` : "-"}</dd>
+        </div>
+        <div>
           <dt>Workdir</dt>
           <dd>{task.workdir || "-"}</dd>
         </div>

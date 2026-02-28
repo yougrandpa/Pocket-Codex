@@ -30,6 +30,7 @@ export interface Task {
   last_heartbeat_at?: string | null;
   paused_at?: string | null;
   retry_count?: number;
+  timeout_seconds?: number;
 }
 
 export interface TaskEvent {
@@ -55,9 +56,19 @@ export interface TaskControlResult {
   message: string;
 }
 
+export interface AuditLog {
+  id: number;
+  timestamp: string;
+  actor: string;
+  action: string;
+  task_id?: string | null;
+  detail: Record<string, unknown>;
+}
+
 export interface CreateTaskInput {
   prompt: string;
   priority?: number;
+  timeout_seconds?: number;
   workdir?: string;
 }
 
@@ -269,7 +280,9 @@ function normalizeTask(raw: unknown): Task {
     last_heartbeat_at:
       typeof value.last_heartbeat_at === "string" ? value.last_heartbeat_at : null,
     paused_at: typeof value.paused_at === "string" ? value.paused_at : null,
-    retry_count: typeof value.retry_count === "number" ? value.retry_count : undefined
+    retry_count: typeof value.retry_count === "number" ? value.retry_count : undefined,
+    timeout_seconds:
+      typeof value.timeout_seconds === "number" ? value.timeout_seconds : undefined
   };
 }
 
@@ -336,6 +349,13 @@ export async function appendTaskMessage(taskId: string, message: string): Promis
     },
     body: JSON.stringify({ message })
   });
+}
+
+export async function getAuditLogs(limit = 20): Promise<AuditLog[]> {
+  const body = await authorizedFetchJson<{ items?: AuditLog[] }>(
+    `/api/v1/tasks/audit/logs?limit=${encodeURIComponent(String(limit))}`
+  );
+  return Array.isArray(body.items) ? body.items : [];
 }
 
 export function openEventStream(taskId?: string): EventSource {

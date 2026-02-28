@@ -1,14 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { AuditPanel } from "@/components/audit-panel";
 import { LoginPanel } from "@/components/login-panel";
 import { NotificationCenter } from "@/components/notification-center";
 import { TaskCreator } from "@/components/task-creator";
 import { TaskList } from "@/components/task-list";
 import {
   Task,
+  AuditLog,
   TaskEvent,
   clearSession,
+  getAuditLogs,
   getTasks,
   openEventStream,
   readSession
@@ -49,6 +52,7 @@ export function TaskDashboard() {
   const [authed, setAuthed] = useState(false);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [events, setEvents] = useState<TaskEvent[]>([]);
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -71,6 +75,12 @@ export function TaskDashboard() {
         }
         setTasks(items);
         setError(null);
+        return getAuditLogs(20);
+      })
+      .then((logs) => {
+        if (!cancelled && logs) {
+          setAuditLogs(logs);
+        }
       })
       .catch((requestError) => {
         if (cancelled) {
@@ -138,6 +148,7 @@ export function TaskDashboard() {
       />
       <TaskList tasks={sortedTasks} error={error} loading={loading} />
       <NotificationCenter events={events} />
+      <AuditPanel logs={auditLogs} />
       <section className="panel animate-rise delay-2">
         <div className="panel-title-row">
           <h2 className="panel-title">Session</h2>

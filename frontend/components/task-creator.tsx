@@ -14,6 +14,7 @@ export function TaskCreator({ onCreated }: TaskCreatorProps) {
   const router = useRouter();
   const [prompt, setPrompt] = useState("");
   const [priority, setPriority] = useState(DEFAULT_PRIORITY);
+  const [timeoutSeconds, setTimeoutSeconds] = useState(20);
   const [workdir, setWorkdir] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,6 +36,7 @@ export function TaskCreator({ onCreated }: TaskCreatorProps) {
       const created = await createTask({
         prompt: prompt.trim(),
         priority,
+        timeout_seconds: timeoutSeconds,
         workdir: workdir.trim() || undefined
       });
 
@@ -80,6 +82,19 @@ export function TaskCreator({ onCreated }: TaskCreatorProps) {
               onChange={(event) => setPriority(Number(event.target.value) || DEFAULT_PRIORITY)}
             />
           </label>
+          <label className="field">
+            <span>Timeout (sec)</span>
+            <input
+              type="number"
+              min={5}
+              max={3600}
+              value={timeoutSeconds}
+              onChange={(event) => setTimeoutSeconds(Number(event.target.value) || 20)}
+            />
+          </label>
+        </div>
+
+        <div className="row">
           <label className="field">
             <span>Workdir (optional)</span>
             <input
