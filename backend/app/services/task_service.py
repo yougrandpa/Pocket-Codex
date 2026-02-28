@@ -35,6 +35,9 @@ class TaskService:
         self._lock = asyncio.Lock()
         self._global_subscribers: set[asyncio.Queue[dict[str, Any]]] = set()
         self._task_subscribers: dict[str, set[asyncio.Queue[dict[str, Any]]]] = {}
+        self._execution_queue: asyncio.Queue[tuple[str, float]] | None = None
+        self._worker_task: asyncio.Task[None] | None = None
+        self._worker_loop_id: int | None = None
         self._load_persisted_tasks()
 
     def _load_persisted_tasks(self) -> None:
@@ -75,6 +78,34 @@ class TaskService:
         detail: dict[str, Any],
     ) -> None:
         self._storage.append_audit(actor=actor, action=action, task_id=task_id, detail=detail)
+
+    async def start_worker(self) -> None:
+        loop_id = id(asyncio.get_running_loop())
+        if self._worker_loop_id != loop_id:
+            if self._worker_task is not None and not self._worker_task.done():
+                self._worker_task.cancel()
+                try:
+                    await self._worker_task
+                except asyncio.CancelledError:
+                    pass
+            self._execution_queue = asyncio.Queue()
+            self._worker_task = None
+            self._worker_loop_id = loop_id
+
+        if self._worker_task is None or self._worker_task.done():
+            self._worker_task = asyncio.create_task(self._worker_loop())
+
+    async def stop_worker(self) -> None:
+        if self._worker_task is None:
+            return
+        self._worker_task.cancel()
+        try:
+            await self._worker_task
+        except asyncio.CancelledError:
+            pass
+        self._worker_task = None
+        self._execution_queue = None
+        self._worker_loop_id = None
 
     async def create_task(
         self,
@@ -122,7 +153,7 @@ class TaskService:
         for event in queued_events:
             await self._broadcast(event, subscribers)
 
-        self._schedule_execution(task.id, delay_seconds=0.2)
+        await self._schedule_execution(task.id, delay_seconds=0.2)
         return task_copy
 
     async def control_task(self, *, task_id: str, action: str, actor: str = "system") -> ControlResult:
@@ -218,7 +249,7 @@ class TaskService:
 
         if schedule_retry:
             retry_delay = settings.retry_backoff_base_seconds * max(1, task_copy.retry_count)
-            self._schedule_execution(task_id, delay_seconds=retry_delay)
+            await self._schedule_execution(task_id, delay_seconds=retry_delay)
 
         return ControlResult(task=task_copy, accepted=accepted, message=message)
 
@@ -362,7 +393,7 @@ class TaskService:
                     retry_task = await self.get_task(retry_task_id)
                     retry_count = retry_task.retry_count if retry_task else 1
                     retry_delay = settings.retry_backoff_base_seconds * max(1, retry_count)
-                    self._schedule_execution(retry_task_id, delay_seconds=retry_delay)
+                    await self._schedule_execution(retry_task_id, delay_seconds=retry_delay)
                 return
 
         done_events: list[dict[str, Any]] = []
@@ -526,13 +557,23 @@ class TaskService:
     def _persist_task_locked(self, task: Task) -> None:
         self._storage.save_task(task)
 
-    def _schedule_execution(self, task_id: str, *, delay_seconds: float) -> None:
-        asyncio.create_task(self._run_with_delay(task_id, delay_seconds))
+    async def _schedule_execution(self, task_id: str, *, delay_seconds: float) -> None:
+        await self.start_worker()
+        if self._execution_queue is None:
+            raise RuntimeError("Execution queue is not initialized")
+        await self._execution_queue.put((task_id, max(0.0, delay_seconds)))
 
-    async def _run_with_delay(self, task_id: str, delay_seconds: float) -> None:
-        if delay_seconds > 0:
-            await asyncio.sleep(delay_seconds)
-        await self._simulate_run(task_id)
+    async def _worker_loop(self) -> None:
+        if self._execution_queue is None:
+            return
+        while True:
+            task_id, delay_seconds = await self._execution_queue.get()
+            try:
+                if delay_seconds > 0:
+                    await asyncio.sleep(delay_seconds)
+                await self._simulate_run(task_id)
+            finally:
+                self._execution_queue.task_done()
 
     def _collect_subscribers_locked(self, task_id: str) -> list[asyncio.Queue[dict[str, Any]]]:
         combined = set(self._global_subscribers)

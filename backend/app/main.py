@@ -9,6 +9,7 @@ from .api.tasks import router as tasks_router
 from .config import settings
 from .errors import register_error_handlers
 from .models import utc_now_iso
+from .services.task_service import task_service
 
 
 app = FastAPI(
@@ -30,6 +31,16 @@ register_error_handlers(app)
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(tasks_router, prefix="/api/v1")
 app.include_router(stream_router, prefix="/api/v1")
+
+
+@app.on_event("startup")
+async def _startup() -> None:
+    await task_service.start_worker()
+
+
+@app.on_event("shutdown")
+async def _shutdown() -> None:
+    await task_service.stop_worker()
 
 
 @app.get("/healthz")
