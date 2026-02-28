@@ -41,10 +41,19 @@ NEXT_PUBLIC_API_BASE_URL=http://localhost:8000 npm run dev
 
 ## 4. 手工联调步骤
 
-## 4.1 创建任务
+## 4.1 登录并获取 Token
+
+```bash
+TOKEN=$(curl -s -X POST http://localhost:8000/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"admin123"}' | python3 -c 'import json,sys; print(json.load(sys.stdin)["access_token"])')
+```
+
+## 4.2 创建任务
 
 ```bash
 curl -X POST http://localhost:8000/api/v1/tasks \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "prompt": "读取 docs 并生成实现清单",
@@ -55,32 +64,35 @@ curl -X POST http://localhost:8000/api/v1/tasks \
 
 预期：返回 `201`，状态为 `QUEUED`，并在短时间后推进到 `RUNNING` / `SUCCEEDED`（模拟执行器）。
 
-## 4.2 查看任务列表
+## 4.3 查看任务列表
 
 ```bash
-curl "http://localhost:8000/api/v1/tasks?limit=20&offset=0"
+curl "http://localhost:8000/api/v1/tasks?limit=20&offset=0" \
+  -H "Authorization: Bearer $TOKEN"
 ```
 
-## 4.3 查看任务详情
+## 4.4 查看任务详情
 
 ```bash
-curl http://localhost:8000/api/v1/tasks/<TASK_ID>
+curl http://localhost:8000/api/v1/tasks/<TASK_ID> \
+  -H "Authorization: Bearer $TOKEN"
 ```
 
-## 4.4 订阅 SSE 事件
+## 4.5 订阅 SSE 事件
 
 ```bash
-curl -N "http://localhost:8000/api/v1/stream?task_id=<TASK_ID>"
+curl -N "http://localhost:8000/api/v1/stream?task_id=<TASK_ID>&access_token=$TOKEN"
 ```
 
 预期：可持续收到 `task.status.changed`、`task.log.appended` 等事件。
 
-## 4.5 发送控制动作
+## 4.6 发送控制动作
 
 取消任务：
 
 ```bash
 curl -X POST http://localhost:8000/api/v1/tasks/<TASK_ID>/control \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"action":"cancel"}'
 ```
@@ -89,14 +101,34 @@ curl -X POST http://localhost:8000/api/v1/tasks/<TASK_ID>/control \
 
 ```bash
 curl -X POST http://localhost:8000/api/v1/tasks/<TASK_ID>/control \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"action":"retry"}'
 ```
 
-## 4.6 追加消息
+暂停任务：
+
+```bash
+curl -X POST http://localhost:8000/api/v1/tasks/<TASK_ID>/control \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"action":"pause"}'
+```
+
+继续任务：
+
+```bash
+curl -X POST http://localhost:8000/api/v1/tasks/<TASK_ID>/control \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"action":"resume"}'
+```
+
+## 4.7 追加消息
 
 ```bash
 curl -X POST http://localhost:8000/api/v1/tasks/<TASK_ID>/message \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"message":"补充：先输出风险项"}'
 ```
@@ -105,7 +137,7 @@ curl -X POST http://localhost:8000/api/v1/tasks/<TASK_ID>/message \
 
 - 状态字段是否仅使用 `TaskStatus` 枚举。
 - 时间字段是否为 ISO 8601 UTC，示例：`2026-02-28T15:04:05Z`。
-- 任务控制接口是否支持 `cancel` / `retry`，`pause` / `resume` 可返回 `501`。
+- 任务控制接口是否支持 `pause` / `resume` / `cancel` / `retry`。
 - SSE `event` 名称与 `data.event_type` 是否一致。
 - 前端 API Base URL 是否正确读取 `NEXT_PUBLIC_API_BASE_URL`。
 
@@ -121,7 +153,7 @@ Q3: 任务一直停在 `QUEUED`？
 A3: 检查模拟执行器异步任务是否启动；确认应用启动日志里无异常。
 
 Q4: `pause` / `resume` 调用失败？  
-A4: 这是 MVP 预期行为，可返回 `501` 占位，先保证 `cancel` / `retry` 可用。
+A4: 先确认任务当前状态（`RUNNING` 才能 `pause`，`WAITING_INPUT` 才能 `resume`）；状态不匹配会返回业务错误。
 
 Q5: 前端创建成功但列表不刷新？  
 A5: 优先检查轮询或刷新逻辑，其次检查 SSE 订阅是否连接成功。

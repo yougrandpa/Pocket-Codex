@@ -4,6 +4,44 @@
 
 ## 1. 状态与枚举
 
+## 0. 鉴权
+
+- 除 `POST /api/v1/auth/login` 与 `POST /api/v1/auth/refresh` 外，其余接口均需鉴权。
+- Header 方式：`Authorization: Bearer <access_token>`
+- SSE（浏览器 `EventSource`）可使用查询参数：`/api/v1/stream?access_token=<access_token>`
+
+### 0.1 登录
+
+`POST /api/v1/auth/login`
+
+```json
+{
+  "username": "admin",
+  "password": "admin123"
+}
+```
+
+响应（`200`）：
+
+```json
+{
+  "access_token": "<jwt>",
+  "refresh_token": "<jwt>",
+  "token_type": "bearer",
+  "expires_in_seconds": 1800
+}
+```
+
+### 0.2 刷新令牌
+
+`POST /api/v1/auth/refresh`
+
+```json
+{
+  "refresh_token": "<jwt>"
+}
+```
+
 ### 1.1 任务状态 `TaskStatus`
 
 - `QUEUED`：已入队，等待执行。
@@ -17,8 +55,8 @@
 
 ### 1.2 控制动作 `TaskControlAction`
 
-- `pause`（MVP 占位，允许返回 `501`）
-- `resume`（MVP 占位，允许返回 `501`）
+- `pause`
+- `resume`
 - `cancel`
 - `retry`
 
@@ -211,15 +249,27 @@
 }
 ```
 
-占位动作响应（`501`）：
+暂停动作响应（`200`）：
 
 ```json
 {
   "task_id": "task_01JYQD0H3YQ4FQ3EVNVB83BP5A",
   "action": "pause",
-  "accepted": false,
+  "accepted": true,
+  "status": "WAITING_INPUT",
+  "message": "task paused"
+}
+```
+
+继续动作响应（`200`）：
+
+```json
+{
+  "task_id": "task_01JYQD0H3YQ4FQ3EVNVB83BP5A",
+  "action": "resume",
+  "accepted": true,
   "status": "RUNNING",
-  "message": "pause is not implemented in MVP"
+  "message": "task resumed"
 }
 ```
 
@@ -248,7 +298,7 @@
 
 ## 4. SSE 事件流
 
-`GET /api/v1/stream?task_id={id}`（`task_id` 可选，不传时返回全量任务事件）
+`GET /api/v1/stream?task_id={id}&access_token={token}`（`task_id` 可选，不传时返回全量任务事件）
 
 响应头建议：
 
@@ -293,4 +343,4 @@ data: {"task_id":"task_01JYQD0H3YQ4FQ3EVNVB83BP5A","seq":102,"timestamp":"2026-0
 - `400 BAD_REQUEST`：参数不合法。
 - `404 TASK_NOT_FOUND`：任务不存在。
 - `409 INVALID_STATE_TRANSITION`：非法状态流转。
-- `501 NOT_IMPLEMENTED`：MVP 占位能力未实现（例如 pause/resume）。
+- `422 VALIDATION_ERROR`：请求体或参数校验失败。
