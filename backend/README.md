@@ -25,6 +25,10 @@ pip install -r requirements.txt
 # Optional: retry policy
 # export APP_MAX_AUTO_RETRIES=2
 # export APP_RETRY_BACKOFF_BASE_SECONDS=1
+# Optional: switch executor queue backend to Redis
+# export APP_EXECUTION_BACKEND=redis
+# export REDIS_URL=redis://localhost:6379/0
+# export REDIS_QUEUE_PREFIX=pocket_codex:tasks
 uvicorn app.main:app --reload --port 8000
 ```
 
@@ -51,4 +55,5 @@ Then check:
 ## Notes
 
 - Default persistence uses SQLite at `backend/pocket_codex.db` and survives process restarts.
+- Default queue backend is in-process (`APP_EXECUTION_BACKEND=local`); set it to `redis` for shared queue consumption.
 - Default credentials are `admin / admin123` and should be overridden with env vars for non-local environments.

@@ -30,6 +30,10 @@ pip install -r requirements.txt
 # 可选：调节超时自动重试次数与退避
 # export APP_MAX_AUTO_RETRIES=2
 # export APP_RETRY_BACKOFF_BASE_SECONDS=1
+# 可选：启用 Redis 队列执行模式（多实例共享队列）
+# export APP_EXECUTION_BACKEND=redis
+# export REDIS_URL=redis://localhost:6379/0
+# export REDIS_QUEUE_PREFIX=pocket_codex:tasks
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 

@@ -24,6 +24,9 @@ class Settings:
     max_auto_retries: int
     default_task_timeout_seconds: int
     retry_backoff_base_seconds: int
+    execution_backend: str
+    redis_url: str
+    redis_queue_prefix: str
 
 
 def load_settings() -> Settings:
@@ -53,6 +56,9 @@ def load_settings() -> Settings:
             os.getenv("APP_RETRY_BACKOFF_BASE_SECONDS", "1"),
             fallback=1,
         ),
+        execution_backend=os.getenv("APP_EXECUTION_BACKEND", "local").strip().lower() or "local",
+        redis_url=os.getenv("REDIS_URL", "redis://localhost:6379/0"),
+        redis_queue_prefix=os.getenv("REDIS_QUEUE_PREFIX", "pocket_codex:tasks"),
     )
 
 

@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from typing import Any, Optional
 
 from ..config import settings
+from ..execution_queue import create_execution_queue
 from ..models import InMemoryTaskRepository, Task, TaskEvent, TaskMessage, TaskStatus, new_id, utc_now_iso
 from ..state import TERMINAL_STATUSES, ensure_transition
 from ..storage import Storage
@@ -35,9 +36,8 @@ class TaskService:
         self._lock = asyncio.Lock()
         self._global_subscribers: set[asyncio.Queue[dict[str, Any]]] = set()
         self._task_subscribers: dict[str, set[asyncio.Queue[dict[str, Any]]]] = {}
-        self._execution_queue: asyncio.Queue[tuple[str, float]] | None = None
+        self._execution_queue = create_execution_queue()
         self._worker_task: asyncio.Task[None] | None = None
-        self._worker_loop_id: int | None = None
         self._load_persisted_tasks()
 
     def _load_persisted_tasks(self) -> None:
@@ -80,23 +80,13 @@ class TaskService:
         self._storage.append_audit(actor=actor, action=action, task_id=task_id, detail=detail)
 
     async def start_worker(self) -> None:
-        loop_id = id(asyncio.get_running_loop())
-        if self._worker_loop_id != loop_id:
-            if self._worker_task is not None and not self._worker_task.done():
-                self._worker_task.cancel()
-                try:
-                    await self._worker_task
-                except asyncio.CancelledError:
-                    pass
-            self._execution_queue = asyncio.Queue()
-            self._worker_task = None
-            self._worker_loop_id = loop_id
-
         if self._worker_task is None or self._worker_task.done():
+            await self._execution_queue.start()
             self._worker_task = asyncio.create_task(self._worker_loop())
 
     async def stop_worker(self) -> None:
         if self._worker_task is None:
+            await self._execution_queue.stop()
             return
         self._worker_task.cancel()
         try:
@@ -104,8 +94,7 @@ class TaskService:
         except asyncio.CancelledError:
             pass
         self._worker_task = None
-        self._execution_queue = None
-        self._worker_loop_id = None
+        await self._execution_queue.stop()
 
     async def create_task(
         self,
@@ -559,21 +548,14 @@ class TaskService:
 
     async def _schedule_execution(self, task_id: str, *, delay_seconds: float) -> None:
         await self.start_worker()
-        if self._execution_queue is None:
-            raise RuntimeError("Execution queue is not initialized")
-        await self._execution_queue.put((task_id, max(0.0, delay_seconds)))
+        await self._execution_queue.enqueue(task_id, max(0.0, delay_seconds))
 
     async def _worker_loop(self) -> None:
-        if self._execution_queue is None:
-            return
         while True:
-            task_id, delay_seconds = await self._execution_queue.get()
-            try:
-                if delay_seconds > 0:
-                    await asyncio.sleep(delay_seconds)
-                await self._simulate_run(task_id)
-            finally:
-                self._execution_queue.task_done()
+            task_id = await self._execution_queue.dequeue(timeout_seconds=1)
+            if task_id is None:
+                continue
+            await self._simulate_run(task_id)
 
     def _collect_subscribers_locked(self, task_id: str) -> list[asyncio.Queue[dict[str, Any]]]:
         combined = set(self._global_subscribers)
