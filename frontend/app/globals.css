@@ -163,6 +163,17 @@ textarea {
   transform: translateY(-1px);
 }
 
+.button-secondary {
+  background: rgba(20, 33, 61, 0.08);
+  border: 1px solid rgba(20, 33, 61, 0.15);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.button-secondary:not(:disabled):hover {
+  box-shadow: 0 10px 24px rgba(20, 33, 61, 0.12);
+}
+
 .task-list {
   display: grid;
   gap: 10px;
@@ -292,6 +303,11 @@ textarea {
   margin: 0;
 }
 
+.note {
+  color: var(--primary-strong);
+  margin: 0;
+}
+
 .muted {
   color: var(--muted);
   margin: 0;
@@ -303,6 +319,57 @@ textarea {
 
 .delay-1 {
   animation-delay: 0.08s;
+}
+
+.delay-2 {
+  animation-delay: 0.12s;
+}
+
+.control-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.notification-list {
+  display: grid;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.notification-item {
+  background: rgba(255, 255, 255, 0.68);
+  border: 1px solid rgba(20, 33, 61, 0.1);
+  border-radius: 10px;
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+}
+
+.notification-item p {
+  margin: 0;
+}
+
+.notification-item code {
+  background: rgba(20, 33, 61, 0.06);
+  border-radius: 8px;
+  display: block;
+  font-size: 0.72rem;
+  overflow-x: auto;
+  padding: 8px;
+}
+
+.event-panel {
+  margin: 12px 0;
+}
+
+.event-panel h3 {
+  font-size: 0.92rem;
+  margin: 0 0 8px;
 }
 
 @keyframes fade-up {

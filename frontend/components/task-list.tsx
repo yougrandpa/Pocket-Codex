@@ -4,6 +4,7 @@ import { Task } from "@/lib/api";
 interface TaskListProps {
   tasks: Task[];
   error?: string | null;
+  loading?: boolean;
 }
 
 function formatTime(value?: string | null): string {
@@ -19,7 +20,7 @@ function formatTime(value?: string | null): string {
   return date.toLocaleString();
 }
 
-export function TaskList({ tasks, error = null }: TaskListProps): JSX.Element {
+export function TaskList({ tasks, error = null, loading = false }: TaskListProps) {
   return (
     <section className="panel animate-rise delay-1">
       <div className="panel-title-row">
@@ -29,7 +30,9 @@ export function TaskList({ tasks, error = null }: TaskListProps): JSX.Element {
 
       {error ? <p className="error">{error}</p> : null}
 
-      {!error && tasks.length === 0 ? (
+      {loading ? <p className="muted">Loading tasks...</p> : null}
+
+      {!loading && !error && tasks.length === 0 ? (
         <p className="muted">No tasks yet. Create one to start monitoring from mobile.</p>
       ) : null}
 

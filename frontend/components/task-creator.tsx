@@ -2,11 +2,15 @@
 
 import { useRouter } from "next/navigation";
 import { FormEvent, useMemo, useState } from "react";
-import { createTask } from "@/lib/api";
+import { createTask, Task } from "@/lib/api";
 
 const DEFAULT_PRIORITY = 5;
 
-export function TaskCreator(): JSX.Element {
+interface TaskCreatorProps {
+  onCreated?: (task: Task) => void;
+}
+
+export function TaskCreator({ onCreated }: TaskCreatorProps) {
   const router = useRouter();
   const [prompt, setPrompt] = useState("");
   const [priority, setPriority] = useState(DEFAULT_PRIORITY);
@@ -36,8 +40,8 @@ export function TaskCreator(): JSX.Element {
 
       setPrompt("");
       setWorkdir("");
+      onCreated?.(created);
       router.push(`/tasks/${created.id}`);
-      router.refresh();
     } catch (submitError) {
       setError(
         submitError instanceof Error ? submitError.message : "Failed to create task."
