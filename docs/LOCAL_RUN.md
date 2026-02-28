@@ -12,6 +12,12 @@
 
 ## 2. 启动后端（FastAPI）
 
+可选：先启动依赖（PostgreSQL + Redis）：
+
+```bash
+docker compose up -d postgres redis
+```
+
 在仓库根目录执行：
 
 ```bash
