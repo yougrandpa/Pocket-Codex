@@ -8,6 +8,22 @@ from pydantic import BaseModel, Field
 from .models import Task, TaskEvent, TaskMessage, TaskStatus
 
 
+class LoginRequest(BaseModel):
+    username: str = Field(min_length=1)
+    password: str = Field(min_length=1)
+
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str = Field(min_length=1)
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+    expires_in_seconds: int
+
+
 class TaskCreateRequest(BaseModel):
     prompt: str = Field(min_length=1)
     priority: int = 0
@@ -25,8 +41,23 @@ class TaskControlRequest(BaseModel):
     action: TaskControlAction
 
 
+class TaskControlResponse(BaseModel):
+    task_id: str
+    action: TaskControlAction
+    accepted: bool
+    status: TaskStatus
+    message: str
+
+
 class TaskMessageRequest(BaseModel):
     message: str = Field(min_length=1)
+
+
+class TaskMessageAckResponse(BaseModel):
+    task_id: str
+    message_id: str
+    accepted: bool
+    created_at: str
 
 
 class TaskMessageResponse(BaseModel):
@@ -40,6 +71,7 @@ class TaskMessageResponse(BaseModel):
 
 
 class TaskEventResponse(BaseModel):
+    id: str
     seq: int
     task_id: str
     event_type: str
@@ -50,6 +82,7 @@ class TaskEventResponse(BaseModel):
     @classmethod
     def from_model(cls, event: TaskEvent) -> "TaskEventResponse":
         return cls(
+            id=event.id,
             seq=event.seq,
             task_id=event.task_id,
             event_type=event.event_type,
@@ -71,13 +104,12 @@ class TaskResponse(BaseModel):
     started_at: Optional[str]
     finished_at: Optional[str]
     last_heartbeat_at: Optional[str]
+    paused_at: Optional[str]
     retry_count: int
     messages: list[TaskMessageResponse] = Field(default_factory=list)
-    events: list[TaskEventResponse] = Field(default_factory=list)
 
     @classmethod
-    def from_model(cls, task: Task, include_events: bool = True) -> "TaskResponse":
-        events = [TaskEventResponse.from_model(item) for item in task.events] if include_events else []
+    def from_model(cls, task: Task) -> "TaskResponse":
         return cls(
             id=task.id,
             prompt=task.prompt,
@@ -90,12 +122,19 @@ class TaskResponse(BaseModel):
             started_at=task.started_at,
             finished_at=task.finished_at,
             last_heartbeat_at=task.last_heartbeat_at,
+            paused_at=task.paused_at,
             retry_count=task.retry_count,
             messages=[TaskMessageResponse.from_model(item) for item in task.messages],
-            events=events,
         )
+
+
+class TaskDetailResponse(BaseModel):
+    task: TaskResponse
+    events: list[TaskEventResponse]
 
 
 class TaskListResponse(BaseModel):
     total: int
+    limit: int
+    offset: int
     items: list[TaskResponse]

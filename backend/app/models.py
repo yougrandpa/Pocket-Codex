@@ -35,6 +35,7 @@ class TaskMessage:
 
 @dataclass
 class TaskEvent:
+    id: str
     seq: int
     task_id: str
     event_type: str
@@ -56,6 +57,7 @@ class Task:
     started_at: Optional[str] = None
     finished_at: Optional[str] = None
     last_heartbeat_at: Optional[str] = None
+    paused_at: Optional[str] = None
     retry_count: int = 0
     messages: list[TaskMessage] = field(default_factory=list)
     events: list[TaskEvent] = field(default_factory=list)

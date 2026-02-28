@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import asyncio
 import json
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Optional
 
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import StreamingResponse
 
+from ..dependencies import get_optional_current_user, validate_access_token
 from ..services.task_service import task_service
 
 
@@ -14,7 +15,20 @@ router = APIRouter(tags=["stream"])
 
 
 @router.get("/stream")
-async def stream_events(request: Request, task_id: str | None = Query(default=None)) -> StreamingResponse:
+async def stream_events(
+    request: Request,
+    task_id: Optional[str] = Query(default=None),
+    access_token: Optional[str] = Query(default=None),
+    user: Optional[str] = Depends(get_optional_current_user),
+) -> StreamingResponse:
+    if user is None:
+        if access_token is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Missing access token",
+            )
+        user = validate_access_token(access_token)
+
     queue = await task_service.subscribe(task_id=task_id)
 
     async def event_generator() -> AsyncGenerator[str, None]:
@@ -23,11 +37,13 @@ async def stream_events(request: Request, task_id: str | None = Query(default=No
                 if await request.is_disconnected():
                     break
                 try:
-                    event = await asyncio.wait_for(queue.get(), timeout=15.0)
+                    event = await asyncio.wait_for(queue.get(), timeout=20.0)
                     data = json.dumps(event, separators=(",", ":"))
-                    yield f"event: task_event\ndata: {data}\n\n"
+                    event_name = event.get("event_type", "task.event")
+                    event_id = f"{event.get('task_id', 'task')}:{event.get('seq', 0)}"
+                    yield f"id: {event_id}\nevent: {event_name}\ndata: {data}\n\n"
                 except asyncio.TimeoutError:
-                    yield ": keepalive\n\n"
+                    yield ": ping\n\n"
         finally:
             await task_service.unsubscribe(queue=queue, task_id=task_id)
 
