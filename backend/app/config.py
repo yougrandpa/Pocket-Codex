@@ -20,6 +20,9 @@ class Settings:
     access_token_expires_minutes: int
     refresh_token_expires_days: int
     cors_origins: list[str]
+    database_url: str
+    max_auto_retries: int
+    default_task_timeout_seconds: int
 
 
 def load_settings() -> Settings:
@@ -39,6 +42,12 @@ def load_settings() -> Settings:
             fallback=7,
         ),
         cors_origins=allow_origins,
+        database_url=os.getenv("DATABASE_URL", "sqlite:///./backend/pocket_codex.db"),
+        max_auto_retries=_as_int(os.getenv("APP_MAX_AUTO_RETRIES", "1"), fallback=1),
+        default_task_timeout_seconds=_as_int(
+            os.getenv("APP_DEFAULT_TASK_TIMEOUT_SECONDS", "20"),
+            fallback=20,
+        ),
     )
 
 

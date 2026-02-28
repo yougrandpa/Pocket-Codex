@@ -59,6 +59,7 @@ class Task:
     last_heartbeat_at: Optional[str] = None
     paused_at: Optional[str] = None
     retry_count: int = 0
+    timeout_seconds: int = 20
     messages: list[TaskMessage] = field(default_factory=list)
     events: list[TaskEvent] = field(default_factory=list)
 

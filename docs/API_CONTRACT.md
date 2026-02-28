@@ -115,6 +115,7 @@
 {
   "prompt": "读取 docs 并生成实现清单",
   "priority": 5,
+  "timeout_seconds": 20,
   "workdir": "/workspace/Pocket-Codex"
 }
 ```
@@ -133,11 +134,14 @@
   "updated_at": "2026-02-28T14:10:00Z",
   "started_at": null,
   "finished_at": null,
-  "last_heartbeat_at": null
+  "last_heartbeat_at": null,
+  "paused_at": null,
+  "retry_count": 0,
+  "timeout_seconds": 20
 }
 ```
 
-说明：MVP 模拟执行器会异步推进 `QUEUED -> RUNNING -> SUCCEEDED`，用于前端联调。
+说明：当前实现使用队列 worker，异步推进任务。若运行时间超过 `timeout_seconds`，会进入 `TIMEOUT`，并按配置触发自动重试。
 
 ## 3.2 任务列表
 
@@ -159,7 +163,10 @@
       "updated_at": "2026-02-28T14:10:02Z",
       "started_at": "2026-02-28T14:10:01Z",
       "finished_at": null,
-      "last_heartbeat_at": "2026-02-28T14:10:02Z"
+      "last_heartbeat_at": "2026-02-28T14:10:02Z",
+      "paused_at": null,
+      "retry_count": 0,
+      "timeout_seconds": 20
     }
   ],
   "total": 1,
@@ -187,7 +194,10 @@
     "updated_at": "2026-02-28T14:10:08Z",
     "started_at": "2026-02-28T14:10:01Z",
     "finished_at": "2026-02-28T14:10:08Z",
-    "last_heartbeat_at": "2026-02-28T14:10:08Z"
+    "last_heartbeat_at": "2026-02-28T14:10:08Z",
+    "paused_at": null,
+    "retry_count": 0,
+    "timeout_seconds": 20
   },
   "events": [
     {
@@ -282,6 +292,33 @@
 ```json
 {
   "message": "补充：优先输出风险项"
+}
+```
+
+## 3.6 审计日志
+
+`GET /api/v1/tasks/audit/logs?limit=20&offset=0`
+
+响应（`200`）：
+
+```json
+{
+  "total": 3,
+  "limit": 20,
+  "offset": 0,
+  "items": [
+    {
+      "id": 3,
+      "timestamp": "2026-02-28T14:11:12Z",
+      "actor": "admin",
+      "action": "task.control.pause",
+      "task_id": "task_01JYQD0H3YQ4FQ3EVNVB83BP5A",
+      "detail": {
+        "accepted": true,
+        "message": "task paused"
+      }
+    }
+  ]
 }
 ```
 

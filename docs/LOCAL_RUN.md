@@ -19,6 +19,8 @@ cd backend
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+# 可选：默认 sqlite 持久化，也可指定 PostgreSQL
+# export DATABASE_URL=postgresql+psycopg://user:pass@localhost:5432/pocket_codex
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
@@ -62,7 +64,7 @@ curl -X POST http://localhost:8000/api/v1/tasks \
   }'
 ```
 
-预期：返回 `201`，状态为 `QUEUED`，并在短时间后推进到 `RUNNING` / `SUCCEEDED`（模拟执行器）。
+预期：返回 `201`，状态为 `QUEUED`，随后由 worker 队列异步推进到 `RUNNING` / `SUCCEEDED`。如果运行超时，会进入 `TIMEOUT` 并按配置自动重试。
 
 ## 4.3 查看任务列表
 
@@ -131,6 +133,13 @@ curl -X POST http://localhost:8000/api/v1/tasks/<TASK_ID>/message \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"message":"补充：先输出风险项"}'
+```
+
+## 4.8 查看审计日志
+
+```bash
+curl "http://localhost:8000/api/v1/tasks/audit/logs?limit=20&offset=0" \
+  -H "Authorization: Bearer $TOKEN"
 ```
 
 ## 5. 前后端对齐检查单

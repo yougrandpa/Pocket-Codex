@@ -3,10 +3,13 @@ from __future__ import annotations
 import asyncio
 import copy
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Any, Optional
 
+from ..config import settings
 from ..models import InMemoryTaskRepository, Task, TaskEvent, TaskMessage, TaskStatus, new_id, utc_now_iso
 from ..state import TERMINAL_STATUSES, ensure_transition
+from ..storage import Storage
 
 
 @dataclass
@@ -16,12 +19,27 @@ class ControlResult:
     message: str
 
 
+def _parse_iso(value: str | None) -> datetime | None:
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
 class TaskService:
     def __init__(self) -> None:
         self._repo = InMemoryTaskRepository()
+        self._storage = Storage(settings.database_url)
         self._lock = asyncio.Lock()
         self._global_subscribers: set[asyncio.Queue[dict[str, Any]]] = set()
         self._task_subscribers: dict[str, set[asyncio.Queue[dict[str, Any]]]] = {}
+        self._load_persisted_tasks()
+
+    def _load_persisted_tasks(self) -> None:
+        for task in self._storage.load_tasks():
+            self._repo.add(task)
 
     async def list_tasks(
         self,
@@ -44,7 +62,29 @@ class TaskService:
             task = self._repo.get(task_id)
             return copy.deepcopy(task) if task else None
 
-    async def create_task(self, prompt: str, priority: int = 0, workdir: Optional[str] = None) -> Task:
+    async def list_audits(self, *, limit: int = 100, offset: int = 0) -> tuple[list[dict[str, Any]], int]:
+        items, total = self._storage.list_audits(limit=limit, offset=offset)
+        return items, total
+
+    def append_audit(
+        self,
+        *,
+        actor: str,
+        action: str,
+        task_id: str | None,
+        detail: dict[str, Any],
+    ) -> None:
+        self._storage.append_audit(actor=actor, action=action, task_id=task_id, detail=detail)
+
+    async def create_task(
+        self,
+        *,
+        prompt: str,
+        priority: int = 0,
+        workdir: Optional[str] = None,
+        timeout_seconds: Optional[int] = None,
+        actor: str = "system",
+    ) -> Task:
         now = utc_now_iso()
         task = Task(
             id=new_id("task"),
@@ -55,6 +95,7 @@ class TaskService:
             created_at=now,
             updated_at=now,
             last_heartbeat_at=now,
+            timeout_seconds=timeout_seconds or settings.default_task_timeout_seconds,
         )
 
         async with self._lock:
@@ -67,8 +108,16 @@ class TaskService:
                 extra_payload={"reason": "task_created"},
                 events_out=queued_events,
             )
+            self._persist_task_locked(task)
             subscribers = self._collect_subscribers_locked(task.id)
             task_copy = copy.deepcopy(task)
+
+        self._storage.append_audit(
+            actor=actor,
+            action="task.create",
+            task_id=task.id,
+            detail={"priority": priority, "workdir": workdir, "timeout_seconds": task.timeout_seconds},
+        )
 
         for event in queued_events:
             await self._broadcast(event, subscribers)
@@ -76,7 +125,7 @@ class TaskService:
         asyncio.create_task(self._simulate_run(task.id))
         return task_copy
 
-    async def control_task(self, task_id: str, action: str) -> ControlResult:
+    async def control_task(self, *, task_id: str, action: str, actor: str = "system") -> ControlResult:
         action = action.lower()
         queued_events: list[dict[str, Any]] = []
         subscribers: list[asyncio.Queue[dict[str, Any]]] = []
@@ -147,35 +196,22 @@ class TaskService:
                     raise ValueError(
                         f"Task {task_id} in state {task.status} cannot be retried."
                     )
-                task.retry_count += 1
-                task.paused_at = None
-                task.finished_at = None
-                task.started_at = None
-                task.summary = None
-                self._transition_locked(
-                    task=task,
-                    target_status=TaskStatus.RETRYING,
-                    payload={"action": "retry"},
-                    events_out=queued_events,
-                )
-                self._transition_locked(
-                    task=task,
-                    target_status=TaskStatus.QUEUED,
-                    payload={"reason": "retry"},
-                    events_out=queued_events,
-                )
-                self._append_log_event_locked(
-                    task=task,
-                    message="task scheduled for retry",
-                    events_out=queued_events,
-                )
+                self._schedule_retry_locked(task, reason="manual_retry", events_out=queued_events)
                 schedule_retry = True
                 message = "task scheduled for retry"
             else:
                 raise ValueError(f"Unsupported control action: {action}")
 
+            self._persist_task_locked(task)
             subscribers = self._collect_subscribers_locked(task.id)
             task_copy = copy.deepcopy(task)
+
+        self._storage.append_audit(
+            actor=actor,
+            action=f"task.control.{action}",
+            task_id=task_id,
+            detail={"accepted": accepted, "message": message},
+        )
 
         for event in queued_events:
             await self._broadcast(event, subscribers)
@@ -185,7 +221,7 @@ class TaskService:
 
         return ControlResult(task=task_copy, accepted=accepted, message=message)
 
-    async def append_message(self, task_id: str, message: str) -> tuple[Task, TaskMessage]:
+    async def append_message(self, *, task_id: str, message: str, actor: str = "system") -> tuple[Task, TaskMessage]:
         async with self._lock:
             task = self._repo.get(task_id)
             if task is None:
@@ -201,8 +237,16 @@ class TaskService:
                 payload={"message_id": item.id, "message": item.message},
                 events_out=queued_events,
             )
+            self._persist_task_locked(task)
             subscribers = self._collect_subscribers_locked(task.id)
             task_copy = copy.deepcopy(task)
+
+        self._storage.append_audit(
+            actor=actor,
+            action="task.message.append",
+            task_id=task_id,
+            detail={"message_id": item.id},
+        )
 
         for event in queued_events:
             await self._broadcast(event, subscribers)
@@ -231,7 +275,7 @@ class TaskService:
                 self._global_subscribers.discard(queue)
 
     async def _simulate_run(self, task_id: str) -> None:
-        await asyncio.sleep(0.4)
+        await asyncio.sleep(0.3)
         running_events: list[dict[str, Any]] = []
         subscribers: list[asyncio.Queue[dict[str, Any]]] = []
 
@@ -242,10 +286,11 @@ class TaskService:
             self._transition_locked(
                 task=task,
                 target_status=TaskStatus.RUNNING,
-                payload={"source": "simulator"},
+                payload={"source": "worker"},
                 events_out=running_events,
             )
             self._append_log_event_locked(task=task, message="execution started", events_out=running_events)
+            self._persist_task_locked(task)
             subscribers = self._collect_subscribers_locked(task.id)
 
         for event in running_events:
@@ -255,6 +300,8 @@ class TaskService:
         while progress < 4:
             await asyncio.sleep(0.6)
             loop_events: list[dict[str, Any]] = []
+            schedule_auto_retry = False
+            retry_task_id: str | None = None
 
             async with self._lock:
                 task = self._repo.get(task_id)
@@ -264,37 +311,62 @@ class TaskService:
                     return
                 if task.status == TaskStatus.WAITING_INPUT:
                     self._touch_heartbeat_locked(task)
-                    subscribers = self._collect_subscribers_locked(task.id)
+                    self._persist_task_locked(task)
                     continue
                 if task.status != TaskStatus.RUNNING:
                     return
 
-                progress += 1
-                self._append_log_event_locked(
-                    task=task,
-                    message=f"execution step {progress}/4",
-                    events_out=loop_events,
-                )
-                if progress == 2:
-                    task.summary = "Execution is in progress (simulated)."
-                    self._append_event_locked(
+                if self._is_timed_out(task):
+                    self._transition_locked(
                         task=task,
-                        event_type="task.summary.updated",
-                        status=task.status,
-                        payload={"summary": task.summary},
+                        target_status=TaskStatus.TIMEOUT,
+                        payload={"source": "worker", "reason": "timeout"},
                         events_out=loop_events,
                     )
-                subscribers = self._collect_subscribers_locked(task.id)
+                    self._append_log_event_locked(
+                        task=task,
+                        message="task timed out",
+                        events_out=loop_events,
+                    )
+                    if task.retry_count < settings.max_auto_retries:
+                        self._schedule_retry_locked(task, reason="auto_retry_timeout", events_out=loop_events)
+                        schedule_auto_retry = True
+                    self._persist_task_locked(task)
+                    subscribers = self._collect_subscribers_locked(task.id)
+                    retry_task_id = task.id
+
+                else:
+                    progress += 1
+                    self._append_log_event_locked(
+                        task=task,
+                        message=f"execution step {progress}/4",
+                        events_out=loop_events,
+                    )
+                    if progress == 2:
+                        task.summary = "Execution is in progress (worker)."
+                        self._append_event_locked(
+                            task=task,
+                            event_type="task.summary.updated",
+                            status=task.status,
+                            payload={"summary": task.summary},
+                            events_out=loop_events,
+                        )
+                    self._persist_task_locked(task)
+                    subscribers = self._collect_subscribers_locked(task.id)
 
             for event in loop_events:
                 await self._broadcast(event, subscribers)
+            if retry_task_id is not None:
+                if schedule_auto_retry:
+                    asyncio.create_task(self._simulate_run(retry_task_id))
+                return
 
         done_events: list[dict[str, Any]] = []
         async with self._lock:
             task = self._repo.get(task_id)
             if task is None or task.status != TaskStatus.RUNNING:
                 return
-            task.summary = "Task completed successfully (simulated)."
+            task.summary = "Task completed successfully (worker)."
             self._append_event_locked(
                 task=task,
                 event_type="task.summary.updated",
@@ -305,14 +377,52 @@ class TaskService:
             self._transition_locked(
                 task=task,
                 target_status=TaskStatus.SUCCEEDED,
-                payload={"source": "simulator"},
+                payload={"source": "worker"},
                 events_out=done_events,
             )
             self._append_log_event_locked(task=task, message="execution finished", events_out=done_events)
+            self._persist_task_locked(task)
             subscribers = self._collect_subscribers_locked(task.id)
 
         for event in done_events:
             await self._broadcast(event, subscribers)
+
+    def _schedule_retry_locked(
+        self,
+        task: Task,
+        *,
+        reason: str,
+        events_out: list[dict[str, Any]],
+    ) -> None:
+        task.retry_count += 1
+        task.paused_at = None
+        task.finished_at = None
+        task.started_at = None
+        task.summary = None
+        self._transition_locked(
+            task=task,
+            target_status=TaskStatus.RETRYING,
+            payload={"reason": reason},
+            events_out=events_out,
+        )
+        self._transition_locked(
+            task=task,
+            target_status=TaskStatus.QUEUED,
+            payload={"reason": reason},
+            events_out=events_out,
+        )
+        self._append_log_event_locked(
+            task=task,
+            message=f"task scheduled for retry ({reason})",
+            events_out=events_out,
+        )
+
+    def _is_timed_out(self, task: Task) -> bool:
+        started = _parse_iso(task.started_at)
+        if started is None:
+            return False
+        elapsed = (datetime.now(timezone.utc) - started).total_seconds()
+        return elapsed > task.timeout_seconds
 
     def _transition_locked(
         self,
@@ -408,6 +518,9 @@ class TaskService:
         now = utc_now_iso()
         task.updated_at = now
         task.last_heartbeat_at = now
+
+    def _persist_task_locked(self, task: Task) -> None:
+        self._storage.save_task(task)
 
     def _collect_subscribers_locked(self, task_id: str) -> list[asyncio.Queue[dict[str, Any]]]:
         combined = set(self._global_subscribers)

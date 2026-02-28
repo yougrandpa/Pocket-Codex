@@ -6,6 +6,7 @@ from jwt import InvalidTokenError
 from ..auth import create_access_token, create_refresh_token, decode_token
 from ..config import settings
 from ..schemas import LoginRequest, RefreshTokenRequest, TokenResponse
+from ..services.task_service import task_service
 
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -14,7 +15,20 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 @router.post("/login", response_model=TokenResponse)
 async def login(payload: LoginRequest) -> TokenResponse:
     if payload.username != settings.username or payload.password != settings.password:
+        task_service.append_audit(
+            actor=payload.username,
+            action="auth.login.failed",
+            task_id=None,
+            detail={},
+        )
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+
+    task_service.append_audit(
+        actor=payload.username,
+        action="auth.login.succeeded",
+        task_id=None,
+        detail={},
+    )
 
     return TokenResponse(
         access_token=create_access_token(payload.username),
@@ -45,6 +59,13 @@ async def refresh(payload: RefreshTokenRequest) -> TokenResponse:
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token subject",
         )
+
+    task_service.append_audit(
+        actor=username,
+        action="auth.refresh",
+        task_id=None,
+        detail={},
+    )
 
     return TokenResponse(
         access_token=create_access_token(username),

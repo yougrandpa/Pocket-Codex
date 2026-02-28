@@ -6,10 +6,11 @@ FastAPI backend skeleton for Pocket Codex mobile control panel.
 
 - `POST /api/v1/auth/login` and `POST /api/v1/auth/refresh` for single-user JWT auth.
 - `POST /api/v1/tasks` creates a task (`QUEUED`) and starts a simulated lifecycle.
-- Simulated lifecycle transitions `QUEUED -> RUNNING -> SUCCEEDED`, supports pause/resume.
-- `GET /api/v1/tasks` and `GET /api/v1/tasks/{id}` read task data from in-memory storage.
+- Worker lifecycle transitions `QUEUED -> RUNNING -> SUCCEEDED`, supports pause/resume/timeout.
+- `GET /api/v1/tasks` and `GET /api/v1/tasks/{id}` read persisted task snapshots.
 - `POST /api/v1/tasks/{id}/control` supports `pause`, `resume`, `cancel`, `retry`.
 - `POST /api/v1/tasks/{id}/message` appends user messages to a task.
+- `GET /api/v1/tasks/audit/logs` returns audit logs (auth + control + message actions).
 - `GET /api/v1/stream` exposes SSE events (optional `task_id` filter), auth via bearer or `access_token` query.
 
 ## Local run
@@ -19,6 +20,8 @@ cd backend
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+# Optional: switch to PostgreSQL for persistence
+# export DATABASE_URL=postgresql+psycopg://user:pass@localhost:5432/pocket_codex
 uvicorn app.main:app --reload --port 8000
 ```
 
@@ -44,5 +47,5 @@ Then check:
 
 ## Notes
 
-- Storage is in-memory only; data resets on process restart.
+- Default persistence uses SQLite at `backend/pocket_codex.db` and survives process restarts.
 - Default credentials are `admin / admin123` and should be overridden with env vars for non-local environments.

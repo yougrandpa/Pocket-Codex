@@ -28,6 +28,7 @@ class TaskCreateRequest(BaseModel):
     prompt: str = Field(min_length=1)
     priority: int = 0
     workdir: Optional[str] = None
+    timeout_seconds: int = Field(default=20, ge=5, le=3600)
 
 
 class TaskControlAction(str, Enum):
@@ -106,6 +107,7 @@ class TaskResponse(BaseModel):
     last_heartbeat_at: Optional[str]
     paused_at: Optional[str]
     retry_count: int
+    timeout_seconds: int
     messages: list[TaskMessageResponse] = Field(default_factory=list)
 
     @classmethod
@@ -124,6 +126,7 @@ class TaskResponse(BaseModel):
             last_heartbeat_at=task.last_heartbeat_at,
             paused_at=task.paused_at,
             retry_count=task.retry_count,
+            timeout_seconds=task.timeout_seconds,
             messages=[TaskMessageResponse.from_model(item) for item in task.messages],
         )
 
@@ -138,3 +141,19 @@ class TaskListResponse(BaseModel):
     limit: int
     offset: int
     items: list[TaskResponse]
+
+
+class AuditLogResponse(BaseModel):
+    id: int
+    timestamp: str
+    actor: str
+    action: str
+    task_id: Optional[str]
+    detail: dict[str, Any]
+
+
+class AuditLogListResponse(BaseModel):
+    total: int
+    limit: int
+    offset: int
+    items: list[AuditLogResponse]

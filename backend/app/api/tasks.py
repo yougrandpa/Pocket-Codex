@@ -7,6 +7,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from ..dependencies import get_current_user
 from ..models import TaskStatus
 from ..schemas import (
+    AuditLogListResponse,
+    AuditLogResponse,
     TaskControlRequest,
     TaskControlResponse,
     TaskCreateRequest,
@@ -23,26 +25,27 @@ from ..services.task_service import task_service
 router = APIRouter(prefix="/tasks", tags=["tasks"])
 
 
-@router.post(
-    "",
-    response_model=TaskResponse,
-    status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(get_current_user)],
-)
-async def create_task(payload: TaskCreateRequest) -> TaskResponse:
+@router.post("", response_model=TaskResponse, status_code=status.HTTP_201_CREATED)
+async def create_task(
+    payload: TaskCreateRequest,
+    current_user: str = Depends(get_current_user),
+) -> TaskResponse:
     task = await task_service.create_task(
         prompt=payload.prompt,
         priority=payload.priority,
         workdir=payload.workdir,
+        timeout_seconds=payload.timeout_seconds,
+        actor=current_user,
     )
     return TaskResponse.from_model(task)
 
 
-@router.get("", response_model=TaskListResponse, dependencies=[Depends(get_current_user)])
+@router.get("", response_model=TaskListResponse)
 async def list_tasks(
     status_filter: Optional[TaskStatus] = Query(default=None, alias="status"),
     limit: int = Query(default=20, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
+    _: str = Depends(get_current_user),
 ) -> TaskListResponse:
     tasks, total = await task_service.list_tasks(status=status_filter, limit=limit, offset=offset)
     return TaskListResponse(
@@ -53,8 +56,8 @@ async def list_tasks(
     )
 
 
-@router.get("/{task_id}", response_model=TaskDetailResponse, dependencies=[Depends(get_current_user)])
-async def get_task(task_id: str) -> TaskDetailResponse:
+@router.get("/{task_id}", response_model=TaskDetailResponse)
+async def get_task(task_id: str, _: str = Depends(get_current_user)) -> TaskDetailResponse:
     task = await task_service.get_task(task_id)
     if task is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
@@ -64,14 +67,18 @@ async def get_task(task_id: str) -> TaskDetailResponse:
     )
 
 
-@router.post(
-    "/{task_id}/control",
-    response_model=TaskControlResponse,
-    dependencies=[Depends(get_current_user)],
-)
-async def control_task(task_id: str, payload: TaskControlRequest) -> TaskControlResponse:
+@router.post("/{task_id}/control", response_model=TaskControlResponse)
+async def control_task(
+    task_id: str,
+    payload: TaskControlRequest,
+    current_user: str = Depends(get_current_user),
+) -> TaskControlResponse:
     try:
-        result = await task_service.control_task(task_id=task_id, action=payload.action.value)
+        result = await task_service.control_task(
+            task_id=task_id,
+            action=payload.action.value,
+            actor=current_user,
+        )
     except KeyError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found") from None
     except ValueError as exc:
@@ -86,14 +93,18 @@ async def control_task(task_id: str, payload: TaskControlRequest) -> TaskControl
     )
 
 
-@router.post(
-    "/{task_id}/message",
-    response_model=TaskMessageAckResponse,
-    dependencies=[Depends(get_current_user)],
-)
-async def append_message(task_id: str, payload: TaskMessageRequest) -> TaskMessageAckResponse:
+@router.post("/{task_id}/message", response_model=TaskMessageAckResponse)
+async def append_message(
+    task_id: str,
+    payload: TaskMessageRequest,
+    current_user: str = Depends(get_current_user),
+) -> TaskMessageAckResponse:
     try:
-        _, item = await task_service.append_message(task_id=task_id, message=payload.message)
+        _, item = await task_service.append_message(
+            task_id=task_id,
+            message=payload.message,
+            actor=current_user,
+        )
     except KeyError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found") from None
     return TaskMessageAckResponse(
@@ -101,4 +112,19 @@ async def append_message(task_id: str, payload: TaskMessageRequest) -> TaskMessa
         message_id=item.id,
         accepted=True,
         created_at=item.created_at,
+    )
+
+
+@router.get("/audit/logs", response_model=AuditLogListResponse)
+async def list_audit_logs(
+    limit: int = Query(default=100, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
+    _: str = Depends(get_current_user),
+) -> AuditLogListResponse:
+    items, total = await task_service.list_audits(limit=limit, offset=offset)
+    return AuditLogListResponse(
+        total=total,
+        limit=limit,
+        offset=offset,
+        items=[AuditLogResponse(**item) for item in items],
     )
