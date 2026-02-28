@@ -22,6 +22,9 @@ source .venv/bin/activate
 pip install -r requirements.txt
 # Optional: switch to PostgreSQL for persistence
 # export DATABASE_URL=postgresql+psycopg://user:pass@localhost:5432/pocket_codex
+# Optional: retry policy
+# export APP_MAX_AUTO_RETRIES=2
+# export APP_RETRY_BACKOFF_BASE_SECONDS=1
 uvicorn app.main:app --reload --port 8000
 ```
 

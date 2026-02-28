@@ -21,6 +21,9 @@ source .venv/bin/activate
 pip install -r requirements.txt
 # 可选：默认 sqlite 持久化，也可指定 PostgreSQL
 # export DATABASE_URL=postgresql+psycopg://user:pass@localhost:5432/pocket_codex
+# 可选：调节超时自动重试次数与退避
+# export APP_MAX_AUTO_RETRIES=2
+# export APP_RETRY_BACKOFF_BASE_SECONDS=1
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 

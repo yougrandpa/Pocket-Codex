@@ -23,6 +23,7 @@ class Settings:
     database_url: str
     max_auto_retries: int
     default_task_timeout_seconds: int
+    retry_backoff_base_seconds: int
 
 
 def load_settings() -> Settings:
@@ -47,6 +48,10 @@ def load_settings() -> Settings:
         default_task_timeout_seconds=_as_int(
             os.getenv("APP_DEFAULT_TASK_TIMEOUT_SECONDS", "20"),
             fallback=20,
+        ),
+        retry_backoff_base_seconds=_as_int(
+            os.getenv("APP_RETRY_BACKOFF_BASE_SECONDS", "1"),
+            fallback=1,
         ),
     )
 

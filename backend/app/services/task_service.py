@@ -122,7 +122,7 @@ class TaskService:
         for event in queued_events:
             await self._broadcast(event, subscribers)
 
-        asyncio.create_task(self._simulate_run(task.id))
+        self._schedule_execution(task.id, delay_seconds=0.2)
         return task_copy
 
     async def control_task(self, *, task_id: str, action: str, actor: str = "system") -> ControlResult:
@@ -217,7 +217,8 @@ class TaskService:
             await self._broadcast(event, subscribers)
 
         if schedule_retry:
-            asyncio.create_task(self._simulate_run(task_id))
+            retry_delay = settings.retry_backoff_base_seconds * max(1, task_copy.retry_count)
+            self._schedule_execution(task_id, delay_seconds=retry_delay)
 
         return ControlResult(task=task_copy, accepted=accepted, message=message)
 
@@ -358,7 +359,10 @@ class TaskService:
                 await self._broadcast(event, subscribers)
             if retry_task_id is not None:
                 if schedule_auto_retry:
-                    asyncio.create_task(self._simulate_run(retry_task_id))
+                    retry_task = await self.get_task(retry_task_id)
+                    retry_count = retry_task.retry_count if retry_task else 1
+                    retry_delay = settings.retry_backoff_base_seconds * max(1, retry_count)
+                    self._schedule_execution(retry_task_id, delay_seconds=retry_delay)
                 return
 
         done_events: list[dict[str, Any]] = []
@@ -521,6 +525,14 @@ class TaskService:
 
     def _persist_task_locked(self, task: Task) -> None:
         self._storage.save_task(task)
+
+    def _schedule_execution(self, task_id: str, *, delay_seconds: float) -> None:
+        asyncio.create_task(self._run_with_delay(task_id, delay_seconds))
+
+    async def _run_with_delay(self, task_id: str, delay_seconds: float) -> None:
+        if delay_seconds > 0:
+            await asyncio.sleep(delay_seconds)
+        await self._simulate_run(task_id)
 
     def _collect_subscribers_locked(self, task_id: str) -> list[asyncio.Queue[dict[str, Any]]]:
         combined = set(self._global_subscribers)
