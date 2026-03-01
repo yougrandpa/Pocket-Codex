@@ -70,6 +70,52 @@ export interface AuditLog {
   detail: Record<string, unknown>;
 }
 
+export interface AuditLogList {
+  total: number;
+  limit: number;
+  offset: number;
+  items: AuditLog[];
+}
+
+export type MobileLoginRequestStatus =
+  | "PENDING"
+  | "APPROVED"
+  | "REJECTED"
+  | "EXPIRED"
+  | "COMPLETED";
+
+export interface MobileLoginRequestResult {
+  request_id: string;
+  status: MobileLoginRequestStatus;
+  expires_at: string;
+  poll_interval_seconds: number;
+}
+
+export interface MobileLoginStatus {
+  request_id: string;
+  status: MobileLoginRequestStatus;
+  device_name: string;
+  request_ip: string;
+  created_at: string;
+  expires_at: string;
+  approved_at?: string | null;
+  approved_by?: string | null;
+  completed_at?: string | null;
+  access_token?: string | null;
+  refresh_token?: string | null;
+  expires_in_seconds?: number | null;
+}
+
+export interface PendingMobileLoginRequest {
+  request_id: string;
+  status: MobileLoginRequestStatus;
+  username: string;
+  device_name: string;
+  request_ip: string;
+  created_at: string;
+  expires_at: string;
+}
+
 export interface HealthStatus {
   status: string;
   timestamp: string;
@@ -82,6 +128,8 @@ export interface HealthStatus {
   codex_hard_timeout_seconds?: number;
   codex_cli_path?: string;
   codex_cli_exists?: boolean;
+  require_loopback_direct_login?: boolean;
+  mobile_login_request_ttl_seconds?: number;
 }
 
 export interface CreateTaskInput {
@@ -193,11 +241,50 @@ interface RawTokenResponse {
   expires_in_seconds: number;
 }
 
+interface RawMobileLoginRequestResult {
+  request_id: string;
+  status: MobileLoginRequestStatus;
+  expires_at: string;
+  poll_interval_seconds: number;
+}
+
+interface RawMobileLoginStatus {
+  request_id: string;
+  status: MobileLoginRequestStatus;
+  device_name: string;
+  request_ip: string;
+  created_at: string;
+  expires_at: string;
+  approved_at?: string | null;
+  approved_by?: string | null;
+  completed_at?: string | null;
+  access_token?: string | null;
+  refresh_token?: string | null;
+  expires_in_seconds?: number | null;
+}
+
 function normalizeToken(raw: RawTokenResponse): SessionTokens {
   return {
     accessToken: raw.access_token,
     refreshToken: raw.refresh_token,
     expiresInSeconds: raw.expires_in_seconds
+  };
+}
+
+function normalizeMobileLoginStatus(raw: RawMobileLoginStatus): MobileLoginStatus {
+  return {
+    request_id: raw.request_id,
+    status: raw.status,
+    device_name: raw.device_name,
+    request_ip: raw.request_ip,
+    created_at: raw.created_at,
+    expires_at: raw.expires_at,
+    approved_at: raw.approved_at ?? null,
+    approved_by: raw.approved_by ?? null,
+    completed_at: raw.completed_at ?? null,
+    access_token: raw.access_token ?? null,
+    refresh_token: raw.refresh_token ?? null,
+    expires_in_seconds: raw.expires_in_seconds ?? null
   };
 }
 
@@ -212,6 +299,44 @@ export async function login(username: string, password: string): Promise<Session
   const tokens = normalizeToken(response);
   saveSession(tokens);
   return tokens;
+}
+
+export async function requestMobileLogin(
+  username: string,
+  password: string,
+  deviceName: string
+): Promise<MobileLoginRequestResult> {
+  return await fetchJson<RawMobileLoginRequestResult>(`${API_BASE_URL}/api/v1/auth/mobile/request`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      username,
+      password,
+      device_name: deviceName
+    })
+  });
+}
+
+export async function getMobileLoginStatus(requestId: string): Promise<MobileLoginStatus> {
+  const response = await fetchJson<RawMobileLoginStatus>(
+    `${API_BASE_URL}/api/v1/auth/mobile/requests/${encodeURIComponent(requestId)}`,
+    { cache: "no-store" }
+  );
+  const normalized = normalizeMobileLoginStatus(response);
+  if (
+    normalized.access_token &&
+    normalized.refresh_token &&
+    typeof normalized.expires_in_seconds === "number"
+  ) {
+    saveSession({
+      accessToken: normalized.access_token,
+      refreshToken: normalized.refresh_token,
+      expiresInSeconds: normalized.expires_in_seconds
+    });
+  }
+  return normalized;
 }
 
 async function refreshSession(refreshToken: string): Promise<SessionTokens> {
@@ -302,7 +427,15 @@ function normalizeHealth(raw: unknown): HealthStatus {
         : undefined,
     codex_cli_path: typeof value.codex_cli_path === "string" ? value.codex_cli_path : undefined,
     codex_cli_exists:
-      typeof value.codex_cli_exists === "boolean" ? value.codex_cli_exists : undefined
+      typeof value.codex_cli_exists === "boolean" ? value.codex_cli_exists : undefined,
+    require_loopback_direct_login:
+      typeof value.require_loopback_direct_login === "boolean"
+        ? value.require_loopback_direct_login
+        : undefined,
+    mobile_login_request_ttl_seconds:
+      typeof value.mobile_login_request_ttl_seconds === "number"
+        ? value.mobile_login_request_ttl_seconds
+        : undefined
   };
 }
 
@@ -424,16 +557,60 @@ export async function appendTaskMessage(taskId: string, message: string): Promis
   });
 }
 
-export async function getAuditLogs(limit = 20): Promise<AuditLog[]> {
-  const body = await authorizedFetchJson<{ items?: AuditLog[] }>(
-    `/api/v1/tasks/audit/logs?limit=${encodeURIComponent(String(limit))}`
+export async function getAuditLogs(limit = 20, offset = 0): Promise<AuditLogList> {
+  const safeLimit = Math.max(1, Math.floor(limit));
+  const safeOffset = Math.max(0, Math.floor(offset));
+  const body = await authorizedFetchJson<{
+    items?: AuditLog[];
+    total?: number;
+    limit?: number;
+    offset?: number;
+  }>(
+    `/api/v1/tasks/audit/logs?limit=${encodeURIComponent(String(safeLimit))}&offset=${encodeURIComponent(String(safeOffset))}`
   );
-  return Array.isArray(body.items) ? body.items : [];
+  const items = Array.isArray(body.items) ? body.items : [];
+  return {
+    total: typeof body.total === "number" ? body.total : items.length,
+    limit: typeof body.limit === "number" ? body.limit : safeLimit,
+    offset: typeof body.offset === "number" ? body.offset : safeOffset,
+    items
+  };
 }
 
 export async function getHealthStatus(): Promise<HealthStatus> {
   const body = await fetchJson<unknown>(`${API_BASE_URL}/healthz`, { cache: "no-store" });
   return normalizeHealth(body);
+}
+
+export async function getPendingMobileLoginRequests(): Promise<PendingMobileLoginRequest[]> {
+  const body = await authorizedFetchJson<{ items?: PendingMobileLoginRequest[] }>(
+    "/api/v1/auth/mobile/pending",
+    { cache: "no-store" }
+  );
+  const items = Array.isArray(body.items) ? body.items : [];
+  return items.filter((item): item is PendingMobileLoginRequest => {
+    return (
+      typeof item?.request_id === "string" &&
+      typeof item?.status === "string" &&
+      typeof item?.username === "string" &&
+      typeof item?.device_name === "string" &&
+      typeof item?.request_ip === "string" &&
+      typeof item?.created_at === "string" &&
+      typeof item?.expires_at === "string"
+    );
+  });
+}
+
+export async function approveMobileLoginRequest(requestId: string): Promise<void> {
+  await authorizedFetchJson(`/api/v1/auth/mobile/requests/${encodeURIComponent(requestId)}/approve`, {
+    method: "POST"
+  });
+}
+
+export async function rejectMobileLoginRequest(requestId: string): Promise<void> {
+  await authorizedFetchJson(`/api/v1/auth/mobile/requests/${encodeURIComponent(requestId)}/reject`, {
+    method: "POST"
+  });
 }
 
 function parseSseFrame(frame: string): string | null {

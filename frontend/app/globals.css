@@ -21,6 +21,7 @@ html,
 body {
   margin: 0;
   min-height: 100%;
+  overflow-x: hidden;
 }
 
 body {
@@ -37,6 +38,7 @@ a {
 .app-shell {
   margin: 0 auto;
   max-width: 920px;
+  overflow-x: clip;
   padding: 24px 16px 40px;
 }
 
@@ -548,6 +550,7 @@ textarea {
 
 .pagination-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
@@ -599,11 +602,17 @@ textarea {
 
 .executor-meta {
   font-size: 0.82rem;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .executor-meta code {
   background: rgba(20, 33, 61, 0.08);
   border-radius: 6px;
+  display: inline-block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
   padding: 1px 6px;
 }
 

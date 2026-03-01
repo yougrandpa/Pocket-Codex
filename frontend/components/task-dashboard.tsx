@@ -4,14 +4,15 @@ import { useEffect, useMemo, useState } from "react";
 import { AuditPanel } from "@/components/audit-panel";
 import { ExecutorStatusBar } from "@/components/executor-status-bar";
 import { LoginPanel } from "@/components/login-panel";
+import { MobileLoginApprovals } from "@/components/mobile-login-approvals";
 import { NotificationCenter } from "@/components/notification-center";
 import { TaskCreator } from "@/components/task-creator";
 import { TaskList } from "@/components/task-list";
 import { bi, useLanguage } from "@/lib/i18n";
 import {
-  Task,
-  AuditLog,
+  AuditLogList,
   TaskEvent,
+  Task,
   clearSession,
   getAuditLogs,
   getTasks,
@@ -19,6 +20,8 @@ import {
   TaskEventStream,
   readSession
 } from "@/lib/api";
+
+const AUDIT_PAGE_SIZE = 20;
 
 function mergeTaskFromEvent(tasks: Task[], event: TaskEvent): Task[] {
   const index = tasks.findIndex((task) => task.id === event.task_id);
@@ -56,7 +59,13 @@ export function TaskDashboard() {
   const [authed, setAuthed] = useState(false);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [events, setEvents] = useState<TaskEvent[]>([]);
-  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [auditState, setAuditState] = useState<AuditLogList>({
+    total: 0,
+    limit: AUDIT_PAGE_SIZE,
+    offset: 0,
+    items: []
+  });
+  const [auditLoading, setAuditLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -65,20 +74,48 @@ export function TaskDashboard() {
     setAuthed(Boolean(session?.accessToken));
   }, []);
 
+  async function loadAuditPage(page: number, silent = false): Promise<void> {
+    if (!authed) {
+      return;
+    }
+    const safePage = Math.max(1, page);
+    const offset = (safePage - 1) * AUDIT_PAGE_SIZE;
+    if (!silent) {
+      setAuditLoading(true);
+    }
+    try {
+      const logs = await getAuditLogs(AUDIT_PAGE_SIZE, offset);
+      setAuditState(logs);
+      setError(null);
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : bi("审计日志加载失败。", "Failed to load audit logs.")
+      );
+    } finally {
+      if (!silent) {
+        setAuditLoading(false);
+      }
+    }
+  }
+
   useEffect(() => {
     if (!authed) {
       setLoading(false);
+      setAuditLoading(false);
       return;
     }
     let cancelled = false;
     setLoading(true);
-    Promise.all([getTasks(undefined, { limit: 200 }), getAuditLogs(20)])
+    setAuditLoading(true);
+    Promise.all([getTasks(undefined, { limit: 200 }), getAuditLogs(AUDIT_PAGE_SIZE, 0)])
       .then(([items, logs]) => {
         if (cancelled) {
           return;
         }
         setTasks(items);
-        setAuditLogs(logs);
+        setAuditState(logs);
         setError(null);
       })
       .catch((requestError) => {
@@ -94,6 +131,7 @@ export function TaskDashboard() {
       .finally(() => {
         if (!cancelled) {
           setLoading(false);
+          setAuditLoading(false);
         }
       });
     return () => {
@@ -159,6 +197,7 @@ export function TaskDashboard() {
             }}
             workdirSuggestions={workdirSuggestions}
           />
+          <MobileLoginApprovals enabled={authed} />
           <NotificationCenter events={events} />
           <section className="panel animate-rise delay-2">
             <div className="panel-title-row">
@@ -176,6 +215,12 @@ export function TaskDashboard() {
                 setAuthed(false);
                 setTasks([]);
                 setEvents([]);
+                setAuditState({
+                  total: 0,
+                  limit: AUDIT_PAGE_SIZE,
+                  offset: 0,
+                  items: []
+                });
               }}
             >
               {bi("退出登录", "Sign Out")}
@@ -186,7 +231,16 @@ export function TaskDashboard() {
         <div className="dashboard-column dashboard-column-right">
           <div className="task-audit-columns">
             <TaskList tasks={sortedTasks} error={error} loading={loading} />
-            <AuditPanel logs={auditLogs} />
+            <AuditPanel
+              logs={auditState.items}
+              total={auditState.total}
+              limit={auditState.limit || AUDIT_PAGE_SIZE}
+              offset={auditState.offset}
+              loading={auditLoading}
+              onPageChange={(page) => {
+                void loadAuditPage(page);
+              }}
+            />
           </div>
         </div>
       </div>

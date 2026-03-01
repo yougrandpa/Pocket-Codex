@@ -19,7 +19,7 @@ English version: `README.en.md`
 ## 当前 MVP 能力
 
 - 前端：Next.js 移动优先控制台
-- 后端：FastAPI + JWT 鉴权
+- 后端：FastAPI + JWT 鉴权（支持“手机登录需电脑批准”）
 - 实时：SSE 推送状态与日志
 - 存储：SQLite（默认）/ PostgreSQL（可选）
 - 队列：`local` / `redis` 可插拔执行后端
@@ -35,7 +35,8 @@ English version: `README.en.md`
 
 1. 启动后端（`backend/`，端口 `8000`）
 2. 启动前端（`frontend/`，端口 `3000`）
-3. 使用默认账号登录（`admin` / `admin123`）
+3. 使用默认账号登录（`admin` / `admin123`，建议立刻改为自定义强口令）
+4. 手机端登录建议走“手机登录（需电脑授权）”流程
 
 ## 文档索引
 

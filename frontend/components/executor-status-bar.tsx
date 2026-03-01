@@ -49,6 +49,8 @@ export function ExecutorStatusBar() {
   const codexHardTimeout = health?.codex_hard_timeout_seconds;
   const codexCliPath = health?.codex_cli_path || "codex";
   const codexCliExists = health?.codex_cli_exists;
+  const requireLoopbackDirectLogin = health?.require_loopback_direct_login;
+  const mobileLoginRequestTtl = health?.mobile_login_request_ttl_seconds;
 
   const executorText = useMemo(() => {
     if (executorMode === "codex") {
@@ -103,6 +105,17 @@ export function ExecutorStatusBar() {
         <p className="muted executor-meta">
           {bi("Codex 路径", "Codex Path")}: <code>{codexCliPath}</code>
         </p>
+        {typeof requireLoopbackDirectLogin === "boolean" ? (
+          <p className="muted executor-meta">
+            {bi("直接登录策略", "Direct Login Policy")}:{" "}
+            {requireLoopbackDirectLogin
+              ? bi("仅本机回环地址可直接登录", "localhost-only direct sign-in")
+              : bi("允许任意来源直接登录", "direct sign-in from any source")}
+            {typeof mobileLoginRequestTtl === "number"
+              ? ` · ${bi("手机授权有效期", "Mobile approval TTL")}: ${mobileLoginRequestTtl}s`
+              : ""}
+          </p>
+        ) : null}
         {executorMode === "codex" && typeof codexMinTimeout === "number" ? (
           <p className="muted executor-meta">
             {bi("Codex 空闲超时", "Codex Idle Timeout")}: {codexMinTimeout}s

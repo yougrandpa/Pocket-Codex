@@ -150,6 +150,8 @@ class Settings:
     auto_rerun_on_message: bool
     sse_replay_limit: int
     workdir_whitelist: list[str]
+    require_loopback_direct_login: bool
+    mobile_login_request_ttl_seconds: int
 
 
 def load_settings() -> Settings:
@@ -165,6 +167,11 @@ def load_settings() -> Settings:
         fallback=500,
     )
     sse_replay_limit = max(10, min(sse_replay_limit, 5000))
+    mobile_login_request_ttl_seconds = _as_int(
+        os.getenv("APP_MOBILE_LOGIN_REQUEST_TTL_SECONDS", "180"),
+        fallback=180,
+    )
+    mobile_login_request_ttl_seconds = max(30, min(mobile_login_request_ttl_seconds, 900))
     raw_whitelist = _as_csv_list(
         os.getenv("APP_WORKDIR_WHITELIST", str(PROJECT_ROOT.resolve()))
     )
@@ -214,6 +221,11 @@ def load_settings() -> Settings:
         auto_rerun_on_message=_as_bool(os.getenv("APP_AUTO_RERUN_ON_MESSAGE", "true"), True),
         sse_replay_limit=sse_replay_limit,
         workdir_whitelist=workdir_whitelist,
+        require_loopback_direct_login=_as_bool(
+            os.getenv("APP_REQUIRE_LOOPBACK_DIRECT_LOGIN", "true"),
+            True,
+        ),
+        mobile_login_request_ttl_seconds=mobile_login_request_ttl_seconds,
     )
 
 

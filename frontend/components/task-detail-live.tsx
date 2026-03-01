@@ -435,7 +435,7 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
             value={message}
             onChange={(event) => setMessage(event.target.value)}
             rows={3}
-            placeholder="补充指令..."
+            placeholder={bi("补充指令...", "Add follow-up instruction...")}
           />
         </label>
         <button className="button" type="submit" disabled={busyMessage || !message.trim()}>

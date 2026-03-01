@@ -5,6 +5,11 @@ FastAPI backend skeleton for Pocket Codex mobile control panel.
 ## Features in this MVP scaffold
 
 - `POST /api/v1/auth/login` and `POST /api/v1/auth/refresh` for single-user JWT auth.
+- Mobile approval auth flow:
+  - `POST /api/v1/auth/mobile/request` creates pending mobile login request.
+  - `GET /api/v1/auth/mobile/pending` lists pending requests (desktop session required).
+  - `POST /api/v1/auth/mobile/requests/{id}/approve|reject` approves/rejects request.
+  - `GET /api/v1/auth/mobile/requests/{id}` polls request status and returns tokens on approval.
 - `POST /api/v1/tasks` creates a task (`QUEUED`) and starts a simulated lifecycle.
 - Worker lifecycle transitions `QUEUED -> RUNNING -> SUCCEEDED`, supports pause/resume/timeout.
 - `GET /api/v1/tasks` and `GET /api/v1/tasks/{id}` read persisted task snapshots.
@@ -29,6 +34,9 @@ set -a && source .env && set +a
 # export APP_WORKER_CONCURRENCY=2
 # Optional: allowed workdir roots (comma-separated)
 # export APP_WORKDIR_WHITELIST=/Users/slg/workspace/Pocket-Codex
+# Optional: security policy for mobile login approval flow
+# export APP_REQUIRE_LOOPBACK_DIRECT_LOGIN=true
+# export APP_MOBILE_LOGIN_REQUEST_TTL_SECONDS=180
 # Optional: SSE replay limit on reconnect
 # export APP_SSE_REPLAY_LIMIT=500
 # Optional: switch executor queue backend to Redis
@@ -69,5 +77,7 @@ Then check:
 - Queue execution uses priority scheduling and supports multi-worker concurrency via `APP_WORKER_CONCURRENCY`.
 - Workdir validation is enforced by `APP_WORKDIR_WHITELIST` for safer local execution boundaries.
 - SSE supports reconnect replay via `Last-Event-ID` / `last_event_id`.
+- By default, direct login (`/auth/login`) is localhost-only (`APP_REQUIRE_LOOPBACK_DIRECT_LOGIN=true`).
+- Mobile login requires desktop approval via `/auth/mobile/*` endpoints.
 - Default task executor is `simulator`; set `APP_TASK_EXECUTOR=codex` to run real local Codex commands.
 - Default credentials are `admin / admin123` and should be overridden with env vars for non-local environments.

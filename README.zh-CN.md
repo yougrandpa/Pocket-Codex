@@ -12,7 +12,7 @@ Pocket Codex 是一个移动端优先的 Codex 远程控制台，用于在手机
 ## 当前能力（MVP）
 
 - 前端：Next.js 移动优先控制台
-- 后端：FastAPI + JWT 鉴权
+- 后端：FastAPI + JWT 鉴权（支持手机登录电脑端授权）
 - 实时：SSE 状态/日志增量推送
 - 存储：SQLite（默认）或 PostgreSQL（可切换）
 - 队列：可插拔执行后端（`local` / `redis`）
@@ -46,6 +46,11 @@ npm run dev
 
 - 用户名：`admin`
 - 密码：`admin123`
+
+建议：
+
+- 首次启动后立即修改为自定义强口令（通过环境变量 `APP_USERNAME` / `APP_PASSWORD`）
+- 手机端优先使用“手机登录（需电脑授权）”流程
 
 ## 文档索引
 

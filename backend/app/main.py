@@ -59,4 +59,6 @@ async def healthz() -> dict[str, str | bool | int | list[str]]:
         "codex_hard_timeout_seconds": settings.codex_hard_timeout_seconds,
         "codex_cli_path": settings.codex_cli_path,
         "codex_cli_exists": Path(settings.codex_cli_path).exists(),
+        "require_loopback_direct_login": settings.require_loopback_direct_login,
+        "mobile_login_request_ttl_seconds": settings.mobile_login_request_ttl_seconds,
     }

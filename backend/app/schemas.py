@@ -24,6 +24,54 @@ class TokenResponse(BaseModel):
     expires_in_seconds: int
 
 
+class MobileLoginStartRequest(BaseModel):
+    username: str = Field(min_length=1)
+    password: str = Field(min_length=1)
+    device_name: str = Field(default="unknown-device", min_length=1, max_length=120)
+
+
+class MobileLoginStartResponse(BaseModel):
+    request_id: str
+    status: str
+    expires_at: str
+    poll_interval_seconds: int
+
+
+class MobileLoginStatusResponse(BaseModel):
+    request_id: str
+    status: str
+    device_name: str
+    request_ip: str
+    created_at: str
+    expires_at: str
+    approved_at: Optional[str]
+    approved_by: Optional[str]
+    completed_at: Optional[str]
+    access_token: Optional[str] = None
+    refresh_token: Optional[str] = None
+    expires_in_seconds: Optional[int] = None
+
+
+class MobileLoginPendingResponse(BaseModel):
+    request_id: str
+    status: str
+    username: str
+    device_name: str
+    request_ip: str
+    created_at: str
+    expires_at: str
+
+
+class MobileLoginPendingListResponse(BaseModel):
+    total: int
+    items: list[MobileLoginPendingResponse]
+
+
+class MobileLoginDecisionResponse(BaseModel):
+    request_id: str
+    status: str
+
+
 class TaskCreateRequest(BaseModel):
     prompt: str = Field(min_length=1)
     priority: int = 0
