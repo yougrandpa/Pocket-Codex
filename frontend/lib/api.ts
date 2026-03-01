@@ -33,6 +33,14 @@ export interface Task {
   paused_at?: string | null;
   retry_count?: number;
   timeout_seconds?: number;
+  model?: string | null;
+  reasoning_effort?: string | null;
+  prompt_tokens?: number;
+  completion_tokens?: number;
+  total_tokens?: number;
+  cost_usd?: number;
+  context_window_used_tokens?: number | null;
+  context_window_total_tokens?: number | null;
   current_run_id?: string | null;
   run_sequence?: number;
 }
@@ -150,6 +158,8 @@ export interface CreateTaskInput {
   priority?: number;
   timeout_seconds?: number;
   workdir?: string;
+  model?: string;
+  reasoning_effort?: string;
 }
 
 const DEFAULT_API_BASE_URL = "http://localhost:8000";
@@ -499,6 +509,20 @@ function normalizeTask(raw: unknown): Task {
     retry_count: typeof value.retry_count === "number" ? value.retry_count : undefined,
     timeout_seconds:
       typeof value.timeout_seconds === "number" ? value.timeout_seconds : undefined,
+    model: typeof value.model === "string" ? value.model : null,
+    reasoning_effort: typeof value.reasoning_effort === "string" ? value.reasoning_effort : null,
+    prompt_tokens: typeof value.prompt_tokens === "number" ? value.prompt_tokens : 0,
+    completion_tokens: typeof value.completion_tokens === "number" ? value.completion_tokens : 0,
+    total_tokens: typeof value.total_tokens === "number" ? value.total_tokens : 0,
+    cost_usd: typeof value.cost_usd === "number" ? value.cost_usd : 0,
+    context_window_used_tokens:
+      typeof value.context_window_used_tokens === "number"
+        ? value.context_window_used_tokens
+        : null,
+    context_window_total_tokens:
+      typeof value.context_window_total_tokens === "number"
+        ? value.context_window_total_tokens
+        : null,
     current_run_id: typeof value.current_run_id === "string" ? value.current_run_id : null,
     run_sequence: typeof value.run_sequence === "number" ? value.run_sequence : undefined
   };

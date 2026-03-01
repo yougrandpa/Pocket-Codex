@@ -176,6 +176,24 @@ class Storage:
                 started_at=str(item["started_at"]) if item.get("started_at") is not None else None,
                 finished_at=str(item["finished_at"]) if item.get("finished_at") is not None else None,
                 summary=str(item["summary"]) if item.get("summary") is not None else None,
+                model=str(item["model"]) if item.get("model") is not None else None,
+                reasoning_effort=(
+                    str(item["reasoning_effort"]) if item.get("reasoning_effort") is not None else None
+                ),
+                prompt_tokens=int(item.get("prompt_tokens", 0)),
+                completion_tokens=int(item.get("completion_tokens", 0)),
+                total_tokens=int(item.get("total_tokens", 0)),
+                cost_usd=float(item.get("cost_usd", 0.0)),
+                context_window_used_tokens=(
+                    int(item["context_window_used_tokens"])
+                    if item.get("context_window_used_tokens") is not None
+                    else None
+                ),
+                context_window_total_tokens=(
+                    int(item["context_window_total_tokens"])
+                    if item.get("context_window_total_tokens") is not None
+                    else None
+                ),
             )
             for item in payload.get("runs", [])
         ]
@@ -198,6 +216,24 @@ class Storage:
             paused_at=str(payload["paused_at"]) if payload.get("paused_at") is not None else None,
             retry_count=int(payload.get("retry_count", 0)),
             timeout_seconds=int(payload.get("timeout_seconds", 20)),
+            model=str(payload["model"]) if payload.get("model") is not None else None,
+            reasoning_effort=(
+                str(payload["reasoning_effort"]) if payload.get("reasoning_effort") is not None else None
+            ),
+            prompt_tokens=int(payload.get("prompt_tokens", 0)),
+            completion_tokens=int(payload.get("completion_tokens", 0)),
+            total_tokens=int(payload.get("total_tokens", 0)),
+            cost_usd=float(payload.get("cost_usd", 0.0)),
+            context_window_used_tokens=(
+                int(payload["context_window_used_tokens"])
+                if payload.get("context_window_used_tokens") is not None
+                else None
+            ),
+            context_window_total_tokens=(
+                int(payload["context_window_total_tokens"])
+                if payload.get("context_window_total_tokens") is not None
+                else None
+            ),
             current_run_id=(
                 str(payload["current_run_id"]) if payload.get("current_run_id") is not None else None
             ),

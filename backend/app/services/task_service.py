@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import copy
+import re
 import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -31,6 +32,57 @@ class ControlResult:
     message: str
 
 
+@dataclass
+class UsageMetrics:
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    total_tokens: int = 0
+    cost_usd: float = 0.0
+    context_window_used_tokens: int | None = None
+    context_window_total_tokens: int | None = None
+
+    def has_values(self) -> bool:
+        return (
+            self.prompt_tokens > 0
+            or self.completion_tokens > 0
+            or self.total_tokens > 0
+            or self.cost_usd > 0
+            or self.context_window_used_tokens is not None
+            or self.context_window_total_tokens is not None
+        )
+
+
+_PROMPT_TOKENS_PATTERN = re.compile(
+    r"(?:prompt|input)\s*(?:tokens?|标记)[^\d]*([\d.,]+(?:[kKmM])?)",
+    re.IGNORECASE,
+)
+_COMPLETION_TOKENS_PATTERN = re.compile(
+    r"(?:completion|output)\s*(?:tokens?|标记)[^\d]*([\d.,]+(?:[kKmM])?)",
+    re.IGNORECASE,
+)
+_TOTAL_TOKENS_PATTERN = re.compile(
+    r"(?:total)\s*(?:tokens?|标记)[^\d]*([\d.,]+(?:[kKmM])?)",
+    re.IGNORECASE,
+)
+_COST_PATTERN = re.compile(
+    r"(?:cost|费用|usd)[^\d$]*\$?\s*([\d.,]+)",
+    re.IGNORECASE,
+)
+_CONTEXT_WINDOW_FRACTION_PATTERN = re.compile(
+    r"(?:context(?:\s*window)?|背景信息窗口|已用)[^\d]*([\d.,]+(?:[kKmM])?)\s*/\s*([\d.,]+(?:[kKmM])?)",
+    re.IGNORECASE,
+)
+_CONTEXT_WINDOW_TEXT_PATTERN = re.compile(
+    r"(?:已用|used)\s*([\d.,]+(?:[kKmM])?)\s*(?:tokens?|标记).{0,24}?(?:共|total)\s*([\d.,]+(?:[kKmM])?)",
+    re.IGNORECASE,
+)
+_CONTEXT_WINDOW_PERCENT_PATTERN = re.compile(
+    r"(\d{1,3})\s*%\s*(?:已用|used)?",
+    re.IGNORECASE,
+)
+_REASONING_EFFORT_ALLOWED = {"low", "medium", "high"}
+
+
 def _parse_iso(value: str | None) -> datetime | None:
     if not value:
         return None
@@ -38,6 +90,39 @@ def _parse_iso(value: str | None) -> datetime | None:
         return datetime.fromisoformat(value.replace("Z", "+00:00"))
     except ValueError:
         return None
+
+
+def _parse_scaled_number(raw: str | None) -> int | None:
+    if raw is None:
+        return None
+    text = raw.strip().lower().replace(",", "")
+    if not text:
+        return None
+    multiplier = 1.0
+    if text.endswith("k"):
+        multiplier = 1_000.0
+        text = text[:-1]
+    elif text.endswith("m"):
+        multiplier = 1_000_000.0
+        text = text[:-1]
+    try:
+        value = float(text) * multiplier
+    except ValueError:
+        return None
+    return max(0, int(round(value)))
+
+
+def _parse_cost_value(raw: str | None) -> float | None:
+    if raw is None:
+        return None
+    text = raw.strip().replace(",", "")
+    if not text:
+        return None
+    try:
+        value = float(text)
+    except ValueError:
+        return None
+    return max(0.0, value)
 
 
 class TaskService:
@@ -156,9 +241,13 @@ class TaskService:
         priority: int = 0,
         workdir: Optional[str] = None,
         timeout_seconds: Optional[int] = None,
+        model: str | None = None,
+        reasoning_effort: str | None = None,
         actor: str = "system",
     ) -> Task:
         normalized_workdir = self._normalize_workdir_or_raise(workdir)
+        normalized_model = self._normalize_model(model)
+        normalized_reasoning_effort = self._normalize_reasoning_effort(reasoning_effort)
         now = utc_now_iso()
         base_timeout = timeout_seconds or settings.default_task_timeout_seconds
         effective_timeout = self._normalize_timeout_for_executor(base_timeout)
@@ -172,6 +261,8 @@ class TaskService:
             updated_at=now,
             last_heartbeat_at=now,
             timeout_seconds=effective_timeout,
+            model=normalized_model,
+            reasoning_effort=normalized_reasoning_effort,
         )
 
         async with self._lock:
@@ -197,6 +288,8 @@ class TaskService:
                 "priority": priority,
                 "workdir": normalized_workdir,
                 "timeout_seconds": task.timeout_seconds,
+                "model": normalized_model,
+                "reasoning_effort": normalized_reasoning_effort,
             },
         )
 
@@ -436,7 +529,7 @@ class TaskService:
             return -1
 
     async def _simulate_run(self, task_id: str) -> None:
-        if settings.task_executor == "codex":
+        if self._is_cli_executor():
             await self._run_codex_task(task_id)
             return
 
@@ -574,6 +667,8 @@ class TaskService:
             sequence=task.run_sequence,
             reason=reason,
             created_at=now,
+            model=task.model,
+            reasoning_effort=task.reasoning_effort,
         )
         task.current_run_id = run.run_id
         task.runs.append(run)
@@ -612,7 +707,7 @@ class TaskService:
             task.timeout_seconds = next_timeout
             self._append_log_event_locked(
                 task=task,
-                message=f"timeout increased to {next_timeout}s for codex executor",
+                message=f"timeout increased to {next_timeout}s for cli executor",
                 events_out=events_out,
             )
         task.retry_count += 1
@@ -641,9 +736,38 @@ class TaskService:
     @staticmethod
     def _normalize_timeout_for_executor(timeout_seconds: int) -> int:
         normalized = max(5, int(timeout_seconds))
-        if settings.task_executor == "codex":
+        if settings.task_executor in {"codex", "codex-cli"}:
             return max(normalized, settings.codex_min_timeout_seconds)
         return normalized
+
+    @staticmethod
+    def _normalize_model(value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        return normalized or None
+
+    @staticmethod
+    def _normalize_reasoning_effort(value: str | None) -> str | None:
+        raw = value if value is not None else settings.codex_reasoning_effort
+        if raw is None:
+            return None
+        normalized = raw.strip().lower()
+        if not normalized:
+            return None
+        if normalized not in _REASONING_EFFORT_ALLOWED:
+            raise ValueError("reasoning_effort must be one of: low, medium, high")
+        return normalized
+
+    @staticmethod
+    def _is_cli_executor() -> bool:
+        return settings.task_executor in {"codex", "codex-cli"}
+
+    @staticmethod
+    def _executor_source() -> str:
+        if settings.task_executor in {"codex", "codex-cli"}:
+            return settings.task_executor
+        return "simulator"
 
     def _normalize_workdir_or_raise(self, workdir: str | None) -> str | None:
         if workdir is None:
@@ -802,6 +926,7 @@ class TaskService:
             await self._simulate_run(task_id)
 
     async def _run_codex_task(self, task_id: str) -> None:
+        executor_source = self._executor_source()
         running_events: list[dict[str, Any]] = []
         async with self._lock:
             task = self._repo.get(task_id)
@@ -810,12 +935,12 @@ class TaskService:
             self._transition_locked(
                 task=task,
                 target_status=TaskStatus.RUNNING,
-                payload={"source": "codex"},
+                payload={"source": executor_source},
                 events_out=running_events,
             )
             self._append_log_event_locked(
                 task=task,
-                message="starting codex executor",
+                message=f"starting {executor_source} executor",
                 events_out=running_events,
             )
             self._persist_task_locked(task)
@@ -831,11 +956,12 @@ class TaskService:
             return
         workdir = normalized_workdir or str(Path.cwd())
         prompt = self._build_codex_prompt(task)
+        selected_model = task.model or settings.codex_model
         cmd = [settings.codex_cli_path, "exec", "--skip-git-repo-check", "-C", workdir]
         if settings.codex_full_auto:
             cmd.append("--full-auto")
-        if settings.codex_model:
-            cmd.extend(["--model", settings.codex_model])
+        if selected_model:
+            cmd.extend(["--model", selected_model])
         cmd.append(prompt)
 
         try:
@@ -847,7 +973,7 @@ class TaskService:
         except FileNotFoundError:
             await self._mark_task_failed(
                 task_id=task_id,
-                reason=f"codex cli not found at '{settings.codex_cli_path}'",
+                reason=f"{executor_source} cli not found at '{settings.codex_cli_path}'",
             )
             return
 
@@ -884,7 +1010,7 @@ class TaskService:
             )
 
         timed_out = False
-        timeout_reason = "codex execution timeout"
+        timeout_reason = f"{executor_source} execution timeout"
         return_code: int | None = None
         while True:
             try:
@@ -896,11 +1022,11 @@ class TaskService:
                 total_elapsed = now - progress["started_at"]
                 if idle_elapsed > task.timeout_seconds:
                     timed_out = True
-                    timeout_reason = f"codex execution timeout (idle>{task.timeout_seconds}s)"
+                    timeout_reason = f"{executor_source} execution timeout (idle>{task.timeout_seconds}s)"
                 elif total_elapsed > settings.codex_hard_timeout_seconds:
                     timed_out = True
                     timeout_reason = (
-                        "codex execution timeout "
+                        f"{executor_source} execution timeout "
                         f"(hard>{settings.codex_hard_timeout_seconds}s)"
                     )
                 if timed_out:
@@ -914,17 +1040,23 @@ class TaskService:
             except asyncio.CancelledError:
                 pass
         self._active_processes.pop(task_id, None)
+        usage = self._extract_usage_metrics(output_lines)
 
         if timed_out:
-            await self._mark_task_timeout(task_id=task_id, reason=timeout_reason)
+            await self._mark_task_timeout(task_id=task_id, reason=timeout_reason, usage=usage)
             return
 
         if return_code == 0:
             summary = self._summarize_output(output_lines)
-            await self._mark_task_succeeded(task_id=task_id, summary=summary)
+            await self._mark_task_succeeded(task_id=task_id, summary=summary, usage=usage)
         else:
-            reason = f"codex exited with code {return_code}"
-            await self._mark_task_failed(task_id=task_id, reason=reason, output_lines=output_lines)
+            reason = f"{executor_source} exited with code {return_code}"
+            await self._mark_task_failed(
+                task_id=task_id,
+                reason=reason,
+                output_lines=output_lines,
+                usage=usage,
+            )
 
     async def _stream_process_output(
         self,
@@ -971,13 +1103,21 @@ class TaskService:
             return True
         return False
 
-    async def _mark_task_succeeded(self, *, task_id: str, summary: str | None) -> None:
+    async def _mark_task_succeeded(
+        self,
+        *,
+        task_id: str,
+        summary: str | None,
+        usage: UsageMetrics | None = None,
+    ) -> None:
+        executor_source = self._executor_source()
         events_out: list[dict[str, Any]] = []
         async with self._lock:
             task = self._repo.get(task_id)
             if task is None or task.status != TaskStatus.RUNNING:
                 return
-            task.summary = summary or "Task completed successfully (codex)."
+            task.summary = summary or f"Task completed successfully ({executor_source})."
+            self._apply_usage_metrics_locked(task=task, usage=usage, events_out=events_out)
             self._append_event_locked(
                 task=task,
                 event_type="task.summary.updated",
@@ -988,7 +1128,7 @@ class TaskService:
             self._transition_locked(
                 task=task,
                 target_status=TaskStatus.SUCCEEDED,
-                payload={"source": "codex"},
+                payload={"source": executor_source},
                 events_out=events_out,
             )
             self._persist_task_locked(task)
@@ -996,17 +1136,25 @@ class TaskService:
         for event in events_out:
             await self._broadcast(event, subscribers)
 
-    async def _mark_task_timeout(self, *, task_id: str, reason: str) -> None:
+    async def _mark_task_timeout(
+        self,
+        *,
+        task_id: str,
+        reason: str,
+        usage: UsageMetrics | None = None,
+    ) -> None:
+        executor_source = self._executor_source()
         events_out: list[dict[str, Any]] = []
         schedule_auto_retry = False
         async with self._lock:
             task = self._repo.get(task_id)
             if task is None or task.status != TaskStatus.RUNNING:
                 return
+            self._apply_usage_metrics_locked(task=task, usage=usage, events_out=events_out)
             self._transition_locked(
                 task=task,
                 target_status=TaskStatus.TIMEOUT,
-                payload={"source": "codex", "reason": "timeout"},
+                payload={"source": executor_source, "reason": "timeout"},
                 events_out=events_out,
             )
             self._append_log_event_locked(task=task, message=reason, events_out=events_out)
@@ -1033,7 +1181,9 @@ class TaskService:
         task_id: str,
         reason: str,
         output_lines: list[str] | None = None,
+        usage: UsageMetrics | None = None,
     ) -> None:
+        executor_source = self._executor_source()
         events_out: list[dict[str, Any]] = []
         async with self._lock:
             task = self._repo.get(task_id)
@@ -1043,9 +1193,10 @@ class TaskService:
                 self._transition_locked(
                     task=task,
                     target_status=TaskStatus.RUNNING,
-                    payload={"source": "codex", "reason": "bootstrap_failed"},
+                    payload={"source": executor_source, "reason": "bootstrap_failed"},
                     events_out=events_out,
                 )
+            self._apply_usage_metrics_locked(task=task, usage=usage, events_out=events_out)
             tail = self._summarize_output(output_lines or [])
             task.summary = tail or reason
             self._append_event_locked(
@@ -1058,7 +1209,7 @@ class TaskService:
             self._transition_locked(
                 task=task,
                 target_status=TaskStatus.FAILED,
-                payload={"source": "codex", "reason": reason},
+                payload={"source": executor_source, "reason": reason},
                 events_out=events_out,
             )
             self._append_log_event_locked(task=task, message=reason, events_out=events_out)
@@ -1066,6 +1217,123 @@ class TaskService:
             subscribers = self._collect_subscribers_locked(task.id)
         for event in events_out:
             await self._broadcast(event, subscribers)
+
+    @staticmethod
+    def _extract_usage_metrics(lines: list[str]) -> UsageMetrics | None:
+        usage = UsageMetrics()
+        context_percent: int | None = None
+
+        for line in lines:
+            prompt_match = _PROMPT_TOKENS_PATTERN.search(line)
+            if prompt_match:
+                prompt_tokens = _parse_scaled_number(prompt_match.group(1))
+                if prompt_tokens is not None:
+                    usage.prompt_tokens = max(usage.prompt_tokens, prompt_tokens)
+
+            completion_match = _COMPLETION_TOKENS_PATTERN.search(line)
+            if completion_match:
+                completion_tokens = _parse_scaled_number(completion_match.group(1))
+                if completion_tokens is not None:
+                    usage.completion_tokens = max(usage.completion_tokens, completion_tokens)
+
+            total_match = _TOTAL_TOKENS_PATTERN.search(line)
+            if total_match:
+                total_tokens = _parse_scaled_number(total_match.group(1))
+                if total_tokens is not None:
+                    usage.total_tokens = max(usage.total_tokens, total_tokens)
+
+            cost_match = _COST_PATTERN.search(line)
+            if cost_match:
+                cost_value = _parse_cost_value(cost_match.group(1))
+                if cost_value is not None:
+                    usage.cost_usd = max(usage.cost_usd, cost_value)
+
+            context_match = _CONTEXT_WINDOW_FRACTION_PATTERN.search(line)
+            if context_match:
+                context_used = _parse_scaled_number(context_match.group(1))
+                context_total = _parse_scaled_number(context_match.group(2))
+                if context_used is not None:
+                    usage.context_window_used_tokens = context_used
+                if context_total is not None:
+                    usage.context_window_total_tokens = context_total
+
+            context_text_match = _CONTEXT_WINDOW_TEXT_PATTERN.search(line)
+            if context_text_match:
+                context_used = _parse_scaled_number(context_text_match.group(1))
+                context_total = _parse_scaled_number(context_text_match.group(2))
+                if context_used is not None:
+                    usage.context_window_used_tokens = context_used
+                if context_total is not None:
+                    usage.context_window_total_tokens = context_total
+
+            context_percent_match = _CONTEXT_WINDOW_PERCENT_PATTERN.search(line)
+            if context_percent_match:
+                try:
+                    context_percent = max(0, min(100, int(context_percent_match.group(1))))
+                except ValueError:
+                    pass
+
+        if usage.total_tokens <= 0 and (usage.prompt_tokens > 0 or usage.completion_tokens > 0):
+            usage.total_tokens = usage.prompt_tokens + usage.completion_tokens
+        if (
+            usage.context_window_used_tokens is None
+            and usage.context_window_total_tokens
+            and context_percent is not None
+        ):
+            usage.context_window_used_tokens = int(
+                usage.context_window_total_tokens * (context_percent / 100.0)
+            )
+
+        return usage if usage.has_values() else None
+
+    def _apply_usage_metrics_locked(
+        self,
+        *,
+        task: Task,
+        usage: UsageMetrics | None,
+        events_out: list[dict[str, Any]],
+    ) -> None:
+        if usage is None or not usage.has_values():
+            return
+
+        current_run = self._current_run(task)
+        payload: dict[str, Any] = {}
+        if usage.prompt_tokens > 0:
+            task.prompt_tokens += usage.prompt_tokens
+            payload["prompt_tokens"] = usage.prompt_tokens
+        if usage.completion_tokens > 0:
+            task.completion_tokens += usage.completion_tokens
+            payload["completion_tokens"] = usage.completion_tokens
+        if usage.total_tokens > 0:
+            task.total_tokens += usage.total_tokens
+            payload["total_tokens"] = usage.total_tokens
+        if usage.cost_usd > 0:
+            task.cost_usd = round(task.cost_usd + usage.cost_usd, 6)
+            payload["cost_usd"] = round(usage.cost_usd, 6)
+        if usage.context_window_used_tokens is not None:
+            task.context_window_used_tokens = usage.context_window_used_tokens
+            payload["context_window_used_tokens"] = usage.context_window_used_tokens
+        if usage.context_window_total_tokens is not None:
+            task.context_window_total_tokens = usage.context_window_total_tokens
+            payload["context_window_total_tokens"] = usage.context_window_total_tokens
+
+        if current_run is not None:
+            current_run.prompt_tokens = usage.prompt_tokens
+            current_run.completion_tokens = usage.completion_tokens
+            current_run.total_tokens = usage.total_tokens
+            current_run.cost_usd = round(usage.cost_usd, 6)
+            current_run.context_window_used_tokens = usage.context_window_used_tokens
+            current_run.context_window_total_tokens = usage.context_window_total_tokens
+
+        if not payload:
+            return
+        self._append_event_locked(
+            task=task,
+            event_type="task.usage.updated",
+            status=task.status,
+            payload=payload,
+            events_out=events_out,
+        )
 
     @staticmethod
     def _summarize_output(lines: list[str], max_lines: int = 8, max_chars: int = 1200) -> str | None:
@@ -1079,11 +1347,21 @@ class TaskService:
 
     @staticmethod
     def _build_codex_prompt(task: Task) -> str:
+        preface_parts: list[str] = []
+        if task.model:
+            preface_parts.append(f"Preferred model: {task.model}")
+        if task.reasoning_effort:
+            preface_parts.append(f"Reasoning effort: {task.reasoning_effort}")
+        preface = ""
+        if preface_parts:
+            preface = "\n".join(preface_parts) + "\n\n"
+
         if not task.messages:
-            return task.prompt
+            return f"{preface}{task.prompt}" if preface else task.prompt
         latest_followup = task.messages[-1].message.strip()
         context_followups = "\n".join(f"- {item.message}" for item in task.messages[-5:])
         return (
+            f"{preface}"
             "Original task prompt:\n"
             f"{task.prompt}\n\n"
             "Latest follow-up message (highest priority; override conflicting earlier instructions):\n"

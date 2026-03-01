@@ -8,6 +8,7 @@ import { resetTaskListClickCount, setTaskNavigationContext } from "@/lib/telemet
 
 const DEFAULT_PRIORITY = 5;
 const DEFAULT_TIMEOUT_SECONDS = 180;
+const DEFAULT_REASONING_EFFORT = "medium";
 const WORKDIR_HISTORY_KEY = "pocket_codex_workdir_history";
 const TEMPLATE_STORAGE_KEY = "pocket_codex_task_templates";
 const MAX_WORKDIR_HISTORY = 30;
@@ -24,6 +25,8 @@ interface TaskTemplate {
   prompt: string;
   priority: number;
   timeout_seconds: number;
+  model?: string;
+  reasoning_effort?: string;
   workdir?: string;
   created_at: string;
 }
@@ -48,12 +51,17 @@ function normalizeTemplate(raw: unknown): TaskTemplate | null {
     return null;
   }
   const workdir = typeof value.workdir === "string" ? value.workdir : undefined;
+  const model = typeof value.model === "string" ? value.model : undefined;
+  const reasoning_effort =
+    typeof value.reasoning_effort === "string" ? value.reasoning_effort : undefined;
   return {
     id: value.id,
     name: value.name,
     prompt: value.prompt,
     priority: value.priority,
     timeout_seconds: value.timeout_seconds,
+    model,
+    reasoning_effort,
     workdir,
     created_at: value.created_at
   };
@@ -64,6 +72,8 @@ export function TaskCreator({ onCreated, workdirSuggestions = [] }: TaskCreatorP
   const [prompt, setPrompt] = useState("");
   const [priority, setPriority] = useState(DEFAULT_PRIORITY);
   const [timeoutSeconds, setTimeoutSeconds] = useState(DEFAULT_TIMEOUT_SECONDS);
+  const [model, setModel] = useState("");
+  const [reasoningEffort, setReasoningEffort] = useState(DEFAULT_REASONING_EFFORT);
   const [workdir, setWorkdir] = useState("");
   const [workdirHistory, setWorkdirHistory] = useState<string[]>([]);
   const [templates, setTemplates] = useState<TaskTemplate[]>([]);
@@ -152,6 +162,8 @@ export function TaskCreator({ onCreated, workdirSuggestions = [] }: TaskCreatorP
     setPrompt(template.prompt);
     setPriority(template.priority);
     setTimeoutSeconds(template.timeout_seconds);
+    setModel(template.model ?? "");
+    setReasoningEffort(template.reasoning_effort || DEFAULT_REASONING_EFFORT);
     setWorkdir(template.workdir ?? "");
     setNote(bi("模板已填充到表单。", "Template applied to form."));
     setError(null);
@@ -170,6 +182,8 @@ export function TaskCreator({ onCreated, workdirSuggestions = [] }: TaskCreatorP
       prompt: promptValue,
       priority,
       timeout_seconds: timeoutSeconds,
+      model: model.trim() || undefined,
+      reasoning_effort: reasoningEffort,
       workdir: workdir.trim() || undefined,
       created_at: new Date().toISOString()
     };
@@ -206,6 +220,8 @@ export function TaskCreator({ onCreated, workdirSuggestions = [] }: TaskCreatorP
       setTaskNavigationContext(created.id, "create", 0);
       resetTaskListClickCount();
       setPrompt("");
+      setModel("");
+      setReasoningEffort(DEFAULT_REASONING_EFFORT);
       setWorkdir("");
       onCreated?.(created);
       router.push(`/tasks/${created.id}`);
@@ -229,6 +245,8 @@ export function TaskCreator({ onCreated, workdirSuggestions = [] }: TaskCreatorP
       prompt: prompt.trim(),
       priority,
       timeout_seconds: timeoutSeconds,
+      model: model.trim() || undefined,
+      reasoning_effort: reasoningEffort,
       workdir: workdir.trim() || undefined
     });
   }
@@ -241,6 +259,8 @@ export function TaskCreator({ onCreated, workdirSuggestions = [] }: TaskCreatorP
       prompt: selectedTemplate.prompt,
       priority: selectedTemplate.priority,
       timeout_seconds: selectedTemplate.timeout_seconds,
+      model: selectedTemplate.model,
+      reasoning_effort: selectedTemplate.reasoning_effort || DEFAULT_REASONING_EFFORT,
       workdir: selectedTemplate.workdir
     });
   }
@@ -362,6 +382,35 @@ export function TaskCreator({ onCreated, workdirSuggestions = [] }: TaskCreatorP
               value={timeoutSeconds}
               onChange={(event) => setTimeoutSeconds(Number(event.target.value) || DEFAULT_TIMEOUT_SECONDS)}
             />
+          </label>
+        </div>
+
+        <div className="row">
+          <label className="field">
+            <span>{bi("模型(可选)", "Model (optional)")}</span>
+            <input
+              type="text"
+              value={model}
+              onChange={(event) => setModel(event.target.value)}
+              list="model-options"
+              placeholder={bi("留空使用后端默认模型", "Use backend default model when empty")}
+            />
+            <datalist id="model-options">
+              <option value="gpt-5-codex" />
+              <option value="gpt-5" />
+              <option value="gpt-4.1" />
+            </datalist>
+          </label>
+          <label className="field">
+            <span>{bi("推理强度", "Reasoning Effort")}</span>
+            <select
+              value={reasoningEffort}
+              onChange={(event) => setReasoningEffort(event.target.value)}
+            >
+              <option value="low">{bi("低", "Low")}</option>
+              <option value="medium">{bi("中", "Medium")}</option>
+              <option value="high">{bi("高", "High")}</option>
+            </select>
           </label>
         </div>
 

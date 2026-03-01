@@ -279,6 +279,17 @@ textarea {
   word-break: break-word;
 }
 
+.task-usage-row {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.task-usage-text {
+  font-size: 0.82rem;
+}
+
 .task-quick-actions {
   display: flex;
   flex-wrap: wrap;
@@ -573,6 +584,59 @@ textarea {
 .audit-filter-grid {
   display: grid;
   gap: 10px;
+}
+
+.context-window-indicator {
+  position: relative;
+}
+
+.context-window-toggle {
+  align-items: center;
+  background: rgba(20, 33, 61, 0.08);
+  border: 1px solid rgba(20, 33, 61, 0.16);
+  border-radius: 999px;
+  color: var(--muted);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 0.76rem;
+  font-weight: 700;
+  height: 20px;
+  justify-content: center;
+  line-height: 1;
+  padding: 0;
+  width: 20px;
+}
+
+.context-window-popover {
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid rgba(20, 33, 61, 0.16);
+  border-radius: 10px;
+  box-shadow: 0 8px 22px rgba(20, 33, 61, 0.14);
+  min-width: 172px;
+  padding: 8px 10px;
+  position: absolute;
+  right: 0;
+  top: 26px;
+  z-index: 20;
+}
+
+.context-window-title {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 600;
+  margin: 0 0 4px;
+}
+
+.context-window-percent {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0 0 4px;
+}
+
+.context-window-detail {
+  color: var(--muted);
+  font-size: 0.78rem;
+  margin: 0;
 }
 
 .event-panel {

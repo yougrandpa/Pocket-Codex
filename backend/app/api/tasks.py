@@ -40,6 +40,8 @@ async def create_task(
             priority=payload.priority,
             workdir=payload.workdir,
             timeout_seconds=payload.timeout_seconds,
+            model=payload.model,
+            reasoning_effort=payload.reasoning_effort,
             actor=current_user,
         )
     except ValueError as exc:

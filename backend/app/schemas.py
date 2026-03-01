@@ -77,6 +77,8 @@ class TaskCreateRequest(BaseModel):
     priority: int = 0
     workdir: Optional[str] = None
     timeout_seconds: int = Field(default=20, ge=5, le=3600)
+    model: Optional[str] = Field(default=None, max_length=80)
+    reasoning_effort: Optional[str] = Field(default=None, max_length=16)
 
 
 class TaskControlAction(str, Enum):
@@ -163,6 +165,14 @@ class TaskRunResponse(BaseModel):
     started_at: Optional[str]
     finished_at: Optional[str]
     summary: Optional[str]
+    model: Optional[str]
+    reasoning_effort: Optional[str]
+    prompt_tokens: int
+    completion_tokens: int
+    total_tokens: int
+    cost_usd: float
+    context_window_used_tokens: Optional[int]
+    context_window_total_tokens: Optional[int]
 
     @classmethod
     def from_model(cls, run: TaskRun) -> "TaskRunResponse":
@@ -175,6 +185,14 @@ class TaskRunResponse(BaseModel):
             started_at=run.started_at,
             finished_at=run.finished_at,
             summary=run.summary,
+            model=run.model,
+            reasoning_effort=run.reasoning_effort,
+            prompt_tokens=run.prompt_tokens,
+            completion_tokens=run.completion_tokens,
+            total_tokens=run.total_tokens,
+            cost_usd=run.cost_usd,
+            context_window_used_tokens=run.context_window_used_tokens,
+            context_window_total_tokens=run.context_window_total_tokens,
         )
 
 
@@ -193,6 +211,14 @@ class TaskResponse(BaseModel):
     paused_at: Optional[str]
     retry_count: int
     timeout_seconds: int
+    model: Optional[str]
+    reasoning_effort: Optional[str]
+    prompt_tokens: int
+    completion_tokens: int
+    total_tokens: int
+    cost_usd: float
+    context_window_used_tokens: Optional[int]
+    context_window_total_tokens: Optional[int]
     current_run_id: Optional[str]
     run_sequence: int
     runs: list[TaskRunResponse] = Field(default_factory=list)
@@ -215,6 +241,14 @@ class TaskResponse(BaseModel):
             paused_at=task.paused_at,
             retry_count=task.retry_count,
             timeout_seconds=task.timeout_seconds,
+            model=task.model,
+            reasoning_effort=task.reasoning_effort,
+            prompt_tokens=task.prompt_tokens,
+            completion_tokens=task.completion_tokens,
+            total_tokens=task.total_tokens,
+            cost_usd=task.cost_usd,
+            context_window_used_tokens=task.context_window_used_tokens,
+            context_window_total_tokens=task.context_window_total_tokens,
             current_run_id=task.current_run_id,
             run_sequence=task.run_sequence,
             runs=[TaskRunResponse.from_model(item) for item in task.runs],

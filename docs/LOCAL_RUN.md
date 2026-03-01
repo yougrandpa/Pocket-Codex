@@ -48,11 +48,13 @@ pip install -r requirements.txt
 # export APP_CORS_ALLOW_PRIVATE_NETWORK=true
 # 可选：SSE 断线重放上限
 # export APP_SSE_REPLAY_LIMIT=500
-# 可选：启用本地 Codex 执行器（真正调用 codex CLI，而非模拟器）
+# 可选：启用本地 Codex 执行器（真正调用 CLI，而非模拟器）
 # export APP_TASK_EXECUTOR=codex
+# export APP_TASK_EXECUTOR=codex-cli
 # export APP_CODEX_MIN_TIMEOUT_SECONDS=180
 # export APP_CODEX_HARD_TIMEOUT_SECONDS=1800
 # export CODEX_CLI_PATH=codex
+# export CODEX_CLI_PATH=codex-cli
 # export CODEX_FULL_AUTO=true
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
@@ -253,7 +255,7 @@ Q7: 启动前端时报 `Cannot find module './xxx.js'`（来自 `.next/server/we
 A7: 这是 Next.js 本地缓存损坏或增量构建残留导致。执行 `cd frontend && npm run dev:lan`（会先清理 `.next` 再启动），或 `npm run dev:reset` 即可。
 
 Q8: 我发送了追加消息，但任务没有执行新命令？  
-A8: 如果后端是 `APP_TASK_EXECUTOR=simulator`，任务只是模拟执行，不会真正调用 Codex。请切换为 `APP_TASK_EXECUTOR=codex` 并重启后端。可先请求 `GET /healthz`，确认返回 `task_executor=codex`。当前版本在任务已结束后追加消息时，会自动触发一次重跑（`RETRYING -> QUEUED`）。
+A8: 如果后端是 `APP_TASK_EXECUTOR=simulator`，任务只是模拟执行，不会真正调用 CLI。请切换为 `APP_TASK_EXECUTOR=codex` 或 `APP_TASK_EXECUTOR=codex-cli` 并重启后端。可先请求 `GET /healthz`，确认返回 `task_executor=codex` 或 `task_executor=codex-cli`。当前版本在任务已结束后追加消息时，会自动触发一次重跑（`RETRYING -> QUEUED`）。
 
 Q9: 日志提示 `codex cli not found at 'codex'` 怎么办？  
 A9: 先查看 `GET /healthz` 返回的 `codex_cli_path` 和 `codex_cli_exists`。如果 `codex_cli_exists=false`，请在 `backend/.env` 里设置绝对路径，例如 `CODEX_CLI_PATH=/Applications/Codex.app/Contents/Resources/codex`，然后重启后端。

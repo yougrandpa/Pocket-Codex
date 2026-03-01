@@ -56,6 +56,9 @@ export function ExecutorStatusBar() {
     if (executorMode === "codex") {
       return bi("Codex（真实执行）", "Codex (real execution)");
     }
+    if (executorMode === "codex-cli") {
+      return bi("Codex CLI（真实执行）", "Codex CLI (real execution)");
+    }
     if (executorMode === "simulator") {
       return bi("Simulator（模拟执行）", "Simulator (mock execution)");
     }
@@ -63,7 +66,7 @@ export function ExecutorStatusBar() {
   }, [executorMode]);
 
   const modeClassName =
-    executorMode === "codex"
+    executorMode === "codex" || executorMode === "codex-cli"
       ? "executor-pill executor-pill-codex"
       : executorMode === "simulator"
         ? "executor-pill executor-pill-simulator"
@@ -103,7 +106,7 @@ export function ExecutorStatusBar() {
           </p>
         ) : null}
         <p className="muted executor-meta">
-          {bi("Codex 路径", "Codex Path")}: <code>{codexCliPath}</code>
+          {bi("CLI 路径", "CLI Path")}: <code>{codexCliPath}</code>
         </p>
         {typeof requireLoopbackDirectLogin === "boolean" ? (
           <p className="muted executor-meta">
@@ -135,11 +138,11 @@ export function ExecutorStatusBar() {
           )}
         </p>
       ) : null}
-      {executorMode === "codex" && codexCliExists === false ? (
+      {(executorMode === "codex" || executorMode === "codex-cli") && codexCliExists === false ? (
         <p className="error">
           {bi(
-            "Codex 可执行文件不存在，请检查 CODEX_CLI_PATH。",
-            "Codex executable not found. Check CODEX_CLI_PATH."
+            "CLI 可执行文件不存在，请检查 CODEX_CLI_PATH。",
+            "CLI executable not found. Check CODEX_CLI_PATH."
           )}
         </p>
       ) : null}

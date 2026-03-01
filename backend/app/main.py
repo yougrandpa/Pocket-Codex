@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import shutil
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -59,6 +60,7 @@ async def _shutdown() -> None:
 
 @app.get("/healthz")
 async def healthz() -> dict[str, str | bool | int | list[str]]:
+    cli_exists = Path(settings.codex_cli_path).exists() or shutil.which(settings.codex_cli_path) is not None
     return {
         "status": "ok",
         "timestamp": utc_now_iso(),
@@ -70,7 +72,7 @@ async def healthz() -> dict[str, str | bool | int | list[str]]:
         "codex_min_timeout_seconds": settings.codex_min_timeout_seconds,
         "codex_hard_timeout_seconds": settings.codex_hard_timeout_seconds,
         "codex_cli_path": settings.codex_cli_path,
-        "codex_cli_exists": Path(settings.codex_cli_path).exists(),
+        "codex_cli_exists": cli_exists,
         "require_loopback_direct_login": settings.require_loopback_direct_login,
         "mobile_login_request_ttl_seconds": settings.mobile_login_request_ttl_seconds,
         "cors_allow_private_network": settings.cors_allow_private_network,

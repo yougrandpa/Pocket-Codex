@@ -133,6 +133,15 @@ def _resolve_codex_cli_path(value: str) -> str:
     return candidate
 
 
+def _normalize_task_executor(value: str | None) -> str:
+    normalized = (value or "").strip().lower().replace("_", "-")
+    if normalized in {"codex", "codex-cli"}:
+        return normalized
+    if normalized == "simulator":
+        return "simulator"
+    return "simulator"
+
+
 @dataclass(frozen=True)
 class Settings:
     username: str
@@ -155,6 +164,7 @@ class Settings:
     codex_hard_timeout_seconds: int
     codex_cli_path: str
     codex_model: str | None
+    codex_reasoning_effort: str | None
     codex_full_auto: bool
     auto_rerun_on_message: bool
     sse_replay_limit: int
@@ -182,6 +192,7 @@ def load_settings() -> Settings:
         fallback=180,
     )
     mobile_login_request_ttl_seconds = max(30, min(mobile_login_request_ttl_seconds, 900))
+    task_executor = _normalize_task_executor(os.getenv("APP_TASK_EXECUTOR", "simulator"))
     raw_whitelist = _as_csv_list(
         os.getenv("APP_WORKDIR_WHITELIST", str(PROJECT_ROOT.resolve()))
     )
@@ -216,7 +227,7 @@ def load_settings() -> Settings:
         worker_concurrency=worker_concurrency,
         redis_url=os.getenv("REDIS_URL", "redis://localhost:6379/0"),
         redis_queue_prefix=os.getenv("REDIS_QUEUE_PREFIX", "pocket_codex:tasks"),
-        task_executor=os.getenv("APP_TASK_EXECUTOR", "simulator").strip().lower() or "simulator",
+        task_executor=task_executor,
         codex_min_timeout_seconds=_as_int(
             os.getenv("APP_CODEX_MIN_TIMEOUT_SECONDS", "180"),
             fallback=180,
@@ -225,8 +236,11 @@ def load_settings() -> Settings:
             os.getenv("APP_CODEX_HARD_TIMEOUT_SECONDS", "1800"),
             fallback=1800,
         ),
-        codex_cli_path=_resolve_codex_cli_path(os.getenv("CODEX_CLI_PATH", "codex")),
+        codex_cli_path=_resolve_codex_cli_path(
+            os.getenv("CODEX_CLI_PATH", "codex-cli" if task_executor == "codex-cli" else "codex")
+        ),
         codex_model=os.getenv("CODEX_MODEL", "").strip() or None,
+        codex_reasoning_effort=os.getenv("CODEX_REASONING_EFFORT", "").strip().lower() or None,
         codex_full_auto=_as_bool(os.getenv("CODEX_FULL_AUTO", "true"), True),
         auto_rerun_on_message=_as_bool(os.getenv("APP_AUTO_RERUN_ON_MESSAGE", "true"), True),
         sse_replay_limit=sse_replay_limit,

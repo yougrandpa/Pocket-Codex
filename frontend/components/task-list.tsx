@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { ContextWindowIndicator } from "@/components/context-window-indicator";
 import { Task, TaskControlAction, controlTask } from "@/lib/api";
 import { formatDateTime } from "@/lib/datetime";
 import { bi, statusText } from "@/lib/i18n";
+import { formatTokenCompact, formatUsd } from "@/lib/usage";
 import {
   fireAndForgetUiEvent,
   nextTaskListClickCount,
@@ -170,6 +172,16 @@ export function TaskList({
                 <time dateTime={task.updated_at}>{formatDateTime(task.updated_at)}</time>
               </div>
               <p className="task-prompt">{task.prompt || bi("(空指令)", "(empty prompt)")}</p>
+              <div className="task-usage-row">
+                <p className="muted task-usage-text">
+                  {bi("Tokens", "Tokens")}: {formatTokenCompact(task.total_tokens)} ·{" "}
+                  {bi("花费", "Cost")}: {formatUsd(task.cost_usd)}
+                </p>
+                <ContextWindowIndicator
+                  usedTokens={task.context_window_used_tokens}
+                  totalTokens={task.context_window_total_tokens}
+                />
+              </div>
               <div className="task-item-bottom">
                 <span className="muted">#{task.id.slice(0, 8)}</span>
                 <Link

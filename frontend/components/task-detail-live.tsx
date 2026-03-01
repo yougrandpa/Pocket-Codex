@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { ContextWindowIndicator } from "@/components/context-window-indicator";
 import {
   Task,
   TaskControlAction,
@@ -14,6 +15,7 @@ import {
 } from "@/lib/api";
 import { formatDateTime } from "@/lib/datetime";
 import { bi, statusText, useLanguage } from "@/lib/i18n";
+import { formatTokenCompact, formatUsd } from "@/lib/usage";
 import {
   consumeTaskNavigationContext,
   fireAndForgetUiEvent,
@@ -405,7 +407,13 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
 
       <div className="panel-title-row">
         <h2 className="panel-title">{bi("任务详情", "Task Detail")}</h2>
-        <span className={`status status-${task.status.toLowerCase()}`}>{statusText(task.status)}</span>
+        <div className="task-usage-row">
+          <ContextWindowIndicator
+            usedTokens={task.context_window_used_tokens}
+            totalTokens={task.context_window_total_tokens}
+          />
+          <span className={`status status-${task.status.toLowerCase()}`}>{statusText(task.status)}</span>
+        </div>
       </div>
 
       {error ? <p className="error">{error}</p> : null}
@@ -485,6 +493,37 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
         <div>
           <dt>{bi("工作目录", "Workdir")}</dt>
           <dd>{task.workdir || "-"}</dd>
+        </div>
+        <div>
+          <dt>{bi("模型", "Model")}</dt>
+          <dd>{task.model || "-"}</dd>
+        </div>
+        <div>
+          <dt>{bi("推理强度", "Reasoning Effort")}</dt>
+          <dd>{task.reasoning_effort || "-"}</dd>
+        </div>
+        <div>
+          <dt>{bi("总 Tokens", "Total Tokens")}</dt>
+          <dd>{formatTokenCompact(task.total_tokens)}</dd>
+        </div>
+        <div>
+          <dt>{bi("输入 Tokens", "Prompt Tokens")}</dt>
+          <dd>{formatTokenCompact(task.prompt_tokens)}</dd>
+        </div>
+        <div>
+          <dt>{bi("输出 Tokens", "Completion Tokens")}</dt>
+          <dd>{formatTokenCompact(task.completion_tokens)}</dd>
+        </div>
+        <div>
+          <dt>{bi("累计花费", "Cost (USD)")}</dt>
+          <dd>{formatUsd(task.cost_usd)}</dd>
+        </div>
+        <div>
+          <dt>{bi("背景窗口", "Context Window")}</dt>
+          <dd>
+            {formatTokenCompact(task.context_window_used_tokens)} /{" "}
+            {formatTokenCompact(task.context_window_total_tokens)}
+          </dd>
         </div>
         <div>
           <dt>{bi("创建时间", "Created At")}</dt>

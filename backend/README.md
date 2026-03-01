@@ -47,7 +47,9 @@ set -a && source .env && set +a
 # export REDIS_QUEUE_PREFIX=pocket_codex:tasks
 # Optional: switch task executor from simulator to local codex CLI
 # export APP_TASK_EXECUTOR=codex
+# export APP_TASK_EXECUTOR=codex-cli
 # export CODEX_CLI_PATH=codex
+# export CODEX_CLI_PATH=codex-cli
 # export CODEX_FULL_AUTO=true
 uvicorn app.main:app --reload --port 8000
 ```
@@ -83,5 +85,5 @@ Then check:
 - By default, direct login (`/auth/login`) is localhost-only (`APP_REQUIRE_LOOPBACK_DIRECT_LOGIN=true`).
 - Mobile login requires desktop approval via `/auth/mobile/*` endpoints.
 - Private-network CORS origins are allowed by default (`APP_CORS_ALLOW_PRIVATE_NETWORK=true`) for phone hotspot/LAN usage.
-- Default task executor is `simulator`; set `APP_TASK_EXECUTOR=codex` to run real local Codex commands.
+- Default task executor is `simulator`; set `APP_TASK_EXECUTOR=codex` or `APP_TASK_EXECUTOR=codex-cli` to run real local CLI commands.
 - `APP_USERNAME` and `APP_PASSWORD` are required and must be set before startup.

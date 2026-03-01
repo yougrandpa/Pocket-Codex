@@ -55,6 +55,14 @@ class TaskRun:
     started_at: Optional[str] = None
     finished_at: Optional[str] = None
     summary: Optional[str] = None
+    model: Optional[str] = None
+    reasoning_effort: Optional[str] = None
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    total_tokens: int = 0
+    cost_usd: float = 0.0
+    context_window_used_tokens: Optional[int] = None
+    context_window_total_tokens: Optional[int] = None
 
 
 @dataclass
@@ -73,6 +81,14 @@ class Task:
     paused_at: Optional[str] = None
     retry_count: int = 0
     timeout_seconds: int = 20
+    model: Optional[str] = None
+    reasoning_effort: Optional[str] = None
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    total_tokens: int = 0
+    cost_usd: float = 0.0
+    context_window_used_tokens: Optional[int] = None
+    context_window_total_tokens: Optional[int] = None
     current_run_id: Optional[str] = None
     run_sequence: int = 0
     runs: list[TaskRun] = field(default_factory=list)
