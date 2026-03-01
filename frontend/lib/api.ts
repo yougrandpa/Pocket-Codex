@@ -182,6 +182,7 @@ const API_BASE_URL = "";
 const SESSION_STORAGE_KEY = "pocket_codex_session";
 const LEGACY_LOCAL_STORAGE_KEY = "pocket_codex_session";
 let inMemorySession: SessionTokens | null = null;
+const DIRECT_LOGIN_LOOPBACK_HINT = "Direct login is only allowed from localhost";
 
 interface ErrorPayload {
   error?: {
@@ -194,6 +195,21 @@ interface ErrorPayload {
 
 function isBrowser(): boolean {
   return typeof window !== "undefined";
+}
+
+function isLoopbackHostname(value: string): boolean {
+  const hostname = value.trim().toLowerCase();
+  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1" || hostname === "[::1]";
+}
+
+function getLoopbackBackendApiBase(): string | null {
+  if (!isBrowser()) {
+    return null;
+  }
+  if (!isLoopbackHostname(window.location.hostname)) {
+    return null;
+  }
+  return "http://127.0.0.1:8000";
 }
 
 function parseErrorMessage(value: unknown, fallback: string): string {
@@ -354,16 +370,38 @@ function normalizeMobileLoginStatus(raw: RawMobileLoginStatus): MobileLoginStatu
 }
 
 export async function login(username: string, password: string): Promise<SessionTokens> {
-  const response = await fetchJson<RawTokenResponse>(`${API_BASE_URL}/api/v1/auth/login`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ username, password })
-  });
-  const tokens = normalizeToken(response);
-  saveSession(tokens);
-  return tokens;
+  const payload = JSON.stringify({ username, password });
+  try {
+    const response = await fetchJson<RawTokenResponse>(`${API_BASE_URL}/api/v1/auth/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: payload
+    });
+    const tokens = normalizeToken(response);
+    saveSession(tokens);
+    return tokens;
+  } catch (error) {
+    const fallbackBase = getLoopbackBackendApiBase();
+    if (
+      !(error instanceof Error) ||
+      !fallbackBase ||
+      !error.message.includes(DIRECT_LOGIN_LOOPBACK_HINT)
+    ) {
+      throw error;
+    }
+    const fallbackResponse = await fetchJson<RawTokenResponse>(`${fallbackBase}/api/v1/auth/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: payload
+    });
+    const tokens = normalizeToken(fallbackResponse);
+    saveSession(tokens);
+    return tokens;
+  }
 }
 
 export async function requestMobileLogin(

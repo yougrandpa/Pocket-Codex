@@ -27,47 +27,92 @@ from ..services.task_service import task_service
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
+def _normalize_ip_candidate(value: str | None) -> str:
+    if not value:
+        return "unknown"
+    candidate = value.strip().lower()
+    if not candidate:
+        return "unknown"
+    if candidate.startswith("[") and "]" in candidate:
+        end = candidate.find("]")
+        if end > 1:
+            candidate = candidate[1:end].strip().lower()
+    try:
+        parsed = ip_address(candidate)
+    except ValueError:
+        return candidate
+    if parsed.version == 6 and parsed.ipv4_mapped is not None:
+        return str(parsed.ipv4_mapped)
+    return str(parsed)
+
+
+def _is_loopback_host(value: str | None) -> bool:
+    normalized = _normalize_ip_candidate(value)
+    if normalized == "localhost":
+        return True
+    try:
+        parsed = ip_address(normalized)
+    except ValueError:
+        return False
+    if parsed.is_loopback:
+        return True
+    if parsed.version == 6 and parsed.ipv4_mapped is not None:
+        return parsed.ipv4_mapped.is_loopback
+    return False
+
+
+def _is_trusted_proxy_host(value: str | None) -> bool:
+    normalized = _normalize_ip_candidate(value)
+    trusted_hosts = {_normalize_ip_candidate(item) for item in settings.trusted_proxy_hosts}
+    return normalized in trusted_hosts
+
+
+def _extract_forwarded_ip_candidates(request: Request) -> list[str]:
+    x_forwarded_for = (request.headers.get("x-forwarded-for") or "").strip()
+    if not x_forwarded_for:
+        return []
+    candidates: list[str] = []
+    for item in x_forwarded_for.split(","):
+        normalized = _normalize_ip_candidate(item)
+        try:
+            ip_address(normalized)
+        except ValueError:
+            continue
+        candidates.append(normalized)
+    return candidates
+
+
 def _request_ip(request: Request) -> str:
     direct_host = request.client.host if request.client is not None and request.client.host else "unknown"
+    normalized_direct_host = _normalize_ip_candidate(direct_host)
 
     if not settings.trust_proxy_headers:
-        return direct_host
-    if direct_host not in set(settings.trusted_proxy_hosts):
-        return direct_host
+        return normalized_direct_host
+    if not _is_trusted_proxy_host(direct_host):
+        return normalized_direct_host
+
     proxy_hints = (
         request.headers.get("x-forwarded-for"),
         request.headers.get("x-forwarded-host"),
         request.headers.get("x-forwarded-proto"),
     )
     if not any(proxy_hints):
-        return direct_host
+        return normalized_direct_host
 
-    forwarded_candidates: list[str] = []
-    x_forwarded_for = (request.headers.get("x-forwarded-for") or "").strip()
-    if x_forwarded_for:
-        forwarded_candidates.extend(
-            item.strip() for item in x_forwarded_for.split(",") if item.strip()
-        )
+    forwarded_candidates = _extract_forwarded_ip_candidates(request)
 
-    if direct_host in {"localhost", "127.0.0.1", "::1", "unknown"}:
+    if _is_loopback_host(direct_host) or normalized_direct_host == "unknown":
         for candidate in reversed(forwarded_candidates):
-            try:
-                ip_address(candidate)
-            except ValueError:
-                continue
             return candidate
         return "untrusted-proxy"
-    return direct_host
+    return normalized_direct_host
 
 
 def _is_loopback_request(request: Request) -> bool:
-    host = _request_ip(request)
-    if host in {"localhost"}:
+    host = _normalize_ip_candidate(_request_ip(request))
+    if host == "localhost":
         return True
-    try:
-        return ip_address(host).is_loopback
-    except ValueError:
-        return False
+    return _is_loopback_host(host)
 
 
 async def _append_audit_async(
