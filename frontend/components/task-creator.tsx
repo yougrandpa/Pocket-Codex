@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { createTask, CreateTaskInput, Task } from "@/lib/api";
+import { createTask, CreateTaskInput, ExecutorCapability, Task, getExecutorOptions } from "@/lib/api";
 import { bi } from "@/lib/i18n";
 import { resetTaskListClickCount, setTaskNavigationContext } from "@/lib/telemetry";
 
@@ -27,6 +27,7 @@ interface TaskTemplate {
   timeout_seconds: number;
   model?: string;
   reasoning_effort?: string;
+  enable_parallel_agents?: boolean;
   workdir?: string;
   created_at: string;
 }
@@ -54,6 +55,7 @@ function normalizeTemplate(raw: unknown): TaskTemplate | null {
   const model = typeof value.model === "string" ? value.model : undefined;
   const reasoning_effort =
     typeof value.reasoning_effort === "string" ? value.reasoning_effort : undefined;
+  const enable_parallel_agents = Boolean(value.enable_parallel_agents);
   return {
     id: value.id,
     name: value.name,
@@ -62,6 +64,7 @@ function normalizeTemplate(raw: unknown): TaskTemplate | null {
     timeout_seconds: value.timeout_seconds,
     model,
     reasoning_effort,
+    enable_parallel_agents,
     workdir,
     created_at: value.created_at
   };
@@ -74,6 +77,8 @@ export function TaskCreator({ onCreated, workdirSuggestions = [] }: TaskCreatorP
   const [timeoutSeconds, setTimeoutSeconds] = useState(DEFAULT_TIMEOUT_SECONDS);
   const [model, setModel] = useState("");
   const [reasoningEffort, setReasoningEffort] = useState(DEFAULT_REASONING_EFFORT);
+  const [enableParallelAgents, setEnableParallelAgents] = useState(false);
+  const [executorCapabilities, setExecutorCapabilities] = useState<ExecutorCapability | null>(null);
   const [workdir, setWorkdir] = useState("");
   const [workdirHistory, setWorkdirHistory] = useState<string[]>([]);
   const [templates, setTemplates] = useState<TaskTemplate[]>([]);
@@ -103,6 +108,35 @@ export function TaskCreator({ onCreated, workdirSuggestions = [] }: TaskCreatorP
     } catch {
       // Ignore malformed history payload.
     }
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    getExecutorOptions()
+      .then((result) => {
+        if (cancelled) {
+          return;
+        }
+        setExecutorCapabilities(result);
+        if (result.model_options.length > 0) {
+          setModel((previous) => previous.trim() || result.model_options[0]);
+        }
+        if (result.reasoning_effort_options.length > 0) {
+          setReasoningEffort((previous) =>
+            result.reasoning_effort_options.includes(previous)
+              ? previous
+              : result.reasoning_effort_options[0]
+          );
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setExecutorCapabilities(null);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -140,6 +174,20 @@ export function TaskCreator({ onCreated, workdirSuggestions = [] }: TaskCreatorP
     () => templates.find((item) => item.id === selectedTemplateId) ?? null,
     [selectedTemplateId, templates]
   );
+  const modelOptions = useMemo(() => {
+    const fromExecutor = executorCapabilities?.model_options ?? [];
+    if (model.trim() && !fromExecutor.includes(model.trim())) {
+      return [model.trim(), ...fromExecutor];
+    }
+    return fromExecutor;
+  }, [executorCapabilities?.model_options, model]);
+  const reasoningOptions = useMemo(() => {
+    const fromExecutor = executorCapabilities?.reasoning_effort_options ?? ["low", "medium", "high"];
+    if (!fromExecutor.includes(reasoningEffort)) {
+      return [reasoningEffort, ...fromExecutor];
+    }
+    return fromExecutor;
+  }, [executorCapabilities?.reasoning_effort_options, reasoningEffort]);
 
   function saveWorkdirHistory(nextWorkdir: string): void {
     const trimmed = nextWorkdir.trim();
@@ -164,6 +212,7 @@ export function TaskCreator({ onCreated, workdirSuggestions = [] }: TaskCreatorP
     setTimeoutSeconds(template.timeout_seconds);
     setModel(template.model ?? "");
     setReasoningEffort(template.reasoning_effort || DEFAULT_REASONING_EFFORT);
+    setEnableParallelAgents(Boolean(template.enable_parallel_agents));
     setWorkdir(template.workdir ?? "");
     setNote(bi("模板已填充到表单。", "Template applied to form."));
     setError(null);
@@ -184,6 +233,7 @@ export function TaskCreator({ onCreated, workdirSuggestions = [] }: TaskCreatorP
       timeout_seconds: timeoutSeconds,
       model: model.trim() || undefined,
       reasoning_effort: reasoningEffort,
+      enable_parallel_agents: enableParallelAgents,
       workdir: workdir.trim() || undefined,
       created_at: new Date().toISOString()
     };
@@ -222,6 +272,7 @@ export function TaskCreator({ onCreated, workdirSuggestions = [] }: TaskCreatorP
       setPrompt("");
       setModel("");
       setReasoningEffort(DEFAULT_REASONING_EFFORT);
+      setEnableParallelAgents(false);
       setWorkdir("");
       onCreated?.(created);
       router.push(`/tasks/${created.id}`);
@@ -247,6 +298,7 @@ export function TaskCreator({ onCreated, workdirSuggestions = [] }: TaskCreatorP
       timeout_seconds: timeoutSeconds,
       model: model.trim() || undefined,
       reasoning_effort: reasoningEffort,
+      enable_parallel_agents: enableParallelAgents,
       workdir: workdir.trim() || undefined
     });
   }
@@ -261,6 +313,7 @@ export function TaskCreator({ onCreated, workdirSuggestions = [] }: TaskCreatorP
       timeout_seconds: selectedTemplate.timeout_seconds,
       model: selectedTemplate.model,
       reasoning_effort: selectedTemplate.reasoning_effort || DEFAULT_REASONING_EFFORT,
+      enable_parallel_agents: Boolean(selectedTemplate.enable_parallel_agents),
       workdir: selectedTemplate.workdir
     });
   }
@@ -388,31 +441,55 @@ export function TaskCreator({ onCreated, workdirSuggestions = [] }: TaskCreatorP
         <div className="row">
           <label className="field">
             <span>{bi("模型(可选)", "Model (optional)")}</span>
-            <input
-              type="text"
+            <select
               value={model}
               onChange={(event) => setModel(event.target.value)}
-              list="model-options"
-              placeholder={bi("留空使用后端默认模型", "Use backend default model when empty")}
-            />
-            <datalist id="model-options">
-              <option value="gpt-5-codex" />
-              <option value="gpt-5" />
-              <option value="gpt-4.1" />
-            </datalist>
+              disabled={modelOptions.length === 0}
+            >
+              {modelOptions.length === 0 ? (
+                <option value="">{bi("未获取到模型列表", "Model list unavailable")}</option>
+              ) : null}
+              {modelOptions.map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
           </label>
           <label className="field">
             <span>{bi("推理强度", "Reasoning Effort")}</span>
             <select
               value={reasoningEffort}
               onChange={(event) => setReasoningEffort(event.target.value)}
+              disabled={reasoningOptions.length === 0}
             >
-              <option value="low">{bi("低", "Low")}</option>
-              <option value="medium">{bi("中", "Medium")}</option>
-              <option value="high">{bi("高", "High")}</option>
+              {reasoningOptions.map((item) => (
+                <option key={item} value={item}>
+                  {item === "low" ? bi("低", "Low") : item === "high" ? bi("高", "High") : bi("中", "Medium")}
+                </option>
+              ))}
             </select>
           </label>
         </div>
+
+        <label className="field field-inline">
+          <span>{bi("多代理并行执行", "Parallel multi-agent execution")}</span>
+          <input
+            type="checkbox"
+            checked={enableParallelAgents}
+            disabled={executorCapabilities?.supports_parallel_agents === false}
+            onChange={(event) => setEnableParallelAgents(event.target.checked)}
+          />
+        </label>
+        {executorCapabilities ? (
+          <p className="muted">
+            {bi("能力来源", "Options source")}: {executorCapabilities.source}
+          </p>
+        ) : (
+          <p className="muted">
+            {bi("模型与推理强度暂未从 CLI 读取到，先使用默认值。", "Model and reasoning options are temporarily unavailable from CLI.")}
+          </p>
+        )}
 
         <div className="row">
           <label className="field">

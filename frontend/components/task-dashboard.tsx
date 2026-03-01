@@ -57,6 +57,29 @@ function mergeTaskFromEvent(tasks: Task[], event: TaskEvent): Task[] {
       current.summary = summary;
     }
   }
+  if (event.event_type === "task.usage.updated") {
+    const keys: Array<keyof Task> = [
+      "prompt_tokens",
+      "completion_tokens",
+      "cache_read_tokens",
+      "total_tokens",
+      "input_cost_usd",
+      "output_cost_usd",
+      "cache_read_cost_usd",
+      "cost_multiplier",
+      "original_cost_usd",
+      "billed_cost_usd",
+      "cost_usd",
+      "context_window_used_tokens",
+      "context_window_total_tokens"
+    ];
+    for (const key of keys) {
+      const value = event.payload[key as string];
+      if (typeof value === "number") {
+        (current as Record<string, unknown>)[key] = value;
+      }
+    }
+  }
   next[index] = current;
   return next;
 }

@@ -35,9 +35,17 @@ export interface Task {
   timeout_seconds?: number;
   model?: string | null;
   reasoning_effort?: string | null;
+  enable_parallel_agents?: boolean;
   prompt_tokens?: number;
   completion_tokens?: number;
+  cache_read_tokens?: number;
   total_tokens?: number;
+  input_cost_usd?: number;
+  output_cost_usd?: number;
+  cache_read_cost_usd?: number;
+  cost_multiplier?: number;
+  original_cost_usd?: number;
+  billed_cost_usd?: number;
   cost_usd?: number;
   context_window_used_tokens?: number | null;
   context_window_total_tokens?: number | null;
@@ -160,6 +168,14 @@ export interface CreateTaskInput {
   workdir?: string;
   model?: string;
   reasoning_effort?: string;
+  enable_parallel_agents?: boolean;
+}
+
+export interface ExecutorCapability {
+  source: string;
+  model_options: string[];
+  reasoning_effort_options: string[];
+  supports_parallel_agents: boolean;
 }
 
 const DEFAULT_API_BASE_URL = "http://localhost:8000";
@@ -511,9 +527,19 @@ function normalizeTask(raw: unknown): Task {
       typeof value.timeout_seconds === "number" ? value.timeout_seconds : undefined,
     model: typeof value.model === "string" ? value.model : null,
     reasoning_effort: typeof value.reasoning_effort === "string" ? value.reasoning_effort : null,
+    enable_parallel_agents:
+      typeof value.enable_parallel_agents === "boolean" ? value.enable_parallel_agents : false,
     prompt_tokens: typeof value.prompt_tokens === "number" ? value.prompt_tokens : 0,
     completion_tokens: typeof value.completion_tokens === "number" ? value.completion_tokens : 0,
+    cache_read_tokens: typeof value.cache_read_tokens === "number" ? value.cache_read_tokens : 0,
     total_tokens: typeof value.total_tokens === "number" ? value.total_tokens : 0,
+    input_cost_usd: typeof value.input_cost_usd === "number" ? value.input_cost_usd : 0,
+    output_cost_usd: typeof value.output_cost_usd === "number" ? value.output_cost_usd : 0,
+    cache_read_cost_usd:
+      typeof value.cache_read_cost_usd === "number" ? value.cache_read_cost_usd : 0,
+    cost_multiplier: typeof value.cost_multiplier === "number" ? value.cost_multiplier : 1,
+    original_cost_usd: typeof value.original_cost_usd === "number" ? value.original_cost_usd : 0,
+    billed_cost_usd: typeof value.billed_cost_usd === "number" ? value.billed_cost_usd : 0,
     cost_usd: typeof value.cost_usd === "number" ? value.cost_usd : 0,
     context_window_used_tokens:
       typeof value.context_window_used_tokens === "number"
@@ -694,6 +720,26 @@ export async function getAuditLogs(
 export async function getHealthStatus(): Promise<HealthStatus> {
   const body = await fetchJson<unknown>(`${API_BASE_URL}/healthz`, { cache: "no-store" });
   return normalizeHealth(body);
+}
+
+export async function getExecutorOptions(): Promise<ExecutorCapability> {
+  const body = await authorizedFetchJson<unknown>("/api/v1/tasks/executor/options", {
+    cache: "no-store"
+  });
+  const value = asRecord(body);
+  const modelOptions = Array.isArray(value.model_options)
+    ? value.model_options.filter((item): item is string => typeof item === "string")
+    : [];
+  const reasoningEffortOptions = Array.isArray(value.reasoning_effort_options)
+    ? value.reasoning_effort_options.filter((item): item is string => typeof item === "string")
+    : [];
+  return {
+    source: typeof value.source === "string" ? value.source : "unknown",
+    model_options: modelOptions,
+    reasoning_effort_options: reasoningEffortOptions,
+    supports_parallel_agents:
+      typeof value.supports_parallel_agents === "boolean" ? value.supports_parallel_agents : true
+  };
 }
 
 export async function getPendingMobileLoginRequests(): Promise<PendingMobileLoginRequest[]> {

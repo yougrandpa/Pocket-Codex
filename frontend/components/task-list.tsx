@@ -175,7 +175,7 @@ export function TaskList({
               <div className="task-usage-row">
                 <p className="muted task-usage-text">
                   {bi("Tokens", "Tokens")}: {formatTokenCompact(task.total_tokens)} ·{" "}
-                  {bi("花费", "Cost")}: {formatUsd(task.cost_usd)}
+                  {bi("花费", "Cost")}: {formatUsd(task.billed_cost_usd ?? task.cost_usd)}
                 </p>
                 <ContextWindowIndicator
                   usedTokens={task.context_window_used_tokens}

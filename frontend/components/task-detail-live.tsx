@@ -15,7 +15,7 @@ import {
 } from "@/lib/api";
 import { formatDateTime } from "@/lib/datetime";
 import { bi, statusText, useLanguage } from "@/lib/i18n";
-import { formatTokenCompact, formatUsd } from "@/lib/usage";
+import { formatTokenCompact, formatTokenDetailed, formatUsdDetailed } from "@/lib/usage";
 import {
   consumeTaskNavigationContext,
   fireAndForgetUiEvent,
@@ -49,6 +49,29 @@ function mergeTaskFromStatus(task: Task, event: TaskEvent): Task {
     const summary = event.payload.summary;
     if (typeof summary === "string") {
       next.summary = summary;
+    }
+  }
+  if (event.event_type === "task.usage.updated") {
+    const keys: Array<keyof Task> = [
+      "prompt_tokens",
+      "completion_tokens",
+      "cache_read_tokens",
+      "total_tokens",
+      "input_cost_usd",
+      "output_cost_usd",
+      "cache_read_cost_usd",
+      "cost_multiplier",
+      "original_cost_usd",
+      "billed_cost_usd",
+      "cost_usd",
+      "context_window_used_tokens",
+      "context_window_total_tokens"
+    ];
+    for (const key of keys) {
+      const value = event.payload[key as string];
+      if (typeof value === "number") {
+        (next as Record<string, unknown>)[key] = value;
+      }
     }
   }
   return next;
@@ -503,20 +526,52 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
           <dd>{task.reasoning_effort || "-"}</dd>
         </div>
         <div>
+          <dt>{bi("并行多代理", "Parallel Multi-agent")}</dt>
+          <dd>{task.enable_parallel_agents ? bi("启用", "Enabled") : bi("关闭", "Disabled")}</dd>
+        </div>
+        <div>
           <dt>{bi("总 Tokens", "Total Tokens")}</dt>
-          <dd>{formatTokenCompact(task.total_tokens)}</dd>
+          <dd>{formatTokenDetailed(task.total_tokens)}</dd>
         </div>
         <div>
           <dt>{bi("输入 Tokens", "Prompt Tokens")}</dt>
-          <dd>{formatTokenCompact(task.prompt_tokens)}</dd>
+          <dd>{formatTokenDetailed(task.prompt_tokens)}</dd>
         </div>
         <div>
           <dt>{bi("输出 Tokens", "Completion Tokens")}</dt>
-          <dd>{formatTokenCompact(task.completion_tokens)}</dd>
+          <dd>{formatTokenDetailed(task.completion_tokens)}</dd>
+        </div>
+        <div>
+          <dt>{bi("缓存读取 Tokens", "Cache Read Tokens")}</dt>
+          <dd>{formatTokenDetailed(task.cache_read_tokens)}</dd>
+        </div>
+        <div>
+          <dt>{bi("输入成本", "Input Cost")}</dt>
+          <dd>{formatUsdDetailed(task.input_cost_usd)}</dd>
+        </div>
+        <div>
+          <dt>{bi("输出成本", "Output Cost")}</dt>
+          <dd>{formatUsdDetailed(task.output_cost_usd)}</dd>
+        </div>
+        <div>
+          <dt>{bi("缓存读取成本", "Cache Read Cost")}</dt>
+          <dd>{formatUsdDetailed(task.cache_read_cost_usd)}</dd>
+        </div>
+        <div>
+          <dt>{bi("倍率", "Multiplier")}</dt>
+          <dd>{typeof task.cost_multiplier === "number" ? `${task.cost_multiplier.toFixed(2)}x` : "1.00x"}</dd>
+        </div>
+        <div>
+          <dt>{bi("原始成本", "Original Cost")}</dt>
+          <dd>{formatUsdDetailed(task.original_cost_usd)}</dd>
+        </div>
+        <div>
+          <dt>{bi("计费成本", "Billed Cost")}</dt>
+          <dd>{formatUsdDetailed(task.billed_cost_usd)}</dd>
         </div>
         <div>
           <dt>{bi("累计花费", "Cost (USD)")}</dt>
-          <dd>{formatUsd(task.cost_usd)}</dd>
+          <dd>{formatUsdDetailed(task.cost_usd)}</dd>
         </div>
         <div>
           <dt>{bi("背景窗口", "Context Window")}</dt>

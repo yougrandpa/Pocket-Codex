@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import asyncio
 import copy
+import json
 import re
+import shutil
 import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -36,7 +38,14 @@ class ControlResult:
 class UsageMetrics:
     prompt_tokens: int = 0
     completion_tokens: int = 0
+    cache_read_tokens: int = 0
     total_tokens: int = 0
+    input_cost_usd: float = 0.0
+    output_cost_usd: float = 0.0
+    cache_read_cost_usd: float = 0.0
+    cost_multiplier: float = 1.0
+    original_cost_usd: float = 0.0
+    billed_cost_usd: float = 0.0
     cost_usd: float = 0.0
     context_window_used_tokens: int | None = None
     context_window_total_tokens: int | None = None
@@ -45,7 +54,13 @@ class UsageMetrics:
         return (
             self.prompt_tokens > 0
             or self.completion_tokens > 0
+            or self.cache_read_tokens > 0
             or self.total_tokens > 0
+            or self.input_cost_usd > 0
+            or self.output_cost_usd > 0
+            or self.cache_read_cost_usd > 0
+            or self.original_cost_usd > 0
+            or self.billed_cost_usd > 0
             or self.cost_usd > 0
             or self.context_window_used_tokens is not None
             or self.context_window_total_tokens is not None
@@ -53,19 +68,47 @@ class UsageMetrics:
 
 
 _PROMPT_TOKENS_PATTERN = re.compile(
-    r"(?:prompt|input)\s*(?:tokens?|标记)[^\d]*([\d.,]+(?:[kKmM])?)",
+    r"(?:prompt|input|输入)\s*(?:tokens?|token|标记)[^\d]*([\d.,]+(?:[kKmM])?)",
     re.IGNORECASE,
 )
 _COMPLETION_TOKENS_PATTERN = re.compile(
-    r"(?:completion|output)\s*(?:tokens?|标记)[^\d]*([\d.,]+(?:[kKmM])?)",
+    r"(?:completion|output|输出)\s*(?:tokens?|token|标记)[^\d]*([\d.,]+(?:[kKmM])?)",
+    re.IGNORECASE,
+)
+_CACHE_READ_TOKENS_PATTERN = re.compile(
+    r"(?:cache\s*read|cached?\s*read|缓存读取)\s*(?:tokens?|token|标记)[^\d]*([\d.,]+(?:[kKmM])?)",
     re.IGNORECASE,
 )
 _TOTAL_TOKENS_PATTERN = re.compile(
-    r"(?:total)\s*(?:tokens?|标记)[^\d]*([\d.,]+(?:[kKmM])?)",
+    r"(?:total|总)\s*(?:tokens?|token|标记)[^\d]*([\d.,]+(?:[kKmM])?)",
     re.IGNORECASE,
 )
-_COST_PATTERN = re.compile(
+_INPUT_COST_PATTERN = re.compile(
+    r"(?:input\s*cost|输入成本|输入费用)[^\d$]*\$?\s*([\d.,]+)",
+    re.IGNORECASE,
+)
+_OUTPUT_COST_PATTERN = re.compile(
+    r"(?:output\s*cost|输出成本|输出费用)[^\d$]*\$?\s*([\d.,]+)",
+    re.IGNORECASE,
+)
+_CACHE_READ_COST_PATTERN = re.compile(
+    r"(?:cache\s*read\s*cost|缓存读取成本|缓存读取费用)[^\d$]*\$?\s*([\d.,]+)",
+    re.IGNORECASE,
+)
+_ORIGINAL_COST_PATTERN = re.compile(
+    r"(?:original|原始)[^\d$]*\$?\s*([\d.,]+)",
+    re.IGNORECASE,
+)
+_BILLED_COST_PATTERN = re.compile(
+    r"(?:billed|bill|计费)[^\d$]*\$?\s*([\d.,]+)",
+    re.IGNORECASE,
+)
+_GENERIC_COST_PATTERN = re.compile(
     r"(?:cost|费用|usd)[^\d$]*\$?\s*([\d.,]+)",
+    re.IGNORECASE,
+)
+_COST_MULTIPLIER_PATTERN = re.compile(
+    r"(?:multiplier|倍率)[^\d]*([\d.]+)x?",
     re.IGNORECASE,
 )
 _CONTEXT_WINDOW_FRACTION_PATTERN = re.compile(
@@ -81,6 +124,11 @@ _CONTEXT_WINDOW_PERCENT_PATTERN = re.compile(
     re.IGNORECASE,
 )
 _REASONING_EFFORT_ALLOWED = {"low", "medium", "high"}
+_MODEL_PRICING_PER_1M_TOKENS: dict[str, tuple[float, float, float]] = {
+    "gpt-5-codex": (1.50, 6.00, 0.15),
+    "gpt-5": (1.25, 10.00, 0.125),
+    "gpt-4.1": (2.00, 8.00, 0.20),
+}
 
 
 def _parse_iso(value: str | None) -> datetime | None:
@@ -125,6 +173,24 @@ def _parse_cost_value(raw: str | None) -> float | None:
     return max(0.0, value)
 
 
+def _usd_from_tokens(tokens: int, price_per_million: float) -> float:
+    if tokens <= 0 or price_per_million <= 0:
+        return 0.0
+    return (tokens / 1_000_000.0) * price_per_million
+
+
+def _price_tuple_for_model(model_name: str | None) -> tuple[float, float, float] | None:
+    if not model_name:
+        return None
+    normalized = model_name.strip().lower()
+    if normalized in _MODEL_PRICING_PER_1M_TOKENS:
+        return _MODEL_PRICING_PER_1M_TOKENS[normalized]
+    for key, value in _MODEL_PRICING_PER_1M_TOKENS.items():
+        if key in normalized:
+            return value
+    return None
+
+
 class TaskService:
     def __init__(self) -> None:
         self._repo = InMemoryTaskRepository()
@@ -136,6 +202,13 @@ class TaskService:
         self._worker_tasks: list[asyncio.Task[None]] = []
         self._active_processes: dict[str, asyncio.subprocess.Process] = {}
         self._next_stream_id = 1
+        self._capabilities_cache: dict[str, Any] = {
+            "source": settings.task_executor,
+            "model_options": [],
+            "reasoning_effort_options": ["low", "medium", "high"],
+            "supports_parallel_agents": True,
+        }
+        self._capabilities_cache_updated_at = 0.0
         self._load_persisted_tasks()
 
     def _load_persisted_tasks(self) -> None:
@@ -155,6 +228,9 @@ class TaskService:
                         started_at=task.started_at,
                         finished_at=task.finished_at,
                         summary=task.summary,
+                        model=task.model,
+                        reasoning_effort=task.reasoning_effort,
+                        enable_parallel_agents=task.enable_parallel_agents,
                     )
                 )
             if task.events:
@@ -201,6 +277,27 @@ class TaskService:
         )
         return items, total
 
+    async def get_executor_capabilities(self) -> dict[str, Any]:
+        now = time.monotonic()
+        if now - self._capabilities_cache_updated_at < 120:
+            return dict(self._capabilities_cache)
+
+        if not self._is_cli_executor():
+            model_options = [settings.codex_model] if settings.codex_model else []
+            self._capabilities_cache = {
+                "source": settings.task_executor,
+                "model_options": model_options,
+                "reasoning_effort_options": ["low", "medium", "high"],
+                "supports_parallel_agents": True,
+            }
+            self._capabilities_cache_updated_at = now
+            return dict(self._capabilities_cache)
+
+        options = await asyncio.to_thread(self._load_cli_capabilities_sync)
+        self._capabilities_cache = options
+        self._capabilities_cache_updated_at = now
+        return dict(self._capabilities_cache)
+
     def append_audit(
         self,
         *,
@@ -243,6 +340,7 @@ class TaskService:
         timeout_seconds: Optional[int] = None,
         model: str | None = None,
         reasoning_effort: str | None = None,
+        enable_parallel_agents: bool = False,
         actor: str = "system",
     ) -> Task:
         normalized_workdir = self._normalize_workdir_or_raise(workdir)
@@ -263,6 +361,7 @@ class TaskService:
             timeout_seconds=effective_timeout,
             model=normalized_model,
             reasoning_effort=normalized_reasoning_effort,
+            enable_parallel_agents=bool(enable_parallel_agents),
         )
 
         async with self._lock:
@@ -290,6 +389,7 @@ class TaskService:
                 "timeout_seconds": task.timeout_seconds,
                 "model": normalized_model,
                 "reasoning_effort": normalized_reasoning_effort,
+                "enable_parallel_agents": bool(enable_parallel_agents),
             },
         )
 
@@ -669,6 +769,7 @@ class TaskService:
             created_at=now,
             model=task.model,
             reasoning_effort=task.reasoning_effort,
+            enable_parallel_agents=task.enable_parallel_agents,
         )
         task.current_run_id = run.run_id
         task.runs.append(run)
@@ -768,6 +869,97 @@ class TaskService:
         if settings.task_executor in {"codex", "codex-cli"}:
             return settings.task_executor
         return "simulator"
+
+    @staticmethod
+    def _run_cli_probe(args: list[str]) -> tuple[int, str]:
+        import subprocess
+
+        cmd = [settings.codex_cli_path, *args]
+        try:
+            completed = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=8,
+            )
+        except (OSError, subprocess.SubprocessError):
+            return 1, ""
+        output = (completed.stdout or "").strip()
+        if not output:
+            output = (completed.stderr or "").strip()
+        return completed.returncode, output
+
+    def _load_cli_capabilities_sync(self) -> dict[str, Any]:
+        model_options: list[str] = []
+        model_seen: set[str] = set()
+
+        for args in (["models", "--json"], ["model", "list", "--json"], ["models"]):
+            return_code, output = self._run_cli_probe(args)
+            if return_code != 0 or not output:
+                continue
+            discovered = self._parse_model_output(output)
+            for item in discovered:
+                if item not in model_seen:
+                    model_seen.add(item)
+                    model_options.append(item)
+            if model_options:
+                break
+
+        if settings.codex_model and settings.codex_model not in model_seen:
+            model_options.insert(0, settings.codex_model)
+        if not model_options:
+            model_options = ["gpt-5-codex", "gpt-5"]
+
+        reasoning_effort_options = ["low", "medium", "high"]
+        return_code, help_output = self._run_cli_probe(["exec", "--help"])
+        if return_code == 0 and help_output:
+            if "reasoning" not in help_output.lower():
+                reasoning_effort_options = []
+
+        return {
+            "source": settings.task_executor,
+            "model_options": model_options,
+            "reasoning_effort_options": reasoning_effort_options,
+            "supports_parallel_agents": True,
+        }
+
+    @staticmethod
+    def _parse_model_output(output: str) -> list[str]:
+        output = output.strip()
+        if not output:
+            return []
+        model_names: list[str] = []
+        seen: set[str] = set()
+        if output.startswith("[") or output.startswith("{"):
+            try:
+                payload = json.loads(output)
+                if isinstance(payload, list):
+                    for item in payload:
+                        if isinstance(item, str):
+                            candidate = item.strip()
+                        elif isinstance(item, dict):
+                            candidate = str(item.get("id") or item.get("name") or "").strip()
+                        else:
+                            candidate = ""
+                        if candidate and candidate not in seen:
+                            seen.add(candidate)
+                            model_names.append(candidate)
+                    return model_names
+            except json.JSONDecodeError:
+                pass
+
+        for line in output.splitlines():
+            candidate = line.strip()
+            if not candidate:
+                continue
+            if candidate.startswith("-"):
+                candidate = candidate.lstrip("-").strip()
+            candidate = candidate.split()[0].strip()
+            if candidate and candidate not in seen:
+                seen.add(candidate)
+                model_names.append(candidate)
+        return model_names
 
     def _normalize_workdir_or_raise(self, workdir: str | None) -> str | None:
         if workdir is None:
@@ -962,6 +1154,8 @@ class TaskService:
             cmd.append("--full-auto")
         if selected_model:
             cmd.extend(["--model", selected_model])
+        if task.reasoning_effort:
+            cmd.extend(["-c", f"model_reasoning_effort={task.reasoning_effort}"])
         cmd.append(prompt)
 
         try:
@@ -1040,7 +1234,7 @@ class TaskService:
             except asyncio.CancelledError:
                 pass
         self._active_processes.pop(task_id, None)
-        usage = self._extract_usage_metrics(output_lines)
+        usage = self._extract_usage_metrics(output_lines, selected_model)
 
         if timed_out:
             await self._mark_task_timeout(task_id=task_id, reason=timeout_reason, usage=usage)
@@ -1219,7 +1413,7 @@ class TaskService:
             await self._broadcast(event, subscribers)
 
     @staticmethod
-    def _extract_usage_metrics(lines: list[str]) -> UsageMetrics | None:
+    def _extract_usage_metrics(lines: list[str], model_name: str | None = None) -> UsageMetrics | None:
         usage = UsageMetrics()
         context_percent: int | None = None
 
@@ -1236,15 +1430,57 @@ class TaskService:
                 if completion_tokens is not None:
                     usage.completion_tokens = max(usage.completion_tokens, completion_tokens)
 
+            cache_read_match = _CACHE_READ_TOKENS_PATTERN.search(line)
+            if cache_read_match:
+                cache_read_tokens = _parse_scaled_number(cache_read_match.group(1))
+                if cache_read_tokens is not None:
+                    usage.cache_read_tokens = max(usage.cache_read_tokens, cache_read_tokens)
+
             total_match = _TOTAL_TOKENS_PATTERN.search(line)
             if total_match:
                 total_tokens = _parse_scaled_number(total_match.group(1))
                 if total_tokens is not None:
                     usage.total_tokens = max(usage.total_tokens, total_tokens)
 
-            cost_match = _COST_PATTERN.search(line)
-            if cost_match:
-                cost_value = _parse_cost_value(cost_match.group(1))
+            input_cost_match = _INPUT_COST_PATTERN.search(line)
+            if input_cost_match:
+                cost_value = _parse_cost_value(input_cost_match.group(1))
+                if cost_value is not None:
+                    usage.input_cost_usd = max(usage.input_cost_usd, cost_value)
+
+            output_cost_match = _OUTPUT_COST_PATTERN.search(line)
+            if output_cost_match:
+                cost_value = _parse_cost_value(output_cost_match.group(1))
+                if cost_value is not None:
+                    usage.output_cost_usd = max(usage.output_cost_usd, cost_value)
+
+            cache_read_cost_match = _CACHE_READ_COST_PATTERN.search(line)
+            if cache_read_cost_match:
+                cost_value = _parse_cost_value(cache_read_cost_match.group(1))
+                if cost_value is not None:
+                    usage.cache_read_cost_usd = max(usage.cache_read_cost_usd, cost_value)
+
+            original_cost_match = _ORIGINAL_COST_PATTERN.search(line)
+            if original_cost_match:
+                cost_value = _parse_cost_value(original_cost_match.group(1))
+                if cost_value is not None:
+                    usage.original_cost_usd = max(usage.original_cost_usd, cost_value)
+
+            billed_cost_match = _BILLED_COST_PATTERN.search(line)
+            if billed_cost_match:
+                cost_value = _parse_cost_value(billed_cost_match.group(1))
+                if cost_value is not None:
+                    usage.billed_cost_usd = max(usage.billed_cost_usd, cost_value)
+
+            multiplier_match = _COST_MULTIPLIER_PATTERN.search(line)
+            if multiplier_match:
+                multiplier = _parse_cost_value(multiplier_match.group(1))
+                if multiplier is not None and multiplier > 0:
+                    usage.cost_multiplier = multiplier
+
+            generic_cost_match = _GENERIC_COST_PATTERN.search(line)
+            if generic_cost_match:
+                cost_value = _parse_cost_value(generic_cost_match.group(1))
                 if cost_value is not None:
                     usage.cost_usd = max(usage.cost_usd, cost_value)
 
@@ -1273,8 +1509,11 @@ class TaskService:
                 except ValueError:
                     pass
 
-        if usage.total_tokens <= 0 and (usage.prompt_tokens > 0 or usage.completion_tokens > 0):
-            usage.total_tokens = usage.prompt_tokens + usage.completion_tokens
+        if (
+            usage.total_tokens <= 0
+            and (usage.prompt_tokens > 0 or usage.completion_tokens > 0 or usage.cache_read_tokens > 0)
+        ):
+            usage.total_tokens = usage.prompt_tokens + usage.completion_tokens + usage.cache_read_tokens
         if (
             usage.context_window_used_tokens is None
             and usage.context_window_total_tokens
@@ -1283,6 +1522,31 @@ class TaskService:
             usage.context_window_used_tokens = int(
                 usage.context_window_total_tokens * (context_percent / 100.0)
             )
+
+        pricing = _price_tuple_for_model(model_name)
+        if pricing:
+            in_price, out_price, cache_price = pricing
+            if usage.input_cost_usd <= 0 and usage.prompt_tokens > 0:
+                usage.input_cost_usd = _usd_from_tokens(usage.prompt_tokens, in_price)
+            if usage.output_cost_usd <= 0 and usage.completion_tokens > 0:
+                usage.output_cost_usd = _usd_from_tokens(usage.completion_tokens, out_price)
+            if usage.cache_read_cost_usd <= 0 and usage.cache_read_tokens > 0:
+                usage.cache_read_cost_usd = _usd_from_tokens(usage.cache_read_tokens, cache_price)
+
+        line_item_total = usage.input_cost_usd + usage.output_cost_usd + usage.cache_read_cost_usd
+        if usage.original_cost_usd <= 0 and line_item_total > 0:
+            usage.original_cost_usd = line_item_total
+        if usage.billed_cost_usd <= 0 and usage.original_cost_usd > 0:
+            usage.billed_cost_usd = usage.original_cost_usd * max(usage.cost_multiplier, 0.0)
+        if usage.cost_usd <= 0 and usage.billed_cost_usd > 0:
+            usage.cost_usd = usage.billed_cost_usd
+
+        usage.input_cost_usd = round(usage.input_cost_usd, 6)
+        usage.output_cost_usd = round(usage.output_cost_usd, 6)
+        usage.cache_read_cost_usd = round(usage.cache_read_cost_usd, 6)
+        usage.original_cost_usd = round(usage.original_cost_usd, 6)
+        usage.billed_cost_usd = round(usage.billed_cost_usd, 6)
+        usage.cost_usd = round(usage.cost_usd, 6)
 
         return usage if usage.has_values() else None
 
@@ -1304,9 +1568,30 @@ class TaskService:
         if usage.completion_tokens > 0:
             task.completion_tokens += usage.completion_tokens
             payload["completion_tokens"] = usage.completion_tokens
+        if usage.cache_read_tokens > 0:
+            task.cache_read_tokens += usage.cache_read_tokens
+            payload["cache_read_tokens"] = usage.cache_read_tokens
         if usage.total_tokens > 0:
             task.total_tokens += usage.total_tokens
             payload["total_tokens"] = usage.total_tokens
+        if usage.input_cost_usd > 0:
+            task.input_cost_usd = round(task.input_cost_usd + usage.input_cost_usd, 6)
+            payload["input_cost_usd"] = round(usage.input_cost_usd, 6)
+        if usage.output_cost_usd > 0:
+            task.output_cost_usd = round(task.output_cost_usd + usage.output_cost_usd, 6)
+            payload["output_cost_usd"] = round(usage.output_cost_usd, 6)
+        if usage.cache_read_cost_usd > 0:
+            task.cache_read_cost_usd = round(task.cache_read_cost_usd + usage.cache_read_cost_usd, 6)
+            payload["cache_read_cost_usd"] = round(usage.cache_read_cost_usd, 6)
+        if usage.cost_multiplier > 0:
+            task.cost_multiplier = usage.cost_multiplier
+            payload["cost_multiplier"] = usage.cost_multiplier
+        if usage.original_cost_usd > 0:
+            task.original_cost_usd = round(task.original_cost_usd + usage.original_cost_usd, 6)
+            payload["original_cost_usd"] = round(usage.original_cost_usd, 6)
+        if usage.billed_cost_usd > 0:
+            task.billed_cost_usd = round(task.billed_cost_usd + usage.billed_cost_usd, 6)
+            payload["billed_cost_usd"] = round(usage.billed_cost_usd, 6)
         if usage.cost_usd > 0:
             task.cost_usd = round(task.cost_usd + usage.cost_usd, 6)
             payload["cost_usd"] = round(usage.cost_usd, 6)
@@ -1320,7 +1605,14 @@ class TaskService:
         if current_run is not None:
             current_run.prompt_tokens = usage.prompt_tokens
             current_run.completion_tokens = usage.completion_tokens
+            current_run.cache_read_tokens = usage.cache_read_tokens
             current_run.total_tokens = usage.total_tokens
+            current_run.input_cost_usd = round(usage.input_cost_usd, 6)
+            current_run.output_cost_usd = round(usage.output_cost_usd, 6)
+            current_run.cache_read_cost_usd = round(usage.cache_read_cost_usd, 6)
+            current_run.cost_multiplier = usage.cost_multiplier
+            current_run.original_cost_usd = round(usage.original_cost_usd, 6)
+            current_run.billed_cost_usd = round(usage.billed_cost_usd, 6)
             current_run.cost_usd = round(usage.cost_usd, 6)
             current_run.context_window_used_tokens = usage.context_window_used_tokens
             current_run.context_window_total_tokens = usage.context_window_total_tokens
@@ -1352,6 +1644,10 @@ class TaskService:
             preface_parts.append(f"Preferred model: {task.model}")
         if task.reasoning_effort:
             preface_parts.append(f"Reasoning effort: {task.reasoning_effort}")
+        if task.enable_parallel_agents:
+            preface_parts.append(
+                "Execution strategy: use multiple parallel sub-agents/workers for independent subtasks."
+            )
         preface = ""
         if preface_parts:
             preface = "\n".join(preface_parts) + "\n\n"

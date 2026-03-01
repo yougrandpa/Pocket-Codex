@@ -160,6 +160,25 @@ a {
   gap: 6px;
 }
 
+.field-inline {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.field-inline > input[type="checkbox"] {
+  accent-color: var(--primary);
+  appearance: auto;
+  background: transparent;
+  border: 0;
+  flex: 0 0 auto;
+  height: 18px;
+  min-height: 18px;
+  min-width: 18px;
+  padding: 0;
+  width: 18px;
+}
+
 .field > span {
   color: var(--muted);
   font-size: 0.84rem;
@@ -613,11 +632,22 @@ textarea {
   border-radius: 10px;
   box-shadow: 0 8px 22px rgba(20, 33, 61, 0.14);
   min-width: 172px;
+  opacity: 0;
+  pointer-events: none;
   padding: 8px 10px;
   position: absolute;
   right: 0;
   top: 26px;
+  transform: translateY(4px);
+  transition: opacity 0.16s ease, transform 0.16s ease;
   z-index: 20;
+}
+
+.context-window-indicator:hover .context-window-popover,
+.context-window-indicator:focus-within .context-window-popover {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
 }
 
 .context-window-title {

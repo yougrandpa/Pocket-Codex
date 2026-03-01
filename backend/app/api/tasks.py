@@ -10,6 +10,7 @@ from ..models import TaskStatus
 from ..schemas import (
     AuditLogListResponse,
     AuditLogResponse,
+    ExecutorCapabilityResponse,
     TaskControlRequest,
     TaskControlResponse,
     TaskCreateRequest,
@@ -42,6 +43,7 @@ async def create_task(
             timeout_seconds=payload.timeout_seconds,
             model=payload.model,
             reasoning_effort=payload.reasoning_effort,
+            enable_parallel_agents=payload.enable_parallel_agents,
             actor=current_user,
         )
     except ValueError as exc:
@@ -84,6 +86,12 @@ async def track_ui_event(
         detail=payload.detail or {},
     )
     return UiEventAckResponse(accepted=True, action=action)
+
+
+@router.get("/executor/options", response_model=ExecutorCapabilityResponse)
+async def get_executor_options(_: str = Depends(get_current_user)) -> ExecutorCapabilityResponse:
+    options = await task_service.get_executor_capabilities()
+    return ExecutorCapabilityResponse(**options)
 
 
 @router.get("/{task_id}", response_model=TaskDetailResponse)

@@ -180,9 +180,17 @@ class Storage:
                 reasoning_effort=(
                     str(item["reasoning_effort"]) if item.get("reasoning_effort") is not None else None
                 ),
+                enable_parallel_agents=bool(item.get("enable_parallel_agents", False)),
                 prompt_tokens=int(item.get("prompt_tokens", 0)),
                 completion_tokens=int(item.get("completion_tokens", 0)),
+                cache_read_tokens=int(item.get("cache_read_tokens", 0)),
                 total_tokens=int(item.get("total_tokens", 0)),
+                input_cost_usd=float(item.get("input_cost_usd", 0.0)),
+                output_cost_usd=float(item.get("output_cost_usd", 0.0)),
+                cache_read_cost_usd=float(item.get("cache_read_cost_usd", 0.0)),
+                cost_multiplier=float(item.get("cost_multiplier", 1.0)),
+                original_cost_usd=float(item.get("original_cost_usd", 0.0)),
+                billed_cost_usd=float(item.get("billed_cost_usd", 0.0)),
                 cost_usd=float(item.get("cost_usd", 0.0)),
                 context_window_used_tokens=(
                     int(item["context_window_used_tokens"])
@@ -220,9 +228,17 @@ class Storage:
             reasoning_effort=(
                 str(payload["reasoning_effort"]) if payload.get("reasoning_effort") is not None else None
             ),
+            enable_parallel_agents=bool(payload.get("enable_parallel_agents", False)),
             prompt_tokens=int(payload.get("prompt_tokens", 0)),
             completion_tokens=int(payload.get("completion_tokens", 0)),
+            cache_read_tokens=int(payload.get("cache_read_tokens", 0)),
             total_tokens=int(payload.get("total_tokens", 0)),
+            input_cost_usd=float(payload.get("input_cost_usd", 0.0)),
+            output_cost_usd=float(payload.get("output_cost_usd", 0.0)),
+            cache_read_cost_usd=float(payload.get("cache_read_cost_usd", 0.0)),
+            cost_multiplier=float(payload.get("cost_multiplier", 1.0)),
+            original_cost_usd=float(payload.get("original_cost_usd", 0.0)),
+            billed_cost_usd=float(payload.get("billed_cost_usd", 0.0)),
             cost_usd=float(payload.get("cost_usd", 0.0)),
             context_window_used_tokens=(
                 int(payload["context_window_used_tokens"])

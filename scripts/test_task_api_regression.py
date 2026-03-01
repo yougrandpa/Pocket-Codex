@@ -31,6 +31,8 @@ def main() -> None:
         headers = {"Authorization": f"Bearer {token}"}
 
         created_ids: list[str] = []
+        options = client.get("/api/v1/tasks/executor/options", headers=headers)
+        assert_true(options.status_code == 200, f"executor options failed: {options.text}")
         for index in range(3):
             created = client.post(
                 "/api/v1/tasks",
@@ -39,6 +41,9 @@ def main() -> None:
                     "prompt": f"regression pagination task {index}",
                     "priority": 5,
                     "timeout_seconds": 20,
+                    "model": "gpt-5-codex",
+                    "reasoning_effort": "medium",
+                    "enable_parallel_agents": index % 2 == 0,
                 },
             )
             assert_true(created.status_code == 201, f"create task failed: {created.status_code} {created.text}")

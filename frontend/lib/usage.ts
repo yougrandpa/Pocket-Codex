@@ -11,6 +11,13 @@ export function formatTokenCompact(value: number | null | undefined): string {
   return `${Math.round(value)}`;
 }
 
+export function formatTokenDetailed(value: number | null | undefined): string {
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
+    return "-";
+  }
+  return Math.round(value).toLocaleString();
+}
+
 export function formatUsd(value: number | null | undefined): string {
   if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
     return "$0.00";
@@ -19,6 +26,13 @@ export function formatUsd(value: number | null | undefined): string {
     return `$${value.toFixed(4)}`;
   }
   return `$${value.toFixed(2)}`;
+}
+
+export function formatUsdDetailed(value: number | null | undefined): string {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
+    return "$0.000000";
+  }
+  return `$${value.toFixed(6)}`;
 }
 
 export function formatContextUsage(

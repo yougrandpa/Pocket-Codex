@@ -79,6 +79,14 @@ class TaskCreateRequest(BaseModel):
     timeout_seconds: int = Field(default=20, ge=5, le=3600)
     model: Optional[str] = Field(default=None, max_length=80)
     reasoning_effort: Optional[str] = Field(default=None, max_length=16)
+    enable_parallel_agents: bool = False
+
+
+class ExecutorCapabilityResponse(BaseModel):
+    source: str
+    model_options: list[str]
+    reasoning_effort_options: list[str]
+    supports_parallel_agents: bool
 
 
 class TaskControlAction(str, Enum):
@@ -167,9 +175,17 @@ class TaskRunResponse(BaseModel):
     summary: Optional[str]
     model: Optional[str]
     reasoning_effort: Optional[str]
+    enable_parallel_agents: bool
     prompt_tokens: int
     completion_tokens: int
+    cache_read_tokens: int
     total_tokens: int
+    input_cost_usd: float
+    output_cost_usd: float
+    cache_read_cost_usd: float
+    cost_multiplier: float
+    original_cost_usd: float
+    billed_cost_usd: float
     cost_usd: float
     context_window_used_tokens: Optional[int]
     context_window_total_tokens: Optional[int]
@@ -187,9 +203,17 @@ class TaskRunResponse(BaseModel):
             summary=run.summary,
             model=run.model,
             reasoning_effort=run.reasoning_effort,
+            enable_parallel_agents=run.enable_parallel_agents,
             prompt_tokens=run.prompt_tokens,
             completion_tokens=run.completion_tokens,
+            cache_read_tokens=run.cache_read_tokens,
             total_tokens=run.total_tokens,
+            input_cost_usd=run.input_cost_usd,
+            output_cost_usd=run.output_cost_usd,
+            cache_read_cost_usd=run.cache_read_cost_usd,
+            cost_multiplier=run.cost_multiplier,
+            original_cost_usd=run.original_cost_usd,
+            billed_cost_usd=run.billed_cost_usd,
             cost_usd=run.cost_usd,
             context_window_used_tokens=run.context_window_used_tokens,
             context_window_total_tokens=run.context_window_total_tokens,
@@ -213,9 +237,17 @@ class TaskResponse(BaseModel):
     timeout_seconds: int
     model: Optional[str]
     reasoning_effort: Optional[str]
+    enable_parallel_agents: bool
     prompt_tokens: int
     completion_tokens: int
+    cache_read_tokens: int
     total_tokens: int
+    input_cost_usd: float
+    output_cost_usd: float
+    cache_read_cost_usd: float
+    cost_multiplier: float
+    original_cost_usd: float
+    billed_cost_usd: float
     cost_usd: float
     context_window_used_tokens: Optional[int]
     context_window_total_tokens: Optional[int]
@@ -243,9 +275,17 @@ class TaskResponse(BaseModel):
             timeout_seconds=task.timeout_seconds,
             model=task.model,
             reasoning_effort=task.reasoning_effort,
+            enable_parallel_agents=task.enable_parallel_agents,
             prompt_tokens=task.prompt_tokens,
             completion_tokens=task.completion_tokens,
+            cache_read_tokens=task.cache_read_tokens,
             total_tokens=task.total_tokens,
+            input_cost_usd=task.input_cost_usd,
+            output_cost_usd=task.output_cost_usd,
+            cache_read_cost_usd=task.cache_read_cost_usd,
+            cost_multiplier=task.cost_multiplier,
+            original_cost_usd=task.original_cost_usd,
+            billed_cost_usd=task.billed_cost_usd,
             cost_usd=task.cost_usd,
             context_window_used_tokens=task.context_window_used_tokens,
             context_window_total_tokens=task.context_window_total_tokens,
