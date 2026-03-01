@@ -7,7 +7,7 @@ import { LoginPanel } from "@/components/login-panel";
 import { NotificationCenter } from "@/components/notification-center";
 import { TaskCreator } from "@/components/task-creator";
 import { TaskList } from "@/components/task-list";
-import { bi } from "@/lib/i18n";
+import { bi, useLanguage } from "@/lib/i18n";
 import {
   Task,
   AuditLog,
@@ -51,6 +51,7 @@ function mergeTaskFromEvent(tasks: Task[], event: TaskEvent): Task[] {
 }
 
 export function TaskDashboard() {
+  const [language] = useLanguage();
   const [authed, setAuthed] = useState(false);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [events, setEvents] = useState<TaskEvent[]>([]);
@@ -150,7 +151,7 @@ export function TaskDashboard() {
   }
 
   return (
-    <div className="page-grid">
+    <div className="page-grid" data-lang={language}>
       <ExecutorStatusBar />
       <TaskCreator
         onCreated={(task) => {

@@ -11,7 +11,7 @@ import {
   getTask,
   openEventStream
 } from "@/lib/api";
-import { bi, statusText } from "@/lib/i18n";
+import { bi, statusText, useLanguage } from "@/lib/i18n";
 
 interface TaskDetailLiveProps {
   taskId: string;
@@ -168,6 +168,7 @@ function roleLabel(role: ConversationTurn["role"]): string {
 }
 
 export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
+  const [language] = useLanguage();
   const [task, setTask] = useState<Task | null>(null);
   const [events, setEvents] = useState<TaskEvent[]>([]);
   const [logPage, setLogPage] = useState(1);
@@ -371,7 +372,7 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
   }
 
   return (
-    <section className="panel animate-rise">
+    <section className="panel animate-rise" data-lang={language}>
       <Link href="/" className="button button-secondary back-dashboard-button">
         {bi("返回控制台", "Back to dashboard")}
       </Link>
