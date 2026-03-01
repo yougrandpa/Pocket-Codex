@@ -40,6 +40,10 @@ pip install -r requirements.txt
 # export APP_EXECUTION_BACKEND=redis
 # export REDIS_URL=redis://localhost:6379/0
 # export REDIS_QUEUE_PREFIX=pocket_codex:tasks
+# 可选：启用本地 Codex 执行器（真正调用 codex CLI，而非模拟器）
+# export APP_TASK_EXECUTOR=codex
+# export CODEX_CLI_PATH=codex
+# export CODEX_FULL_AUTO=true
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
@@ -191,3 +195,6 @@ A6: 运行 `./scripts/verify_local_env.sh`，会执行后端编译+API 烟测以
 
 Q7: 启动前端时报 `Cannot find module './xxx.js'`（来自 `.next/server/webpack-runtime.js`）怎么办？  
 A7: 这是 Next.js 本地缓存损坏或增量构建残留导致。执行 `cd frontend && npm run clean && npm run dev`（或直接 `npm run dev:reset`）即可。
+
+Q8: 我发送了追加消息，但任务没有执行新命令？  
+A8: 如果后端是 `APP_TASK_EXECUTOR=simulator`，任务只是模拟执行，不会真正调用 Codex。请切换为 `APP_TASK_EXECUTOR=codex` 并重启后端。当前版本在任务已结束后追加消息时，会自动触发一次重跑（`RETRYING -> QUEUED`）。

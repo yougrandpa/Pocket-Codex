@@ -4,6 +4,7 @@ import asyncio
 import copy
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Optional
 
 from ..config import settings
@@ -38,6 +39,7 @@ class TaskService:
         self._task_subscribers: dict[str, set[asyncio.Queue[dict[str, Any]]]] = {}
         self._execution_queue = create_execution_queue()
         self._worker_task: asyncio.Task[None] | None = None
+        self._active_processes: dict[str, asyncio.subprocess.Process] = {}
         self._load_persisted_tasks()
 
     def _load_persisted_tasks(self) -> None:
@@ -210,9 +212,17 @@ class TaskService:
                         message="task canceled by user",
                         events_out=queued_events,
                     )
+                    process = self._active_processes.get(task_id)
+                    if process is not None and process.returncode is None:
+                        process.terminate()
                     message = "task canceled"
             elif action == "retry":
-                if task.status not in {TaskStatus.FAILED, TaskStatus.CANCELED, TaskStatus.TIMEOUT}:
+                if task.status not in {
+                    TaskStatus.FAILED,
+                    TaskStatus.CANCELED,
+                    TaskStatus.TIMEOUT,
+                    TaskStatus.SUCCEEDED,
+                }:
                     raise ValueError(
                         f"Task {task_id} in state {task.status} cannot be retried."
                     )
@@ -258,6 +268,25 @@ class TaskService:
                 payload={"message_id": item.id, "message": item.message},
                 events_out=queued_events,
             )
+
+            if settings.auto_rerun_on_message and task.status in TERMINAL_STATUSES:
+                previous_prompt = task.prompt
+                task.prompt = message
+                self._schedule_retry_locked(
+                    task,
+                    reason="message_followup",
+                    events_out=queued_events,
+                )
+                self._append_event_locked(
+                    task=task,
+                    event_type="task.summary.updated",
+                    status=task.status,
+                    payload={
+                        "summary": f"Follow-up message accepted; rerun scheduled. previous_prompt={previous_prompt[:120]}"
+                    },
+                    events_out=queued_events,
+                )
+
             self._persist_task_locked(task)
             subscribers = self._collect_subscribers_locked(task.id)
             task_copy = copy.deepcopy(task)
@@ -271,6 +300,10 @@ class TaskService:
 
         for event in queued_events:
             await self._broadcast(event, subscribers)
+
+        if settings.auto_rerun_on_message and task_copy.status == TaskStatus.QUEUED:
+            retry_delay = settings.retry_backoff_base_seconds * max(1, task_copy.retry_count)
+            await self._schedule_execution(task_id, delay_seconds=retry_delay)
         return task_copy, item
 
     async def subscribe(self, task_id: Optional[str] = None) -> asyncio.Queue[dict[str, Any]]:
@@ -296,6 +329,10 @@ class TaskService:
                 self._global_subscribers.discard(queue)
 
     async def _simulate_run(self, task_id: str) -> None:
+        if settings.task_executor == "codex":
+            await self._run_codex_task(task_id)
+            return
+
         await asyncio.sleep(0.3)
         running_events: list[dict[str, Any]] = []
         subscribers: list[asyncio.Queue[dict[str, Any]]] = []
@@ -556,6 +593,231 @@ class TaskService:
             if task_id is None:
                 continue
             await self._simulate_run(task_id)
+
+    async def _run_codex_task(self, task_id: str) -> None:
+        running_events: list[dict[str, Any]] = []
+        async with self._lock:
+            task = self._repo.get(task_id)
+            if task is None or task.status != TaskStatus.QUEUED:
+                return
+            self._transition_locked(
+                task=task,
+                target_status=TaskStatus.RUNNING,
+                payload={"source": "codex"},
+                events_out=running_events,
+            )
+            self._append_log_event_locked(
+                task=task,
+                message="starting codex executor",
+                events_out=running_events,
+            )
+            self._persist_task_locked(task)
+            subscribers = self._collect_subscribers_locked(task.id)
+
+        for event in running_events:
+            await self._broadcast(event, subscribers)
+
+        workdir = task.workdir or str(Path.cwd())
+        prompt = self._build_codex_prompt(task)
+        cmd = [settings.codex_cli_path, "exec", "--skip-git-repo-check", "-C", workdir]
+        if settings.codex_full_auto:
+            cmd.append("--full-auto")
+        if settings.codex_model:
+            cmd.extend(["--model", settings.codex_model])
+        cmd.append(prompt)
+
+        try:
+            process = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+        except FileNotFoundError:
+            await self._mark_task_failed(
+                task_id=task_id,
+                reason=f"codex cli not found at '{settings.codex_cli_path}'",
+            )
+            return
+
+        self._active_processes[task_id] = process
+        output_lines: list[str] = []
+        reader_tasks = []
+        if process.stdout is not None:
+            reader_tasks.append(
+                asyncio.create_task(self._stream_process_output(task_id, process.stdout, "stdout", output_lines))
+            )
+        if process.stderr is not None:
+            reader_tasks.append(
+                asyncio.create_task(self._stream_process_output(task_id, process.stderr, "stderr", output_lines))
+            )
+
+        timed_out = False
+        return_code: int | None = None
+        try:
+            return_code = await asyncio.wait_for(process.wait(), timeout=task.timeout_seconds)
+        except asyncio.TimeoutError:
+            timed_out = True
+            process.kill()
+            await process.wait()
+        finally:
+            for read_task in reader_tasks:
+                read_task.cancel()
+                try:
+                    await read_task
+                except asyncio.CancelledError:
+                    pass
+            self._active_processes.pop(task_id, None)
+
+        if timed_out:
+            await self._mark_task_timeout(task_id=task_id, reason="codex execution timeout")
+            return
+
+        if return_code == 0:
+            summary = self._summarize_output(output_lines)
+            await self._mark_task_succeeded(task_id=task_id, summary=summary)
+        else:
+            reason = f"codex exited with code {return_code}"
+            await self._mark_task_failed(task_id=task_id, reason=reason, output_lines=output_lines)
+
+    async def _stream_process_output(
+        self,
+        task_id: str,
+        stream: asyncio.StreamReader,
+        stream_name: str,
+        output_lines: list[str],
+    ) -> None:
+        while True:
+            line = await stream.readline()
+            if not line:
+                break
+            text = line.decode(errors="replace").rstrip()
+            if not text:
+                continue
+            output_lines.append(text)
+            events_out: list[dict[str, Any]] = []
+            async with self._lock:
+                task = self._repo.get(task_id)
+                if task is None or task.status != TaskStatus.RUNNING:
+                    return
+                self._append_event_locked(
+                    task=task,
+                    event_type="task.log.appended",
+                    status=task.status,
+                    payload={"level": "info", "source": stream_name, "message": text},
+                    events_out=events_out,
+                )
+                self._persist_task_locked(task)
+                subscribers = self._collect_subscribers_locked(task.id)
+            for event in events_out:
+                await self._broadcast(event, subscribers)
+
+    async def _mark_task_succeeded(self, *, task_id: str, summary: str | None) -> None:
+        events_out: list[dict[str, Any]] = []
+        async with self._lock:
+            task = self._repo.get(task_id)
+            if task is None or task.status != TaskStatus.RUNNING:
+                return
+            task.summary = summary or "Task completed successfully (codex)."
+            self._append_event_locked(
+                task=task,
+                event_type="task.summary.updated",
+                status=task.status,
+                payload={"summary": task.summary},
+                events_out=events_out,
+            )
+            self._transition_locked(
+                task=task,
+                target_status=TaskStatus.SUCCEEDED,
+                payload={"source": "codex"},
+                events_out=events_out,
+            )
+            self._persist_task_locked(task)
+            subscribers = self._collect_subscribers_locked(task.id)
+        for event in events_out:
+            await self._broadcast(event, subscribers)
+
+    async def _mark_task_timeout(self, *, task_id: str, reason: str) -> None:
+        events_out: list[dict[str, Any]] = []
+        schedule_auto_retry = False
+        async with self._lock:
+            task = self._repo.get(task_id)
+            if task is None or task.status != TaskStatus.RUNNING:
+                return
+            self._transition_locked(
+                task=task,
+                target_status=TaskStatus.TIMEOUT,
+                payload={"source": "codex", "reason": "timeout"},
+                events_out=events_out,
+            )
+            self._append_log_event_locked(task=task, message=reason, events_out=events_out)
+            if task.retry_count < settings.max_auto_retries:
+                self._schedule_retry_locked(task, reason="auto_retry_timeout", events_out=events_out)
+                schedule_auto_retry = True
+            self._persist_task_locked(task)
+            subscribers = self._collect_subscribers_locked(task.id)
+            retry_count = task.retry_count
+        for event in events_out:
+            await self._broadcast(event, subscribers)
+        if schedule_auto_retry:
+            retry_delay = settings.retry_backoff_base_seconds * max(1, retry_count)
+            await self._schedule_execution(task_id, delay_seconds=retry_delay)
+
+    async def _mark_task_failed(
+        self,
+        *,
+        task_id: str,
+        reason: str,
+        output_lines: list[str] | None = None,
+    ) -> None:
+        events_out: list[dict[str, Any]] = []
+        async with self._lock:
+            task = self._repo.get(task_id)
+            if task is None or task.status not in {TaskStatus.RUNNING, TaskStatus.QUEUED}:
+                return
+            if task.status == TaskStatus.QUEUED:
+                self._transition_locked(
+                    task=task,
+                    target_status=TaskStatus.RUNNING,
+                    payload={"source": "codex", "reason": "bootstrap_failed"},
+                    events_out=events_out,
+                )
+            tail = self._summarize_output(output_lines or [])
+            task.summary = tail or reason
+            self._append_event_locked(
+                task=task,
+                event_type="task.summary.updated",
+                status=task.status,
+                payload={"summary": task.summary},
+                events_out=events_out,
+            )
+            self._transition_locked(
+                task=task,
+                target_status=TaskStatus.FAILED,
+                payload={"source": "codex", "reason": reason},
+                events_out=events_out,
+            )
+            self._append_log_event_locked(task=task, message=reason, events_out=events_out)
+            self._persist_task_locked(task)
+            subscribers = self._collect_subscribers_locked(task.id)
+        for event in events_out:
+            await self._broadcast(event, subscribers)
+
+    @staticmethod
+    def _summarize_output(lines: list[str], max_lines: int = 8, max_chars: int = 1200) -> str | None:
+        if not lines:
+            return None
+        picked = lines[-max_lines:]
+        text = "\n".join(picked).strip()
+        if len(text) > max_chars:
+            text = text[-max_chars:]
+        return text or None
+
+    @staticmethod
+    def _build_codex_prompt(task: Task) -> str:
+        if not task.messages:
+            return task.prompt
+        followups = "\n".join(f"- {item.message}" for item in task.messages[-5:])
+        return f"{task.prompt}\n\nFollow-up messages:\n{followups}"
 
     def _collect_subscribers_locked(self, task_id: str) -> list[asyncio.Queue[dict[str, Any]]]:
         combined = set(self._global_subscribers)

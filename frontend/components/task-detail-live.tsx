@@ -60,7 +60,7 @@ function controlActions(task: Task): TaskControlAction[] {
   if (task.status === "WAITING_INPUT") {
     return ["resume", "cancel"];
   }
-  if (["FAILED", "CANCELED", "TIMEOUT"].includes(task.status)) {
+  if (["FAILED", "CANCELED", "TIMEOUT", "SUCCEEDED"].includes(task.status)) {
     return ["retry"];
   }
   return [];

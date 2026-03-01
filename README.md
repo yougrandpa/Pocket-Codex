@@ -23,6 +23,7 @@ English version: `README.en.md`
 - 实时：SSE 推送状态与日志
 - 存储：SQLite（默认）/ PostgreSQL（可选）
 - 队列：`local` / `redis` 可插拔执行后端
+- 执行器：`simulator`（默认）/ `codex`（可切换到本地 Codex CLI）
 
 ## 快速开始
 

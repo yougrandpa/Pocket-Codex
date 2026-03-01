@@ -29,6 +29,10 @@ set -a && source .env && set +a
 # export APP_EXECUTION_BACKEND=redis
 # export REDIS_URL=redis://localhost:6379/0
 # export REDIS_QUEUE_PREFIX=pocket_codex:tasks
+# Optional: switch task executor from simulator to local codex CLI
+# export APP_TASK_EXECUTOR=codex
+# export CODEX_CLI_PATH=codex
+# export CODEX_FULL_AUTO=true
 uvicorn app.main:app --reload --port 8000
 ```
 
@@ -56,4 +60,5 @@ Then check:
 
 - Default persistence uses SQLite at `backend/pocket_codex.db` and survives process restarts.
 - Default queue backend is in-process (`APP_EXECUTION_BACKEND=local`); set it to `redis` for shared queue consumption.
+- Default task executor is `simulator`; set `APP_TASK_EXECUTOR=codex` to run real local Codex commands.
 - Default credentials are `admin / admin123` and should be overridden with env vars for non-local environments.

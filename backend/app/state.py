@@ -29,7 +29,7 @@ ALLOWED_TRANSITIONS: dict[TaskStatus, set[TaskStatus]] = {
         TaskStatus.CANCELED,
         TaskStatus.TIMEOUT,
     },
-    TaskStatus.SUCCEEDED: set(),
+    TaskStatus.SUCCEEDED: {TaskStatus.RETRYING},
     TaskStatus.FAILED: {TaskStatus.RETRYING},
     TaskStatus.CANCELED: {TaskStatus.RETRYING},
     TaskStatus.TIMEOUT: {TaskStatus.RETRYING},

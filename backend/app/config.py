@@ -16,6 +16,17 @@ def _as_int(value: str, fallback: int) -> int:
         return fallback
 
 
+def _as_bool(value: str, fallback: bool) -> bool:
+    if value is None:
+        return fallback
+    normalized = value.strip().lower()
+    if normalized in {"1", "true", "yes", "on"}:
+        return True
+    if normalized in {"0", "false", "no", "off"}:
+        return False
+    return fallback
+
+
 def _normalize_database_url(value: str) -> str:
     if not value.startswith("sqlite:///"):
         return value
@@ -50,6 +61,11 @@ class Settings:
     execution_backend: str
     redis_url: str
     redis_queue_prefix: str
+    task_executor: str
+    codex_cli_path: str
+    codex_model: str | None
+    codex_full_auto: bool
+    auto_rerun_on_message: bool
 
 
 def load_settings() -> Settings:
@@ -84,6 +100,11 @@ def load_settings() -> Settings:
         execution_backend=os.getenv("APP_EXECUTION_BACKEND", "local").strip().lower() or "local",
         redis_url=os.getenv("REDIS_URL", "redis://localhost:6379/0"),
         redis_queue_prefix=os.getenv("REDIS_QUEUE_PREFIX", "pocket_codex:tasks"),
+        task_executor=os.getenv("APP_TASK_EXECUTOR", "simulator").strip().lower() or "simulator",
+        codex_cli_path=os.getenv("CODEX_CLI_PATH", "codex"),
+        codex_model=os.getenv("CODEX_MODEL", "").strip() or None,
+        codex_full_auto=_as_bool(os.getenv("CODEX_FULL_AUTO", "true"), True),
+        auto_rerun_on_message=_as_bool(os.getenv("APP_AUTO_RERUN_ON_MESSAGE", "true"), True),
     )
 
 
