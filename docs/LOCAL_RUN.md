@@ -44,6 +44,8 @@ pip install -r requirements.txt
 # export REDIS_QUEUE_PREFIX=pocket_codex:tasks
 # 可选：限制允许执行的工作目录（逗号分隔，推荐仅仓库根目录）
 # export APP_WORKDIR_WHITELIST=/Users/slg/workspace/Pocket-Codex
+# 可选：允许私网来源跨域（手机热点/局域网访问时建议开启，默认已开启）
+# export APP_CORS_ALLOW_PRIVATE_NETWORK=true
 # 可选：SSE 断线重放上限
 # export APP_SSE_REPLAY_LIMIT=500
 # 可选：启用本地 Codex 执行器（真正调用 codex CLI，而非模拟器）

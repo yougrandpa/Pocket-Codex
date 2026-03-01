@@ -152,6 +152,7 @@ class Settings:
     workdir_whitelist: list[str]
     require_loopback_direct_login: bool
     mobile_login_request_ttl_seconds: int
+    cors_allow_private_network: bool
 
 
 def load_settings() -> Settings:
@@ -226,6 +227,10 @@ def load_settings() -> Settings:
             True,
         ),
         mobile_login_request_ttl_seconds=mobile_login_request_ttl_seconds,
+        cors_allow_private_network=_as_bool(
+            os.getenv("APP_CORS_ALLOW_PRIVATE_NETWORK", "true"),
+            True,
+        ),
     )
 
 

@@ -37,6 +37,8 @@ set -a && source .env && set +a
 # Optional: security policy for mobile login approval flow
 # export APP_REQUIRE_LOOPBACK_DIRECT_LOGIN=true
 # export APP_MOBILE_LOGIN_REQUEST_TTL_SECONDS=180
+# Optional: allow private-network origins (172/192.168/10.x and *.local) for phone access
+# export APP_CORS_ALLOW_PRIVATE_NETWORK=true
 # Optional: SSE replay limit on reconnect
 # export APP_SSE_REPLAY_LIMIT=500
 # Optional: switch executor queue backend to Redis
@@ -79,5 +81,6 @@ Then check:
 - SSE supports reconnect replay via `Last-Event-ID` / `last_event_id`.
 - By default, direct login (`/auth/login`) is localhost-only (`APP_REQUIRE_LOOPBACK_DIRECT_LOGIN=true`).
 - Mobile login requires desktop approval via `/auth/mobile/*` endpoints.
+- Private-network CORS origins are allowed by default (`APP_CORS_ALLOW_PRIVATE_NETWORK=true`) for phone hotspot/LAN usage.
 - Default task executor is `simulator`; set `APP_TASK_EXECUTOR=codex` to run real local Codex commands.
 - Default credentials are `admin / admin123` and should be overridden with env vars for non-local environments.

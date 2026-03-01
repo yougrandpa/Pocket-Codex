@@ -24,7 +24,7 @@ import time
 from fastapi.testclient import TestClient
 from app.main import app
 
-with TestClient(app) as client:
+with TestClient(app, base_url="http://127.0.0.1:8000", client=("127.0.0.1", 54000)) as client:
     login = client.post("/api/v1/auth/login", json={"username": "admin", "password": "admin123"})
     assert login.status_code == 200, login.text
     token = login.json()["access_token"]
@@ -52,6 +52,13 @@ with TestClient(app) as client:
     assert status in {"SUCCEEDED", "FAILED", "TIMEOUT", "CANCELED"}, status
     print(f"backend smoke ok: task={task_id} status={status}")
 PY
+
+echo "[verify] mobile auth regression"
+(
+  cd "$ROOT_DIR"
+  source "$BACKEND_DIR/.venv/bin/activate"
+  PYTHONPATH="$BACKEND_DIR" python3 scripts/test_mobile_auth_flow.py
+)
 
 echo "[verify] frontend build"
 cd "$FRONTEND_DIR"

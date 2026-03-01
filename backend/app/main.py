@@ -13,6 +13,17 @@ from .errors import register_error_handlers
 from .models import utc_now_iso
 from .services.task_service import task_service
 
+CORS_PRIVATE_ORIGIN_REGEX = (
+    r"^https?://("
+    r"localhost"
+    r"|127\.0\.0\.1"
+    r"|10(?:\.\d{1,3}){3}"
+    r"|172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2}"
+    r"|192\.168(?:\.\d{1,3}){2}"
+    r"|[a-zA-Z0-9.-]+\.local"
+    r")(?::\d+)?$"
+)
+
 
 app = FastAPI(
     title="Pocket Codex Backend",
@@ -23,6 +34,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
+    allow_origin_regex=CORS_PRIVATE_ORIGIN_REGEX if settings.cors_allow_private_network else None,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -61,4 +73,5 @@ async def healthz() -> dict[str, str | bool | int | list[str]]:
         "codex_cli_exists": Path(settings.codex_cli_path).exists(),
         "require_loopback_direct_login": settings.require_loopback_direct_login,
         "mobile_login_request_ttl_seconds": settings.mobile_login_request_ttl_seconds,
+        "cors_allow_private_network": settings.cors_allow_private_network,
     }
