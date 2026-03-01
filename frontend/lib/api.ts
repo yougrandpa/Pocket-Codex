@@ -1,3 +1,5 @@
+import { bi } from "@/lib/i18n";
+
 export type TaskStatus =
   | "QUEUED"
   | "RUNNING"
@@ -221,7 +223,7 @@ async function authorizedFetchJson<T>(
 ): Promise<T> {
   const session = readSession();
   if (!session?.accessToken) {
-    throw new Error("Please sign in first.");
+    throw new Error(bi("请先登录。", "Please sign in first."));
   }
 
   const headers = new Headers(init.headers || {});
@@ -238,7 +240,7 @@ async function authorizedFetchJson<T>(
       return await authorizedFetchJson<T>(path, init, true);
     } catch {
       clearSession();
-      throw new Error("Session expired. Please sign in again.");
+      throw new Error(bi("会话已过期，请重新登录。", "Session expired. Please sign in again."));
     }
   }
 
@@ -361,7 +363,7 @@ export async function getAuditLogs(limit = 20): Promise<AuditLog[]> {
 export function openEventStream(taskId?: string): EventSource {
   const session = readSession();
   if (!session?.accessToken) {
-    throw new Error("Please sign in first.");
+    throw new Error(bi("请先登录。", "Please sign in first."));
   }
   const params = new URLSearchParams();
   params.set("access_token", session.accessToken);

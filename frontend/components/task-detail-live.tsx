@@ -11,6 +11,7 @@ import {
   getTask,
   openEventStream
 } from "@/lib/api";
+import { bi, statusText } from "@/lib/i18n";
 
 interface TaskDetailLiveProps {
   taskId: string;
@@ -65,6 +66,16 @@ function controlActions(task: Task): TaskControlAction[] {
   return [];
 }
 
+function actionLabel(action: TaskControlAction): string {
+  const map: Record<TaskControlAction, string> = {
+    pause: bi("暂停", "pause"),
+    resume: bi("继续", "resume"),
+    cancel: bi("取消", "cancel"),
+    retry: bi("重试", "retry")
+  };
+  return map[action];
+}
+
 export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
   const [task, setTask] = useState<Task | null>(null);
   const [events, setEvents] = useState<TaskEvent[]>([]);
@@ -86,7 +97,11 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
       })
       .catch((requestError) => {
         if (!cancelled) {
-          setError(requestError instanceof Error ? requestError.message : "Failed to load task.");
+          setError(
+            requestError instanceof Error
+              ? requestError.message
+              : bi("任务加载失败。", "Failed to load task.")
+          );
         }
       });
     return () => {
@@ -113,10 +128,14 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
       source.addEventListener("task.message.appended", consume as EventListener);
       source.addEventListener("task.summary.updated", consume as EventListener);
       source.onerror = () => {
-        setError("Realtime stream disconnected. Retrying automatically...");
+        setError(bi("实时流已断开，正在自动重连...", "Realtime stream disconnected. Retrying automatically..."));
       };
     } catch (streamError) {
-      setError(streamError instanceof Error ? streamError.message : "Unable to open stream.");
+      setError(
+        streamError instanceof Error
+          ? streamError.message
+          : bi("实时流连接失败。", "Unable to open stream.")
+      );
     }
     return () => {
       source?.close();
@@ -142,7 +161,11 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
       );
       setNote(result.message);
     } catch (controlError) {
-      setError(controlError instanceof Error ? controlError.message : "Control action failed.");
+      setError(
+        controlError instanceof Error
+          ? controlError.message
+          : bi("控制动作执行失败。", "Control action failed.")
+      );
     } finally {
       setWorkingAction(null);
     }
@@ -159,9 +182,13 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
     try {
       await appendTaskMessage(taskId, message.trim());
       setMessage("");
-      setNote("Message sent.");
+      setNote(bi("消息已发送。", "Message sent."));
     } catch (appendError) {
-      setError(appendError instanceof Error ? appendError.message : "Failed to append message.");
+      setError(
+        appendError instanceof Error
+          ? appendError.message
+          : bi("追加消息失败。", "Failed to append message.")
+      );
     } finally {
       setBusyMessage(false);
     }
@@ -170,10 +197,10 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
   if (!task) {
     return (
       <section className="panel animate-rise">
-        <h2 className="panel-title">Task not available</h2>
-        <p className="error">{error || "Task was not found."}</p>
+        <h2 className="panel-title">{bi("任务不可用", "Task not available")}</h2>
+        <p className="error">{error || bi("任务不存在。", "Task was not found.")}</p>
         <Link href="/" className="link">
-          Back to dashboard
+          {bi("返回控制台", "Back to dashboard")}
         </Link>
       </section>
     );
@@ -182,8 +209,8 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
   return (
     <section className="panel animate-rise">
       <div className="panel-title-row">
-        <h2 className="panel-title">Task Detail</h2>
-        <span className={`status status-${task.status.toLowerCase()}`}>{task.status}</span>
+        <h2 className="panel-title">{bi("任务详情", "Task Detail")}</h2>
+        <span className={`status status-${task.status.toLowerCase()}`}>{statusText(task.status)}</span>
       </div>
 
       {error ? <p className="error">{error}</p> : null}
@@ -191,18 +218,20 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
 
       <div className="detail-grid">
         <div className="detail-block">
-          <h3>Prompt</h3>
+          <h3>{bi("任务指令", "Prompt")}</h3>
           <p>{task.prompt}</p>
         </div>
         <div className="detail-block">
-          <h3>Summary</h3>
-          <p>{task.summary || "No summary yet."}</p>
+          <h3>{bi("任务摘要", "Summary")}</h3>
+          <p>{task.summary || bi("暂无摘要。", "No summary yet.")}</p>
         </div>
       </div>
 
       <div className="control-row">
         {availableActions.length === 0 ? (
-          <p className="muted">No control action available for current state.</p>
+          <p className="muted">
+            {bi("当前状态没有可用控制动作。", "No control action available for current state.")}
+          </p>
         ) : (
           availableActions.map((action) => (
             <button
@@ -212,7 +241,7 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
               disabled={workingAction !== null}
               onClick={() => handleControl(action)}
             >
-              {workingAction === action ? "Working..." : action}
+              {workingAction === action ? bi("执行中...", "Working...") : actionLabel(action)}
             </button>
           ))
         )}
@@ -220,7 +249,7 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
 
       <form className="stack" onSubmit={handleAppendMessage}>
         <label className="field">
-          <span>Append instruction</span>
+          <span>{bi("追加指令", "Append instruction")}</span>
           <textarea
             value={message}
             onChange={(event) => setMessage(event.target.value)}
@@ -229,53 +258,53 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
           />
         </label>
         <button className="button" type="submit" disabled={busyMessage || !message.trim()}>
-          {busyMessage ? "Sending..." : "Send Message"}
+          {busyMessage ? bi("发送中...", "Sending...") : bi("发送消息", "Send Message")}
         </button>
       </form>
 
       <dl className="meta-list">
         <div>
-          <dt>Task ID</dt>
+          <dt>{bi("任务 ID", "Task ID")}</dt>
           <dd>{task.id}</dd>
         </div>
         <div>
-          <dt>Priority</dt>
+          <dt>{bi("优先级", "Priority")}</dt>
           <dd>{task.priority ?? "-"}</dd>
         </div>
         <div>
-          <dt>Timeout</dt>
+          <dt>{bi("超时", "Timeout")}</dt>
           <dd>{task.timeout_seconds ? `${task.timeout_seconds}s` : "-"}</dd>
         </div>
         <div>
-          <dt>Workdir</dt>
+          <dt>{bi("工作目录", "Workdir")}</dt>
           <dd>{task.workdir || "-"}</dd>
         </div>
         <div>
-          <dt>Created At</dt>
+          <dt>{bi("创建时间", "Created At")}</dt>
           <dd>{formatValue(task.created_at)}</dd>
         </div>
         <div>
-          <dt>Updated At</dt>
+          <dt>{bi("更新时间", "Updated At")}</dt>
           <dd>{formatValue(task.updated_at)}</dd>
         </div>
         <div>
-          <dt>Started At</dt>
+          <dt>{bi("开始时间", "Started At")}</dt>
           <dd>{formatValue(task.started_at)}</dd>
         </div>
         <div>
-          <dt>Finished At</dt>
+          <dt>{bi("完成时间", "Finished At")}</dt>
           <dd>{formatValue(task.finished_at)}</dd>
         </div>
         <div>
-          <dt>Last Heartbeat</dt>
+          <dt>{bi("最后心跳", "Last Heartbeat")}</dt>
           <dd>{formatValue(task.last_heartbeat_at)}</dd>
         </div>
       </dl>
 
       <section className="event-panel">
-        <h3>Recent Events</h3>
+        <h3>{bi("最近事件", "Recent Events")}</h3>
         {events.length === 0 ? (
-          <p className="muted">No events yet.</p>
+          <p className="muted">{bi("暂无事件。", "No events yet.")}</p>
         ) : (
           <ul className="notification-list">
             {events.map((event) => (
@@ -294,7 +323,7 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
       </section>
 
       <Link href="/" className="link">
-        Back to dashboard
+        {bi("返回控制台", "Back to dashboard")}
       </Link>
     </section>
   );

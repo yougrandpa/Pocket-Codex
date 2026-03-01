@@ -6,6 +6,7 @@ import { LoginPanel } from "@/components/login-panel";
 import { NotificationCenter } from "@/components/notification-center";
 import { TaskCreator } from "@/components/task-creator";
 import { TaskList } from "@/components/task-list";
+import { bi } from "@/lib/i18n";
 import {
   Task,
   AuditLog,
@@ -86,7 +87,11 @@ export function TaskDashboard() {
         if (cancelled) {
           return;
         }
-        setError(requestError instanceof Error ? requestError.message : "Failed to load tasks.");
+        setError(
+          requestError instanceof Error
+            ? requestError.message
+            : bi("任务加载失败。", "Failed to load tasks.")
+        );
       })
       .finally(() => {
         if (!cancelled) {
@@ -120,10 +125,14 @@ export function TaskDashboard() {
       source.addEventListener("task.message.appended", consume as EventListener);
       source.addEventListener("task.summary.updated", consume as EventListener);
       source.onerror = () => {
-        setError("Realtime stream disconnected. Retrying automatically...");
+        setError(bi("实时流已断开，正在自动重连...", "Realtime stream disconnected. Retrying automatically..."));
       };
     } catch (streamError) {
-      setError(streamError instanceof Error ? streamError.message : "Failed to open realtime stream.");
+      setError(
+        streamError instanceof Error
+          ? streamError.message
+          : bi("实时流连接失败。", "Failed to open realtime stream.")
+      );
     }
     return () => {
       source?.close();
@@ -151,10 +160,12 @@ export function TaskDashboard() {
       <AuditPanel logs={auditLogs} />
       <section className="panel animate-rise delay-2">
         <div className="panel-title-row">
-          <h2 className="panel-title">Session</h2>
-          <span className="chip">Active</span>
+          <h2 className="panel-title">{bi("会话", "Session")}</h2>
+          <span className="chip">{bi("已激活", "Active")}</span>
         </div>
-        <p className="muted">You are signed in with single-user JWT auth.</p>
+        <p className="muted">
+          {bi("当前使用单用户 JWT 鉴权登录。", "You are signed in with single-user JWT auth.")}
+        </p>
         <button
           className="button button-secondary"
           type="button"
@@ -165,7 +176,7 @@ export function TaskDashboard() {
             setEvents([]);
           }}
         >
-          Sign Out
+          {bi("退出登录", "Sign Out")}
         </button>
       </section>
     </div>

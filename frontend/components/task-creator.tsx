@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { FormEvent, useMemo, useState } from "react";
 import { createTask, Task } from "@/lib/api";
+import { bi } from "@/lib/i18n";
 
 const DEFAULT_PRIORITY = 5;
 
@@ -46,7 +47,9 @@ export function TaskCreator({ onCreated }: TaskCreatorProps) {
       router.push(`/tasks/${created.id}`);
     } catch (submitError) {
       setError(
-        submitError instanceof Error ? submitError.message : "Failed to create task."
+        submitError instanceof Error
+          ? submitError.message
+          : bi("创建任务失败。", "Failed to create task.")
       );
     } finally {
       setSubmitting(false);
@@ -56,24 +59,24 @@ export function TaskCreator({ onCreated }: TaskCreatorProps) {
   return (
     <section className="panel animate-rise">
       <div className="panel-title-row">
-        <h2 className="panel-title">Create Task</h2>
-        <span className="chip">Mobile First</span>
+        <h2 className="panel-title">{bi("创建任务", "Create Task")}</h2>
+        <span className="chip">{bi("移动优先", "Mobile First")}</span>
       </div>
       <form className="stack" onSubmit={handleSubmit}>
         <label className="field">
-          <span>Prompt</span>
+          <span>{bi("任务指令", "Prompt")}</span>
           <textarea
             value={prompt}
             onChange={(event) => setPrompt(event.target.value)}
             rows={4}
-            placeholder="Ask Codex to do something actionable..."
+            placeholder={bi("请输入可执行的任务指令...", "Ask Codex to do something actionable...")}
             required
           />
         </label>
 
         <div className="row">
           <label className="field">
-            <span>Priority</span>
+            <span>{bi("优先级", "Priority")}</span>
             <input
               type="number"
               min={1}
@@ -83,7 +86,7 @@ export function TaskCreator({ onCreated }: TaskCreatorProps) {
             />
           </label>
           <label className="field">
-            <span>Timeout (sec)</span>
+            <span>{bi("超时(秒)", "Timeout (sec)")}</span>
             <input
               type="number"
               min={5}
@@ -96,7 +99,7 @@ export function TaskCreator({ onCreated }: TaskCreatorProps) {
 
         <div className="row">
           <label className="field">
-            <span>Workdir (optional)</span>
+            <span>{bi("工作目录(可选)", "Workdir (optional)")}</span>
             <input
               type="text"
               value={workdir}
@@ -109,7 +112,7 @@ export function TaskCreator({ onCreated }: TaskCreatorProps) {
         {error ? <p className="error">{error}</p> : null}
 
         <button className="button" type="submit" disabled={disabled}>
-          {submitting ? "Creating..." : "Create Task"}
+          {submitting ? bi("创建中...", "Creating...") : bi("创建任务", "Create Task")}
         </button>
       </form>
     </section>

@@ -1,64 +1,46 @@
-# Pocket Codex
+# Pocket Codex（中文优先）
 
-Chinese version: `README.zh-CN.md`
+Pocket Codex 是一个移动端优先的 Codex 远程控制台，用于在手机上监控、控制和追踪任务执行。
 
-Pocket Codex is a mobile-first control panel for monitoring and operating Codex tasks remotely.
+English version: `README.en.md`
 
-## Vision
+## 语言策略
 
-Use your phone to:
+- 主语言：中文
+- 次语言：英文（文档与界面关键文案均保留英文对照）
 
-- See what Codex is currently doing in real time.
-- Check whether a task is queued, running, completed, or failed.
-- Send new commands and control existing tasks (pause, resume, cancel, retry).
-- Receive completion and failure notifications.
+## 项目目标
 
-## MVP Scope
+- 实时查看 Codex 当前执行状态
+- 判断任务是否成功/失败/超时/等待输入
+- 从手机端下达任务与控制动作（暂停、继续、取消、重试）
+- 查看事件流、日志增量与审计记录
 
-- Task list and task detail views.
-- Realtime status and log streaming.
-- Command submission from mobile web.
-- Task control actions.
-- Basic auth for single-user operation.
+## 当前 MVP 能力
 
-## Suggested Stack
+- 前端：Next.js 移动优先控制台
+- 后端：FastAPI + JWT 鉴权
+- 实时：SSE 推送状态与日志
+- 存储：SQLite（默认）/ PostgreSQL（可选）
+- 队列：`local` / `redis` 可插拔执行后端
 
-- Frontend: Next.js (responsive web for iOS Safari first).
-- Backend: FastAPI or NestJS.
-- Queue: Redis + Celery/BullMQ.
-- Realtime: WebSocket/SSE.
-- Database: PostgreSQL.
+## 快速开始
 
-## Next Steps
+1. 一键初始化：`./scripts/setup_local_env.sh`
+2. 环境验收：`./scripts/verify_local_env.sh`
+3. 阅读本地联调文档：`docs/LOCAL_RUN.md`
 
-1. Create product requirements (`docs/PRD.md`).
-2. Define API contract (`docs/API_CONTRACT.md`).
-3. Implement backend task state machine.
-4. Build mobile web dashboard UI.
+推荐启动顺序：
 
-## Project Plan
+1. 启动后端（`backend/`，端口 `8000`）
+2. 启动前端（`frontend/`，端口 `3000`）
+3. 使用默认账号登录（`admin` / `admin123`）
 
-- Full project plan (Chinese): `docs/PROJECT_PLAN.md`
+## 文档索引
 
-## Quick Start
-
-0. One-command local setup: `./scripts/setup_local_env.sh`
-1. Read implementation details: `docs/IMPLEMENTATION_PLAN.md`
-2. Read API contract: `docs/API_CONTRACT.md`
-3. Follow local setup and integration steps: `docs/LOCAL_RUN.md`
-4. Optional infra bootstrap: `docker compose up -d postgres redis`
-
-Recommended startup order:
-
-1. Start backend (`backend/`, FastAPI on `:8000`)
-2. Start frontend (`frontend/`, Next.js on `:3000`)
-3. Sign in with default local credentials (`admin` / `admin123`)
-4. Create a task and verify realtime events with `/api/v1/stream`
-
-## Documentation Index
-
-- Project plan: `docs/PROJECT_PLAN.md`
-- Implementation plan: `docs/IMPLEMENTATION_PLAN.md`
-- API contract: `docs/API_CONTRACT.md`
-- Local runbook: `docs/LOCAL_RUN.md`
-- Usage guide (Chinese): `docs/USAGE.zh-CN.md`
+- 项目计划：`docs/PROJECT_PLAN.md`
+- 实现方案：`docs/IMPLEMENTATION_PLAN.md`
+- API 契约：`docs/API_CONTRACT.md`
+- 本地联调：`docs/LOCAL_RUN.md`
+- 使用说明（中文）：`docs/USAGE.zh-CN.md`
+- 英文总览：`README.en.md`

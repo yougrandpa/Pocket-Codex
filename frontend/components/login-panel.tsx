@@ -2,6 +2,7 @@
 
 import { FormEvent, useMemo, useState } from "react";
 import { login } from "@/lib/api";
+import { bi } from "@/lib/i18n";
 
 interface LoginPanelProps {
   onLoggedIn: () => void;
@@ -29,7 +30,9 @@ export function LoginPanel({ onLoggedIn }: LoginPanelProps) {
       await login(username.trim(), password);
       onLoggedIn();
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "Sign in failed.");
+      setError(
+        submitError instanceof Error ? submitError.message : bi("登录失败。", "Sign in failed.")
+      );
     } finally {
       setSubmitting(false);
     }
@@ -38,12 +41,12 @@ export function LoginPanel({ onLoggedIn }: LoginPanelProps) {
   return (
     <section className="panel animate-rise">
       <div className="panel-title-row">
-        <h2 className="panel-title">Sign In</h2>
-        <span className="chip">Single User</span>
+        <h2 className="panel-title">{bi("登录", "Sign In")}</h2>
+        <span className="chip">{bi("单用户", "Single User")}</span>
       </div>
       <form className="stack" onSubmit={handleSubmit}>
         <label className="field">
-          <span>Username</span>
+          <span>{bi("用户名", "Username")}</span>
           <input
             type="text"
             value={username}
@@ -52,7 +55,7 @@ export function LoginPanel({ onLoggedIn }: LoginPanelProps) {
           />
         </label>
         <label className="field">
-          <span>Password</span>
+          <span>{bi("密码", "Password")}</span>
           <input
             type="password"
             value={password}
@@ -62,7 +65,7 @@ export function LoginPanel({ onLoggedIn }: LoginPanelProps) {
         </label>
         {error ? <p className="error">{error}</p> : null}
         <button className="button" type="submit" disabled={disabled}>
-          {submitting ? "Signing in..." : "Sign In"}
+          {submitting ? bi("登录中...", "Signing in...") : bi("登录", "Sign In")}
         </button>
       </form>
     </section>
