@@ -11,7 +11,7 @@ interface LoginPanelProps {
 
 function defaultDeviceName(): string {
   if (typeof window === "undefined") {
-    return "mobile-browser";
+    return "";
   }
   const value = window.navigator.userAgent || "mobile-browser";
   return value.slice(0, 120);
@@ -20,7 +20,7 @@ function defaultDeviceName(): string {
 export function LoginPanel({ onLoggedIn }: LoginPanelProps) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [deviceName, setDeviceName] = useState(defaultDeviceName);
+  const [deviceName, setDeviceName] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [pendingRequestId, setPendingRequestId] = useState<string | null>(null);
   const [pendingExpiresAt, setPendingExpiresAt] = useState<string | null>(null);
@@ -32,6 +32,10 @@ export function LoginPanel({ onLoggedIn }: LoginPanelProps) {
     () => username.trim().length === 0 || password.trim().length === 0,
     [password, username]
   );
+
+  useEffect(() => {
+    setDeviceName(defaultDeviceName());
+  }, []);
 
   useEffect(() => {
     if (!pendingRequestId) {
