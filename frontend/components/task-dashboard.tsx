@@ -176,9 +176,11 @@ export function TaskDashboard() {
           </section>
         </div>
 
-        <div className="dashboard-column">
-          <TaskList tasks={sortedTasks} error={error} loading={loading} />
-          <AuditPanel logs={auditLogs} />
+        <div className="dashboard-column dashboard-column-right">
+          <div className="task-audit-columns">
+            <TaskList tasks={sortedTasks} error={error} loading={loading} />
+            <AuditPanel logs={auditLogs} />
+          </div>
         </div>
       </div>
     </div>

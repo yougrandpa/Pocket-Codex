@@ -88,6 +88,15 @@ a {
   align-content: start;
 }
 
+.dashboard-column-right {
+  align-content: stretch;
+}
+
+.task-audit-columns {
+  display: grid;
+  gap: 14px;
+}
+
 .full-span {
   grid-column: 1 / -1;
 }
@@ -596,6 +605,11 @@ textarea {
   .dashboard-columns {
     align-items: start;
     grid-template-columns: minmax(280px, 360px) 1fr;
+  }
+
+  .task-audit-columns {
+    align-items: start;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
 
   .row {
