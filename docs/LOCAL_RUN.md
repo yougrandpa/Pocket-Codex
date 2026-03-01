@@ -175,6 +175,46 @@ curl "http://localhost:8000/api/v1/tasks/audit/logs?limit=20&offset=0" \
   -H "Authorization: Bearer $TOKEN"
 ```
 
+## 4.9 手机登录授权流（API 手工联调）
+
+说明：默认开启 `APP_REQUIRE_LOOPBACK_DIRECT_LOGIN=true`，非 localhost 直接登录会返回 `403`。
+
+### 4.9.1 手机端发起登录请求（模拟）
+
+```bash
+REQ=$(curl -s -X POST http://localhost:8000/api/v1/auth/mobile/request \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"admin123","device_name":"iphone-15-pro"}')
+echo "$REQ"
+REQ_ID=$(echo "$REQ" | python3 -c 'import json,sys; print(json.load(sys.stdin)["request_id"])')
+```
+
+### 4.9.2 电脑端查看待审批请求（需要已登录 token）
+
+```bash
+curl "http://localhost:8000/api/v1/auth/mobile/pending" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+### 4.9.3 电脑端批准请求
+
+```bash
+curl -X POST "http://localhost:8000/api/v1/auth/mobile/requests/$REQ_ID/approve" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+### 4.9.4 手机端轮询状态并获取 token
+
+```bash
+curl "http://localhost:8000/api/v1/auth/mobile/requests/$REQ_ID"
+```
+
+如果已批准，响应里会包含：
+
+- `access_token`
+- `refresh_token`
+- `status=COMPLETED`
+
 ## 5. 前后端对齐检查单
 
 - 状态字段是否仅使用 `TaskStatus` 枚举。
@@ -187,6 +227,9 @@ curl "http://localhost:8000/api/v1/tasks/audit/logs?limit=20&offset=0" \
 
 Q1: 前端报跨域错误（CORS）怎么办？  
 A1: 在后端 FastAPI 配置中开启本地来源（至少包含 `http://localhost:3000`）。
+
+Q1-1: 手机端登录报 `403 Direct login is only allowed from localhost`？  
+A1-1: 这是默认安全策略，手机端应走 `/api/v1/auth/mobile/request` + 电脑批准流程；或临时将 `APP_REQUIRE_LOOPBACK_DIRECT_LOGIN=false`（不推荐）。
 
 Q2: `curl -N` 看不到 SSE 输出？  
 A2: 确认后端返回 `text/event-stream`，并且创建任务后确实产生了事件；必要时先不加 `task_id` 订阅全量流。

@@ -29,18 +29,70 @@ npm run dev
 
 访问：`http://localhost:3000`
 
-## 2. 登录
+## 2. 登录（重点：手机端需要电脑授权）
 
-首页会先显示登录卡片，输入账号后进入控制台。
+当前默认安全策略是：
 
-- 默认账号：`admin`
-- 默认密码：`admin123`
+- **电脑本机（localhost）**可以直接登录。
+- **手机端**不能直接拿账号密码进系统，必须走“请求 -> 电脑批准 -> 手机登录成功”流程。
+
+默认账号：
+
+- 用户名：`admin`
+- 密码：`admin123`
 
 建议在 `backend/.env` 中修改：
 
 - `APP_USERNAME`
 - `APP_PASSWORD`
 - `APP_JWT_SECRET`（至少 32 字符）
+
+关键安全配置（`backend/.env`）：
+
+- `APP_REQUIRE_LOOPBACK_DIRECT_LOGIN=true`（默认开启，禁止非 localhost 直接登录）
+- `APP_MOBILE_LOGIN_REQUEST_TTL_SECONDS=180`（手机授权请求有效期，单位秒）
+
+### 2.1 手机端登录步骤（你需要按这个顺序操作）
+
+1. **先在电脑端打开控制台并登录**
+   - 地址：`http://localhost:3000`
+   - 使用账号密码点击“电脑端直接登录”
+2. **保持电脑端页面不关闭**
+   - 左侧会看到“手机登录授权 / Mobile Login Approvals”面板
+3. **手机访问前端地址**
+   - 不能用 `localhost`，要用你电脑局域网 IP，例如：`http://192.168.1.10:3000`
+4. **手机端输入同一套账号密码**
+   - 点击“手机登录（需电脑授权）”
+5. **回到电脑端批准请求**
+   - 在“手机登录授权”里找到对应设备名/IP，点击“允许登录”
+6. **手机端自动完成登录**
+   - 手机会轮询授权状态，批准后会自动进入控制台
+
+### 2.2 手机访问地址怎么配
+
+如果手机打不开前端，优先检查：
+
+- 前端是否以可被局域网访问的方式启动（通常默认可用）
+- 手机和电脑是否在同一 Wi-Fi
+- `NEXT_PUBLIC_API_BASE_URL` 是否指向手机可访问的后端地址（不是 `localhost`）
+
+推荐启动方式示例：
+
+```bash
+# 终端 1：后端（监听所有网卡）
+cd backend
+source .venv/bin/activate
+set -a && source .env && set +a
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+```bash
+# 终端 2：前端（把 API 指向电脑局域网 IP）
+cd frontend
+NEXT_PUBLIC_API_BASE_URL=http://192.168.1.10:8000 npm run dev
+```
+
+然后手机打开：`http://192.168.1.10:3000`
 
 ## 3. 创建任务
 
@@ -136,6 +188,22 @@ npm run dev
 ### Q1: 登录报 401
 
 检查 `backend/.env` 的 `APP_USERNAME/APP_PASSWORD` 是否与前端输入一致。
+
+### Q1-1: 手机端点“电脑端直接登录”报 403
+
+这是预期行为。默认开启了 `APP_REQUIRE_LOOPBACK_DIRECT_LOGIN=true`，手机不允许直接登录。
+请使用“手机登录（需电脑授权）”按钮，并在电脑端批准。
+
+### Q1-2: 手机端显示“等待电脑端授权”但一直不成功
+
+排查顺序：
+
+1. 电脑端是否已经登录同一服务。
+2. 电脑端“手机登录授权”面板是否出现该请求（设备名/IP）。
+3. 请求是否超时（默认 180 秒）。
+4. 手机和电脑是否在同一网络，前端/API 地址是否用电脑局域网 IP。
+5. 若有反向代理，确认没有屏蔽轮询接口：
+   - `GET /api/v1/auth/mobile/requests/{request_id}`
 
 ### Q2: 任务长期停在 `QUEUED`
 
