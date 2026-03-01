@@ -11,6 +11,18 @@ interface NotificationCenterProps {
 
 const NOTIFICATION_PAGE_SIZE = 15;
 
+function shouldIncludeNotification(event: TaskEvent): boolean {
+  if (event.event_type !== "task.log.appended") {
+    return true;
+  }
+  const level = typeof event.payload.level === "string" ? event.payload.level.toLowerCase() : "info";
+  if (level === "error" || level === "warn" || level === "warning") {
+    return true;
+  }
+  const message = typeof event.payload.message === "string" ? event.payload.message.toLowerCase() : "";
+  return message.includes("timeout") || message.includes("failed") || message.includes("error");
+}
+
 function describeEvent(event: TaskEvent): string {
   if (event.event_type === "task.status.changed") {
     const rawFrom = typeof event.payload.from === "string" ? event.payload.from : "unknown";
@@ -41,11 +53,12 @@ const STATUS_SET = {
 
 export function NotificationCenter({ events }: NotificationCenterProps) {
   const [page, setPage] = useState(1);
-  const totalPages = Math.max(1, Math.ceil(events.length / NOTIFICATION_PAGE_SIZE));
+  const visibleEvents = useMemo(() => events.filter(shouldIncludeNotification), [events]);
+  const totalPages = Math.max(1, Math.ceil(visibleEvents.length / NOTIFICATION_PAGE_SIZE));
   const pagedEvents = useMemo(() => {
     const start = (page - 1) * NOTIFICATION_PAGE_SIZE;
-    return events.slice(start, start + NOTIFICATION_PAGE_SIZE);
-  }, [events, page]);
+    return visibleEvents.slice(start, start + NOTIFICATION_PAGE_SIZE);
+  }, [page, visibleEvents]);
 
   useEffect(() => {
     if (page > totalPages) {
@@ -55,15 +68,15 @@ export function NotificationCenter({ events }: NotificationCenterProps) {
 
   useEffect(() => {
     setPage(1);
-  }, [events.length]);
+  }, [visibleEvents.length]);
 
   return (
     <section className="panel animate-rise delay-2">
       <div className="panel-title-row">
         <h2 className="panel-title">{bi("通知", "Notifications")}</h2>
-        <span className="chip">{events.length}</span>
+        <span className="chip">{visibleEvents.length}</span>
       </div>
-      {events.length === 0 ? (
+      {visibleEvents.length === 0 ? (
         <div className="empty-cta">
           <p className="muted">{bi("暂无通知。", "No notifications yet.")}</p>
           <a className="link" href="#create-task-panel">
@@ -74,7 +87,7 @@ export function NotificationCenter({ events }: NotificationCenterProps) {
         <>
           <div className="pagination-row">
             <p className="muted">
-              {bi("第", "Page")} {page} / {totalPages} · {bi("共", "Total")} {events.length}{" "}
+              {bi("第", "Page")} {page} / {totalPages} · {bi("共", "Total")} {visibleEvents.length}{" "}
               {bi("条通知", "notifications")}
             </p>
             <div className="pagination-actions">

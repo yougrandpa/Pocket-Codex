@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import re
 from typing import Optional
 
@@ -79,7 +80,8 @@ async def track_ui_event(
             detail="event_name contains invalid characters",
         )
     action = f"ui.event.{event_name}"
-    task_service.append_audit(
+    await asyncio.to_thread(
+        task_service.append_audit,
         actor=current_user,
         action=action,
         task_id=payload.task_id,

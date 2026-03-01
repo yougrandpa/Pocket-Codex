@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from ipaddress import ip_address
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -42,9 +43,25 @@ def _is_loopback_request(request: Request) -> bool:
         return False
 
 
-def _verify_credentials(username: str, password: str) -> None:
+async def _append_audit_async(
+    *,
+    actor: str,
+    action: str,
+    task_id: str | None,
+    detail: dict[str, object],
+) -> None:
+    await asyncio.to_thread(
+        task_service.append_audit,
+        actor=actor,
+        action=action,
+        task_id=task_id,
+        detail=detail,
+    )
+
+
+async def _verify_credentials(username: str, password: str) -> None:
     if username != settings.username or password != settings.password:
-        task_service.append_audit(
+        await _append_audit_async(
             actor=username,
             action="auth.login.failed",
             task_id=None,
@@ -55,11 +72,11 @@ def _verify_credentials(username: str, password: str) -> None:
 
 @router.post("/login", response_model=TokenResponse)
 async def login(payload: LoginRequest, request: Request) -> TokenResponse:
-    _verify_credentials(payload.username, payload.password)
+    await _verify_credentials(payload.username, payload.password)
     request_ip = _request_ip(request)
 
     if settings.require_loopback_direct_login and not _is_loopback_request(request):
-        task_service.append_audit(
+        await _append_audit_async(
             actor=payload.username,
             action="auth.login.blocked.non_loopback",
             task_id=None,
@@ -70,7 +87,7 @@ async def login(payload: LoginRequest, request: Request) -> TokenResponse:
             detail="Direct login is only allowed from localhost. Use mobile approval flow.",
         )
 
-    task_service.append_audit(
+    await _append_audit_async(
         actor=payload.username,
         action="auth.login.succeeded",
         task_id=None,
@@ -89,14 +106,14 @@ async def create_mobile_login_request(
     payload: MobileLoginStartRequest,
     request: Request,
 ) -> MobileLoginStartResponse:
-    _verify_credentials(payload.username, payload.password)
+    await _verify_credentials(payload.username, payload.password)
     request_ip = _request_ip(request)
     record = await mobile_auth_service.create_request(
         username=payload.username,
         device_name=payload.device_name.strip() or "unknown-device",
         request_ip=request_ip,
     )
-    task_service.append_audit(
+    await _append_audit_async(
         actor=payload.username,
         action="auth.mobile.request.created",
         task_id=None,
@@ -145,7 +162,7 @@ async def approve_mobile_login_request(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Request not found") from None
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
-    task_service.append_audit(
+    await _append_audit_async(
         actor=current_user,
         action="auth.mobile.request.approved",
         task_id=None,
@@ -165,9 +182,26 @@ async def reject_mobile_login_request(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Request not found") from None
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
-    task_service.append_audit(
+    await _append_audit_async(
         actor=current_user,
         action="auth.mobile.request.rejected",
+        task_id=None,
+        detail={"request_id": request_id, "device_name": updated.device_name, "request_ip": updated.request_ip},
+    )
+    return MobileLoginDecisionResponse(request_id=updated.request_id, status=updated.status)
+
+
+@router.post("/mobile/requests/{request_id}/cancel", response_model=MobileLoginDecisionResponse)
+async def cancel_mobile_login_request(request_id: str) -> MobileLoginDecisionResponse:
+    try:
+        updated = await mobile_auth_service.cancel(request_id=request_id, actor="requester")
+    except KeyError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Request not found") from None
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    await _append_audit_async(
+        actor=updated.username,
+        action="auth.mobile.request.canceled",
         task_id=None,
         detail={"request_id": request_id, "device_name": updated.device_name, "request_ip": updated.request_ip},
     )
@@ -184,7 +218,7 @@ async def get_mobile_login_request_status(request_id: str) -> MobileLoginStatusR
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Request not found") from None
 
     if access_token and refresh_token:
-        task_service.append_audit(
+        await _append_audit_async(
             actor=record.username,
             action="auth.mobile.request.completed",
             task_id=None,
@@ -230,7 +264,7 @@ async def refresh(payload: RefreshTokenRequest) -> TokenResponse:
             detail="Invalid token subject",
         )
 
-    task_service.append_audit(
+    await _append_audit_async(
         actor=username,
         action="auth.refresh",
         task_id=None,

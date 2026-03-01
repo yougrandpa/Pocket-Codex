@@ -2,7 +2,14 @@
 
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { createTask, CreateTaskInput, ExecutorCapability, Task, getExecutorOptions } from "@/lib/api";
+import {
+  createTask,
+  CreateTaskInput,
+  ExecutorCapability,
+  Task,
+  getExecutorOptions,
+  getHealthStatus
+} from "@/lib/api";
 import { bi } from "@/lib/i18n";
 import { resetTaskListClickCount, setTaskNavigationContext } from "@/lib/telemetry";
 
@@ -79,6 +86,7 @@ export function TaskCreator({ onCreated, workdirSuggestions = [] }: TaskCreatorP
   const [reasoningEffort, setReasoningEffort] = useState(DEFAULT_REASONING_EFFORT);
   const [enableParallelAgents, setEnableParallelAgents] = useState(false);
   const [executorCapabilities, setExecutorCapabilities] = useState<ExecutorCapability | null>(null);
+  const [minTimeoutSeconds, setMinTimeoutSeconds] = useState(5);
   const [workdir, setWorkdir] = useState("");
   const [workdirHistory, setWorkdirHistory] = useState<string[]>([]);
   const [templates, setTemplates] = useState<TaskTemplate[]>([]);
@@ -132,6 +140,30 @@ export function TaskCreator({ onCreated, workdirSuggestions = [] }: TaskCreatorP
       .catch(() => {
         if (!cancelled) {
           setExecutorCapabilities(null);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    getHealthStatus()
+      .then((status) => {
+        if (cancelled) {
+          return;
+        }
+        const minTimeout =
+          typeof status.codex_min_timeout_seconds === "number"
+            ? Math.max(5, Math.floor(status.codex_min_timeout_seconds))
+            : 5;
+        setMinTimeoutSeconds(minTimeout);
+        setTimeoutSeconds((previous) => (previous < minTimeout ? minTimeout : previous));
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setMinTimeoutSeconds(5);
         }
       });
     return () => {
@@ -390,14 +422,19 @@ export function TaskCreator({ onCreated, workdirSuggestions = [] }: TaskCreatorP
                   >
                     {bi("一键创建任务", "Create from template")}
                   </button>
-                  <button
-                    className="button button-secondary"
-                    type="button"
-                    disabled={submitting}
-                    onClick={handleDeleteTemplate}
-                  >
-                    {bi("删除模板", "Delete template")}
-                  </button>
+                  <details className="template-more-actions">
+                    <summary className="link">{bi("更多操作", "More actions")}</summary>
+                    <div className="pagination-actions compact-actions">
+                      <button
+                        className="button button-secondary"
+                        type="button"
+                        disabled={submitting}
+                        onClick={handleDeleteTemplate}
+                      >
+                        {bi("删除模板", "Delete template")}
+                      </button>
+                    </div>
+                  </details>
                 </>
               ) : null}
             </div>
@@ -430,11 +467,18 @@ export function TaskCreator({ onCreated, workdirSuggestions = [] }: TaskCreatorP
             <span>{bi("超时(秒)", "Timeout (sec)")}</span>
             <input
               type="number"
-              min={5}
+              min={minTimeoutSeconds}
               max={3600}
               value={timeoutSeconds}
-              onChange={(event) => setTimeoutSeconds(Number(event.target.value) || DEFAULT_TIMEOUT_SECONDS)}
+              onChange={(event) =>
+                setTimeoutSeconds(
+                  Math.max(minTimeoutSeconds, Number(event.target.value) || DEFAULT_TIMEOUT_SECONDS)
+                )
+              }
             />
+            <small className="muted">
+              {bi("最小可用超时", "Minimum timeout")}: {minTimeoutSeconds}s
+            </small>
           </label>
         </div>
 
@@ -490,6 +534,12 @@ export function TaskCreator({ onCreated, workdirSuggestions = [] }: TaskCreatorP
             {bi("模型与推理强度暂未从 CLI 读取到，先使用默认值。", "Model and reasoning options are temporarily unavailable from CLI.")}
           </p>
         )}
+        <p className="muted">
+          {bi(
+            "策略提示：低推理更快更省，高推理更稳；并行多代理通常更快但成本更高。",
+            "Strategy hint: low reasoning is faster/cheaper, high reasoning is steadier; parallel agents are usually faster but cost more."
+          )}
+        </p>
 
         <div className="row">
           <label className="field">
@@ -532,6 +582,14 @@ export function TaskCreator({ onCreated, workdirSuggestions = [] }: TaskCreatorP
             </datalist>
           </label>
         </div>
+        {mergedWorkdirOptions.length === 0 ? (
+          <p className="muted">
+            {bi(
+              "先创建一次任务后即可在这里快速复用工作目录。",
+              "Create one task first, then you can quickly reuse workdirs here."
+            )}
+          </p>
+        ) : null}
 
         {error ? <p className="error">{error}</p> : null}
         {note ? <p className="note">{note}</p> : null}

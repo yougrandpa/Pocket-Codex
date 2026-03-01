@@ -30,6 +30,25 @@ const AUDIT_PAGE_SIZE = 20;
 const TASK_PAGE_SIZE = 20;
 const EXPORT_PAGE_SIZE = 500;
 
+function parseTaskPage(raw: string | null): number {
+  if (!raw) {
+    return 1;
+  }
+  const value = Number.parseInt(raw, 10);
+  if (!Number.isFinite(value) || value < 1) {
+    return 1;
+  }
+  return value;
+}
+
+function readTaskPageFromLocation(): number {
+  if (typeof window === "undefined") {
+    return 1;
+  }
+  const params = new URLSearchParams(window.location.search);
+  return parseTaskPage(params.get("taskPage"));
+}
+
 function mergeTaskFromEvent(tasks: Task[], event: TaskEvent): Task[] {
   const index = tasks.findIndex((task) => task.id === event.task_id);
   if (index < 0) {
@@ -169,13 +188,29 @@ export function TaskDashboard() {
     setAuthed(Boolean(session?.accessToken));
   }, []);
 
+  const updateTaskPageQuery = useCallback((page: number): void => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    const url = new URL(window.location.href);
+    if (page <= 1) {
+      url.searchParams.delete("taskPage");
+    } else {
+      url.searchParams.set("taskPage", String(page));
+    }
+    window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
+  }, []);
+
   const loadTaskPage = useCallback(
-    async (page: number, silent = false): Promise<void> => {
+    async (page: number, silent = false, persistPage = !silent): Promise<void> => {
       if (!authed) {
         return;
       }
       const safePage = Math.max(1, page);
       const offset = (safePage - 1) * TASK_PAGE_SIZE;
+      if (persistPage) {
+        updateTaskPageQuery(safePage);
+      }
       if (!silent) {
         setTaskLoading(true);
       }
@@ -195,7 +230,7 @@ export function TaskDashboard() {
         }
       }
     },
-    [authed]
+    [authed, updateTaskPageQuery]
   );
 
   const loadAuditPage = useCallback(
@@ -261,9 +296,10 @@ export function TaskDashboard() {
     let cancelled = false;
     setTaskLoading(true);
     setAuditLoading(true);
+    const initialTaskPage = readTaskPageFromLocation();
 
     Promise.all([
-      getTasks(undefined, { limit: TASK_PAGE_SIZE, offset: 0 }),
+      getTasks(undefined, { limit: TASK_PAGE_SIZE, offset: (initialTaskPage - 1) * TASK_PAGE_SIZE }),
       getAuditLogs(AUDIT_PAGE_SIZE, 0, auditFilters)
     ])
       .then(([taskResult, logs]) => {
@@ -401,7 +437,6 @@ export function TaskDashboard() {
 
   return (
     <div className="page-grid" data-lang={language}>
-      <ExecutorStatusBar />
       <div className="dashboard-columns">
         <div className="dashboard-column">
           <TaskCreator
@@ -410,6 +445,7 @@ export function TaskDashboard() {
             }}
             workdirSuggestions={workdirSuggestions}
           />
+          <ExecutorStatusBar />
           <MobileLoginApprovals enabled={authed} />
           <NotificationCenter events={events} />
           <section className="panel animate-rise delay-2">

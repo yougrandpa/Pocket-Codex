@@ -513,6 +513,15 @@ textarea {
   margin: 0;
 }
 
+.login-steps {
+  margin: 0 0 12px;
+  padding-left: 1.1rem;
+}
+
+.login-steps li + li {
+  margin-top: 4px;
+}
+
 .empty-cta {
   display: grid;
   gap: 6px;
@@ -755,6 +764,17 @@ textarea {
   padding: 1px 6px;
 }
 
+.template-more-actions {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.template-more-actions summary {
+  cursor: pointer;
+  user-select: none;
+}
+
 @keyframes fade-up {
   from {
     opacity: 0;
@@ -773,7 +793,6 @@ textarea {
   }
 
   .mobile-sticky-actions {
-    backdrop-filter: blur(6px);
     background: rgba(247, 243, 236, 0.92);
     border: 1px solid rgba(20, 33, 61, 0.12);
     border-radius: 12px;

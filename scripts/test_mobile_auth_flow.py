@@ -74,12 +74,31 @@ def main() -> None:
             mobile_request.status_code == 200,
             f"mobile request failed: {mobile_request.status_code} {mobile_request.text}",
         )
+        cancelled_request_id = mobile_request.json()["request_id"]
+
+        cancel = remote_client.post(f"/api/v1/auth/mobile/requests/{cancelled_request_id}/cancel")
+        assert_true(cancel.status_code == 200, f"cancel failed: {cancel.status_code} {cancel.text}")
+
+        mobile_request = remote_client.post(
+            "/api/v1/auth/mobile/request",
+            json={
+                "username": username,
+                "password": password,
+                "device_name": "iphone-regression-2",
+            },
+            headers={"Origin": "http://172.20.10.11:3000"},
+        )
+        assert_true(
+            mobile_request.status_code == 200,
+            f"mobile request failed: {mobile_request.status_code} {mobile_request.text}",
+        )
         request_id = mobile_request.json()["request_id"]
 
     with TestClient(app, base_url="http://127.0.0.1:8000", client=("127.0.0.1", 50002)) as local_client:
         pending = local_client.get("/api/v1/auth/mobile/pending", headers=headers)
         assert_true(pending.status_code == 200, f"pending list failed: {pending.text}")
         pending_ids = [item["request_id"] for item in pending.json().get("items", [])]
+        assert_true(cancelled_request_id not in pending_ids, "cancelled request should not stay pending")
         assert_true(request_id in pending_ids, "pending request not listed")
 
         approve = local_client.post(f"/api/v1/auth/mobile/requests/{request_id}/approve", headers=headers)

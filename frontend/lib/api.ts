@@ -773,6 +773,12 @@ export async function rejectMobileLoginRequest(requestId: string): Promise<void>
   });
 }
 
+export async function cancelMobileLoginRequest(requestId: string): Promise<void> {
+  await fetchJson(`${API_BASE_URL}/api/v1/auth/mobile/requests/${encodeURIComponent(requestId)}/cancel`, {
+    method: "POST"
+  });
+}
+
 function parseSseFrame(frame: string): string | null {
   const lines = frame.split(/\r?\n/);
   const dataLines: string[] = [];

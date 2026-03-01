@@ -8,7 +8,7 @@ FastAPI backend skeleton for Pocket Codex mobile control panel.
 - Mobile approval auth flow:
   - `POST /api/v1/auth/mobile/request` creates pending mobile login request.
   - `GET /api/v1/auth/mobile/pending` lists pending requests (desktop session required).
-  - `POST /api/v1/auth/mobile/requests/{id}/approve|reject` approves/rejects request.
+  - `POST /api/v1/auth/mobile/requests/{id}/approve|reject|cancel` approves/rejects/cancels request.
   - `GET /api/v1/auth/mobile/requests/{id}` polls request status and returns tokens on approval.
 - `POST /api/v1/tasks` creates a task (`QUEUED`) and starts a simulated lifecycle.
 - Worker lifecycle transitions `QUEUED -> RUNNING -> SUCCEEDED`, supports pause/resume/timeout.

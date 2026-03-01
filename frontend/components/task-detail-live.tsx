@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { FormEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { ContextWindowIndicator } from "@/components/context-window-indicator";
 import {
@@ -191,6 +192,7 @@ function roleLabel(role: ConversationTurn["role"]): string {
 
 export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
   const [language] = useLanguage();
+  const searchParams = useSearchParams();
   const [task, setTask] = useState<Task | null>(null);
   const [events, setEvents] = useState<TaskEvent[]>([]);
   const [logPage, setLogPage] = useState(1);
@@ -311,6 +313,18 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
     }
   }, [lifecyclePage, totalLifecyclePages]);
 
+  const backHref = useMemo(() => {
+    const rawPage = searchParams.get("fromPage");
+    if (!rawPage) {
+      return "/";
+    }
+    const parsed = Number.parseInt(rawPage, 10);
+    if (!Number.isFinite(parsed) || parsed <= 1) {
+      return "/";
+    }
+    return `/?taskPage=${parsed}`;
+  }, [searchParams]);
+
   const conversationTurns = useMemo<ConversationTurn[]>(() => {
     if (!task) {
       return [];
@@ -415,7 +429,7 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
       <section className="panel animate-rise">
         <h2 className="panel-title">{bi("任务不可用", "Task not available")}</h2>
         <p className="error">{error || bi("任务不存在。", "Task was not found.")}</p>
-        <Link href="/" className="link">
+        <Link href={backHref} className="link" prefetch={false}>
           {bi("返回控制台", "Back to dashboard")}
         </Link>
       </section>
@@ -424,7 +438,7 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
 
   return (
     <section className="panel animate-rise" data-lang={language}>
-      <Link href="/" className="button button-secondary back-dashboard-button">
+      <Link href={backHref} prefetch={false} className="button button-secondary back-dashboard-button">
         {bi("返回控制台", "Back to dashboard")}
       </Link>
 

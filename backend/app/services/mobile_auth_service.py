@@ -114,6 +114,19 @@ class MobileAuthService:
             record.approved_by = actor
             return MobileLoginRequestRecord(**record.__dict__)
 
+    async def cancel(self, *, request_id: str, actor: str) -> MobileLoginRequestRecord:
+        async with self._lock:
+            self._cleanup_locked()
+            record = self._requests.get(request_id)
+            if record is None:
+                raise KeyError(request_id)
+            if record.status != "PENDING":
+                raise ValueError(f"request is not pending: {record.status}")
+            record.status = "REJECTED"
+            record.approved_at = utc_now_iso()
+            record.approved_by = actor
+            return MobileLoginRequestRecord(**record.__dict__)
+
     async def get_status(self, *, request_id: str) -> MobileLoginRequestRecord:
         async with self._lock:
             self._cleanup_locked()

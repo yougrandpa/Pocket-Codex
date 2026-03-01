@@ -185,8 +185,9 @@ export function TaskList({
               <div className="task-item-bottom">
                 <span className="muted">#{task.id.slice(0, 8)}</span>
                 <Link
-                  href={`/tasks/${task.id}`}
+                  href={`/tasks/${task.id}?fromPage=${currentPage}`}
                   className="link"
+                  prefetch={false}
                   onClick={() => {
                     const clickCount = nextTaskListClickCount();
                     setTaskNavigationContext(task.id, "list", clickCount);
