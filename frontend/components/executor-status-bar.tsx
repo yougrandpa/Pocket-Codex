@@ -2,20 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { HealthStatus, getHealthStatus } from "@/lib/api";
+import { formatDateTime } from "@/lib/datetime";
 import { bi } from "@/lib/i18n";
 
 type ConnectionState = "loading" | "ready" | "error";
-
-function formatHealthTimestamp(value: string): string {
-  if (!value) {
-    return "--";
-  }
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) {
-    return value;
-  }
-  return parsed.toLocaleString();
-}
 
 export function ExecutorStatusBar() {
   const [connectionState, setConnectionState] = useState<ConnectionState>("loading");
@@ -51,7 +41,7 @@ export function ExecutorStatusBar() {
 
   const executorMode = (health?.task_executor || "unknown").toLowerCase();
   const executorBackend = health?.execution_backend || "unknown";
-  const checkedAt = formatHealthTimestamp(health?.timestamp || "");
+  const checkedAt = formatDateTime(health?.timestamp || "", "--");
   const codexMinTimeout = health?.codex_min_timeout_seconds;
   const codexHardTimeout = health?.codex_hard_timeout_seconds;
   const codexCliPath = health?.codex_cli_path || "codex";

@@ -1,16 +1,9 @@
 import { AuditLog } from "@/lib/api";
+import { formatDateTime } from "@/lib/datetime";
 import { bi } from "@/lib/i18n";
 
 interface AuditPanelProps {
   logs: AuditLog[];
-}
-
-function formatTime(value: string): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.valueOf())) {
-    return value;
-  }
-  return date.toLocaleString();
 }
 
 export function AuditPanel({ logs }: AuditPanelProps) {
@@ -28,7 +21,7 @@ export function AuditPanel({ logs }: AuditPanelProps) {
             <li key={log.id} className="notification-item">
               <div className="task-item-top">
                 <strong>{log.action}</strong>
-                <time dateTime={log.timestamp}>{formatTime(log.timestamp)}</time>
+                <time dateTime={log.timestamp}>{formatDateTime(log.timestamp)}</time>
               </div>
               <p className="muted">
                 {bi("操作者", "Actor")}: {log.actor}

@@ -89,12 +89,6 @@ const DEFAULT_API_BASE_URL = "http://localhost:8000";
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") || DEFAULT_API_BASE_URL;
 const SESSION_STORAGE_KEY = "pocket_codex_session";
-const STREAM_EVENT_TYPES = [
-  "task.status.changed",
-  "task.log.appended",
-  "task.message.appended",
-  "task.summary.updated"
-] as const;
 
 interface ErrorPayload {
   error?: {
@@ -335,6 +329,16 @@ function normalizeEvent(raw: unknown): TaskEvent {
   };
 }
 
+interface OpenEventStreamOptions {
+  taskId?: string;
+  onEvent: (event: TaskEvent) => void;
+  onError?: (error: Error) => void;
+}
+
+export interface TaskEventStream {
+  close: () => void;
+}
+
 export async function getTasks(status?: TaskStatus): Promise<Task[]> {
   const query = status ? `?status=${encodeURIComponent(status)}` : "";
   const body = await authorizedFetchJson<{ items?: unknown[] }>(`/api/v1/tasks${query}`, {
@@ -398,36 +402,156 @@ export async function getHealthStatus(): Promise<HealthStatus> {
   return normalizeHealth(body);
 }
 
-export function openEventStream(taskId?: string): EventSource {
-  const session = readSession();
-  if (!session?.accessToken) {
-    throw new Error(bi("请先登录。", "Please sign in first."));
+function parseSseFrame(frame: string): string | null {
+  const lines = frame.split(/\r?\n/);
+  const dataLines: string[] = [];
+  for (const line of lines) {
+    if (!line || line.startsWith(":")) {
+      continue;
+    }
+    if (line.startsWith("data:")) {
+      dataLines.push(line.slice("data:".length).trimStart());
+    }
   }
-  const params = new URLSearchParams();
-  params.set("access_token", session.accessToken);
-  if (taskId) {
-    params.set("task_id", taskId);
-  }
-  return new EventSource(`${API_BASE_URL}/api/v1/stream?${params.toString()}`);
+  const payload = dataLines.join("\n").trim();
+  return payload || null;
 }
 
-export function bindTaskEventStream(
-  source: EventSource,
-  onEvent: (event: TaskEvent) => void
-): void {
-  const handleRawEvent = (message: MessageEvent<string>) => {
+export function bindTaskEventStream(onEvent: (event: TaskEvent) => void): (rawData: string) => void {
+  return (rawData: string) => {
     try {
-      const parsed = JSON.parse(message.data) as TaskEvent;
-      onEvent(parsed);
+      const parsed = JSON.parse(rawData) as unknown;
+      onEvent(normalizeEvent(parsed));
     } catch {
       // Ignore malformed event payload.
     }
   };
+}
 
-  source.onmessage = handleRawEvent;
-  for (const eventType of STREAM_EVENT_TYPES) {
-    source.addEventListener(eventType, (event) => {
-      handleRawEvent(event as MessageEvent<string>);
-    });
-  }
+export function openEventStream({
+  taskId,
+  onEvent,
+  onError
+}: OpenEventStreamOptions): TaskEventStream {
+  let closed = false;
+  let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  let controller: AbortController | null = null;
+  let reconnectAttempts = 0;
+  const consume = bindTaskEventStream(onEvent);
+
+  const scheduleReconnect = (immediate = false) => {
+    if (closed) {
+      return;
+    }
+    const delay = immediate ? 0 : Math.min(10_000, 800 * 2 ** reconnectAttempts);
+    reconnectAttempts = Math.min(reconnectAttempts + 1, 8);
+    reconnectTimer = setTimeout(() => {
+      reconnectTimer = null;
+      void connect();
+    }, delay);
+  };
+
+  const connect = async () => {
+    if (closed) {
+      return;
+    }
+    const session = readSession();
+    if (!session?.accessToken) {
+      onError?.(new Error(bi("请先登录。", "Please sign in first.")));
+      return;
+    }
+
+    controller = new AbortController();
+    const params = new URLSearchParams();
+    if (taskId) {
+      params.set("task_id", taskId);
+    }
+    const query = params.toString();
+    const endpoint = `${API_BASE_URL}/api/v1/stream${query ? `?${query}` : ""}`;
+
+    try {
+      const response = await fetch(endpoint, {
+        method: "GET",
+        headers: {
+          Accept: "text/event-stream",
+          Authorization: `Bearer ${session.accessToken}`
+        },
+        cache: "no-store",
+        signal: controller.signal
+      });
+
+      if (response.status === 401 && session.refreshToken) {
+        try {
+          await refreshSession(session.refreshToken);
+          reconnectAttempts = 0;
+          scheduleReconnect(true);
+          return;
+        } catch {
+          clearSession();
+          onError?.(new Error(bi("会话已过期，请重新登录。", "Session expired. Please sign in again.")));
+          return;
+        }
+      }
+
+      if (!response.ok || !response.body) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      reconnectAttempts = 0;
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (!closed) {
+        const { value, done } = await reader.read();
+        if (done) {
+          break;
+        }
+        buffer += decoder.decode(value, { stream: true });
+        const frames = buffer.split(/\r?\n\r?\n/);
+        buffer = frames.pop() ?? "";
+        for (const frame of frames) {
+          const payload = parseSseFrame(frame);
+          if (payload) {
+            consume(payload);
+          }
+        }
+      }
+
+      if (!closed) {
+        onError?.(
+          new Error(
+            bi(
+              "实时流已断开，正在自动重连...",
+              "Realtime stream disconnected. Retrying automatically..."
+            )
+          )
+        );
+        scheduleReconnect();
+      }
+    } catch (error) {
+      if (closed) {
+        return;
+      }
+      const err = error instanceof Error ? error : new Error("Unknown stream error");
+      if (err.name === "AbortError") {
+        return;
+      }
+      onError?.(err);
+      scheduleReconnect();
+    }
+  };
+
+  scheduleReconnect(true);
+
+  return {
+    close: () => {
+      closed = true;
+      if (reconnectTimer) {
+        clearTimeout(reconnectTimer);
+        reconnectTimer = null;
+      }
+      controller?.abort();
+    }
+  };
 }

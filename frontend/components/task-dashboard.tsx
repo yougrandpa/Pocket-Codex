@@ -16,6 +16,7 @@ import {
   getAuditLogs,
   getTasks,
   openEventStream,
+  TaskEventStream,
   readSession
 } from "@/lib/api";
 
@@ -71,19 +72,14 @@ export function TaskDashboard() {
     }
     let cancelled = false;
     setLoading(true);
-    getTasks()
-      .then((items) => {
+    Promise.all([getTasks(), getAuditLogs(20)])
+      .then(([items, logs]) => {
         if (cancelled) {
           return;
         }
         setTasks(items);
+        setAuditLogs(logs);
         setError(null);
-        return getAuditLogs(20);
-      })
-      .then((logs) => {
-        if (!cancelled && logs) {
-          setAuditLogs(logs);
-        }
       })
       .catch((requestError) => {
         if (cancelled) {
@@ -109,26 +105,22 @@ export function TaskDashboard() {
     if (!authed) {
       return;
     }
-    let source: EventSource | null = null;
+    let stream: TaskEventStream | null = null;
     try {
-      source = openEventStream();
-      const consume = (message: MessageEvent<string>) => {
-        try {
-          const parsed = JSON.parse(message.data) as TaskEvent;
+      stream = openEventStream({
+        onEvent: (parsed) => {
           setTasks((previous) => mergeTaskFromEvent(previous, parsed));
-          setEvents((previous) => [parsed, ...previous].slice(0, 20));
-        } catch {
-          // Ignore malformed event frame.
+          setEvents((previous) => [parsed, ...previous].slice(0, 80));
+        },
+        onError: () => {
+          setError(
+            bi(
+              "实时流已断开，正在自动重连...",
+              "Realtime stream disconnected. Retrying automatically..."
+            )
+          );
         }
-      };
-      source.onmessage = consume;
-      source.addEventListener("task.status.changed", consume as EventListener);
-      source.addEventListener("task.log.appended", consume as EventListener);
-      source.addEventListener("task.message.appended", consume as EventListener);
-      source.addEventListener("task.summary.updated", consume as EventListener);
-      source.onerror = () => {
-        setError(bi("实时流已断开，正在自动重连...", "Realtime stream disconnected. Retrying automatically..."));
-      };
+      });
     } catch (streamError) {
       setError(
         streamError instanceof Error
@@ -137,7 +129,7 @@ export function TaskDashboard() {
       );
     }
     return () => {
-      source?.close();
+      stream?.close();
     };
   }, [authed]);
 

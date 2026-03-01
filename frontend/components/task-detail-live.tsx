@@ -6,11 +6,13 @@ import {
   Task,
   TaskControlAction,
   TaskEvent,
+  TaskEventStream,
   appendTaskMessage,
   controlTask,
   getTask,
   openEventStream
 } from "@/lib/api";
+import { formatDateTime } from "@/lib/datetime";
 import { bi, statusText, useLanguage } from "@/lib/i18n";
 
 interface TaskDetailLiveProps {
@@ -18,17 +20,7 @@ interface TaskDetailLiveProps {
 }
 
 const LOG_PAGE_SIZE = 20;
-
-function formatValue(value?: string | null): string {
-  if (!value) {
-    return "-";
-  }
-  const date = new Date(value);
-  if (Number.isNaN(date.valueOf())) {
-    return value;
-  }
-  return date.toLocaleString();
-}
+const LIFECYCLE_PAGE_SIZE = 20;
 
 function mergeTaskFromStatus(task: Task, event: TaskEvent): Task {
   const next = { ...task };
@@ -172,6 +164,7 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
   const [task, setTask] = useState<Task | null>(null);
   const [events, setEvents] = useState<TaskEvent[]>([]);
   const [logPage, setLogPage] = useState(1);
+  const [lifecyclePage, setLifecyclePage] = useState(1);
   const [message, setMessage] = useState("");
   const [workingAction, setWorkingAction] = useState<TaskControlAction | null>(null);
   const [busyMessage, setBusyMessage] = useState(false);
@@ -203,26 +196,23 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
   }, [taskId]);
 
   useEffect(() => {
-    let source: EventSource | null = null;
+    let stream: TaskEventStream | null = null;
     try {
-      source = openEventStream(taskId);
-      const consume = (messageEvent: MessageEvent<string>) => {
-        try {
-          const event = JSON.parse(messageEvent.data) as TaskEvent;
-          setEvents((previous) => [event, ...previous].slice(0, 100));
+      stream = openEventStream({
+        taskId,
+        onEvent: (event) => {
+          setEvents((previous) => [event, ...previous].slice(0, 400));
           setTask((previous) => (previous ? mergeTaskFromStatus(previous, event) : previous));
-        } catch {
-          // Ignore invalid frames.
+        },
+        onError: () => {
+          setError(
+            bi(
+              "实时流已断开，正在自动重连...",
+              "Realtime stream disconnected. Retrying automatically..."
+            )
+          );
         }
-      };
-      source.onmessage = consume;
-      source.addEventListener("task.status.changed", consume as EventListener);
-      source.addEventListener("task.log.appended", consume as EventListener);
-      source.addEventListener("task.message.appended", consume as EventListener);
-      source.addEventListener("task.summary.updated", consume as EventListener);
-      source.onerror = () => {
-        setError(bi("实时流已断开，正在自动重连...", "Realtime stream disconnected. Retrying automatically..."));
-      };
+      });
     } catch (streamError) {
       setError(
         streamError instanceof Error
@@ -231,7 +221,7 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
       );
     }
     return () => {
-      source?.close();
+      stream?.close();
     };
   }, [taskId]);
 
@@ -245,13 +235,19 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
     [events]
   );
   const totalLogPages = Math.max(1, Math.ceil(logEvents.length / LOG_PAGE_SIZE));
+  const totalLifecyclePages = Math.max(1, Math.ceil(timelineEvents.length / LIFECYCLE_PAGE_SIZE));
   const pagedLogEvents = useMemo(() => {
     const start = (logPage - 1) * LOG_PAGE_SIZE;
     return logEvents.slice(start, start + LOG_PAGE_SIZE);
   }, [logEvents, logPage]);
+  const pagedLifecycleEvents = useMemo(() => {
+    const start = (lifecyclePage - 1) * LIFECYCLE_PAGE_SIZE;
+    return timelineEvents.slice(start, start + LIFECYCLE_PAGE_SIZE);
+  }, [lifecyclePage, timelineEvents]);
 
   useEffect(() => {
     setLogPage(1);
+    setLifecyclePage(1);
   }, [taskId]);
 
   useEffect(() => {
@@ -259,6 +255,12 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
       setLogPage(totalLogPages);
     }
   }, [logPage, totalLogPages]);
+
+  useEffect(() => {
+    if (lifecyclePage > totalLifecyclePages) {
+      setLifecyclePage(totalLifecyclePages);
+    }
+  }, [lifecyclePage, totalLifecyclePages]);
 
   const conversationTurns = useMemo<ConversationTurn[]>(() => {
     if (!task) {
@@ -395,7 +397,7 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
               <li key={turn.id} className={`chat-item chat-item-${turn.role}`}>
                 <div className="chat-meta">
                   <strong>{roleLabel(turn.role)}</strong>
-                  <time dateTime={turn.timestamp || undefined}>{formatValue(turn.timestamp)}</time>
+                  <time dateTime={turn.timestamp || undefined}>{formatDateTime(turn.timestamp)}</time>
                 </div>
                 <div className="chat-body">
                   <RichText text={turn.text} />
@@ -460,23 +462,23 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
         </div>
         <div>
           <dt>{bi("创建时间", "Created At")}</dt>
-          <dd>{formatValue(task.created_at)}</dd>
+          <dd>{formatDateTime(task.created_at)}</dd>
         </div>
         <div>
           <dt>{bi("更新时间", "Updated At")}</dt>
-          <dd>{formatValue(task.updated_at)}</dd>
+          <dd>{formatDateTime(task.updated_at)}</dd>
         </div>
         <div>
           <dt>{bi("开始时间", "Started At")}</dt>
-          <dd>{formatValue(task.started_at)}</dd>
+          <dd>{formatDateTime(task.started_at)}</dd>
         </div>
         <div>
           <dt>{bi("完成时间", "Finished At")}</dt>
-          <dd>{formatValue(task.finished_at)}</dd>
+          <dd>{formatDateTime(task.finished_at)}</dd>
         </div>
         <div>
           <dt>{bi("最后心跳", "Last Heartbeat")}</dt>
-          <dd>{formatValue(task.last_heartbeat_at)}</dd>
+          <dd>{formatDateTime(task.last_heartbeat_at)}</dd>
         </div>
       </dl>
 
@@ -524,7 +526,7 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
                   <li key={`${event.id}-${event.seq}`} className="notification-item">
                     <div className="task-item-top">
                       <span className="chip">{source}</span>
-                      <time dateTime={event.timestamp}>{formatValue(event.timestamp)}</time>
+                      <time dateTime={event.timestamp}>{formatDateTime(event.timestamp)}</time>
                     </div>
                     <p className="muted">{bi("级别", "Level")}: {level}</p>
                     <code>{messageText}</code>
@@ -541,19 +543,47 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
         {timelineEvents.length === 0 ? (
           <p className="muted">{bi("暂无状态事件。", "No lifecycle events yet.")}</p>
         ) : (
-          <ul className="notification-list">
-            {timelineEvents.map((event) => (
-              <li key={`${event.id}-${event.seq}`} className="notification-item">
-                <div className="task-item-top">
-                  <span className={`status status-${(event.status || "queued").toLowerCase()}`}>
-                    {event.event_type}
-                  </span>
-                  <time dateTime={event.timestamp}>{formatValue(event.timestamp)}</time>
-                </div>
-                <code>{JSON.stringify(event.payload)}</code>
-              </li>
-            ))}
-          </ul>
+          <>
+            <div className="pagination-row">
+              <p className="muted">
+                {bi("第", "Page")} {lifecyclePage} / {totalLifecyclePages} · {bi("共", "Total")}{" "}
+                {timelineEvents.length} {bi("条", "items")}
+              </p>
+              <div className="pagination-actions">
+                <button
+                  className="button button-secondary"
+                  type="button"
+                  disabled={lifecyclePage <= 1}
+                  onClick={() => setLifecyclePage((previous) => Math.max(1, previous - 1))}
+                >
+                  {bi("上一页", "Previous")}
+                </button>
+                <button
+                  className="button button-secondary"
+                  type="button"
+                  disabled={lifecyclePage >= totalLifecyclePages}
+                  onClick={() =>
+                    setLifecyclePage((previous) => Math.min(totalLifecyclePages, previous + 1))
+                  }
+                >
+                  {bi("下一页", "Next")}
+                </button>
+              </div>
+            </div>
+            <ul className="notification-list">
+              {pagedLifecycleEvents.map((event) => (
+                <li key={`${event.id}-${event.seq}`} className="notification-item">
+                  <div className="task-item-top">
+                    <span className={`status status-${(event.status || "queued").toLowerCase()}`}>
+                      {event.event_type}
+                    </span>
+                    <time dateTime={event.timestamp}>{formatDateTime(event.timestamp)}</time>
+                  </div>
+                  <code>{JSON.stringify(event.payload)}</code>
+                </li>
+              ))}
+            </ul>
+          </>
         )}
       </section>
 
