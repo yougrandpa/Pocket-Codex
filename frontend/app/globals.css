@@ -77,6 +77,17 @@ a {
   gap: 14px;
 }
 
+.dashboard-columns {
+  display: grid;
+  gap: 14px;
+}
+
+.dashboard-column {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+}
+
 .full-span {
   grid-column: 1 / -1;
 }
@@ -582,9 +593,9 @@ textarea {
     padding: 28px 24px 44px;
   }
 
-  .page-grid {
-    grid-template-columns: minmax(280px, 360px) 1fr;
+  .dashboard-columns {
     align-items: start;
+    grid-template-columns: minmax(280px, 360px) 1fr;
   }
 
   .row {

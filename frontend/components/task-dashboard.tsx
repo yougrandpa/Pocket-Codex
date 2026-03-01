@@ -145,35 +145,42 @@ export function TaskDashboard() {
   return (
     <div className="page-grid" data-lang={language}>
       <ExecutorStatusBar />
-      <TaskCreator
-        onCreated={(task) => {
-          setTasks((prev) => [task, ...prev]);
-        }}
-      />
-      <TaskList tasks={sortedTasks} error={error} loading={loading} />
-      <NotificationCenter events={events} />
-      <AuditPanel logs={auditLogs} />
-      <section className="panel animate-rise delay-2">
-        <div className="panel-title-row">
-          <h2 className="panel-title">{bi("会话", "Session")}</h2>
-          <span className="chip">{bi("已激活", "Active")}</span>
+      <div className="dashboard-columns">
+        <div className="dashboard-column">
+          <TaskCreator
+            onCreated={(task) => {
+              setTasks((prev) => [task, ...prev]);
+            }}
+          />
+          <NotificationCenter events={events} />
+          <section className="panel animate-rise delay-2">
+            <div className="panel-title-row">
+              <h2 className="panel-title">{bi("会话", "Session")}</h2>
+              <span className="chip">{bi("已激活", "Active")}</span>
+            </div>
+            <p className="muted">
+              {bi("当前使用单用户 JWT 鉴权登录。", "You are signed in with single-user JWT auth.")}
+            </p>
+            <button
+              className="button button-secondary"
+              type="button"
+              onClick={() => {
+                clearSession();
+                setAuthed(false);
+                setTasks([]);
+                setEvents([]);
+              }}
+            >
+              {bi("退出登录", "Sign Out")}
+            </button>
+          </section>
         </div>
-        <p className="muted">
-          {bi("当前使用单用户 JWT 鉴权登录。", "You are signed in with single-user JWT auth.")}
-        </p>
-        <button
-          className="button button-secondary"
-          type="button"
-          onClick={() => {
-            clearSession();
-            setAuthed(false);
-            setTasks([]);
-            setEvents([]);
-          }}
-        >
-          {bi("退出登录", "Sign Out")}
-        </button>
-      </section>
+
+        <div className="dashboard-column">
+          <TaskList tasks={sortedTasks} error={error} loading={loading} />
+          <AuditPanel logs={auditLogs} />
+        </div>
+      </div>
     </div>
   );
 }
