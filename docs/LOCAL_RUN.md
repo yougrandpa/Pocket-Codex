@@ -263,3 +263,17 @@ A11: 不会。当前版本会保留原始 `prompt`，并在执行时把最近 fo
 
 Q12: SSE 断线后能补发遗漏事件吗？  
 A12: 支持。服务端支持 `last_event_id` / `Last-Event-ID` 断点续传，客户端会自动携带并请求重放最近事件（受 `APP_SSE_REPLAY_LIMIT` 限制）。
+
+## 7. 指标报表脚本
+
+用于验证前端转化优化（已覆盖指标 2 和指标 3）：
+
+```bash
+cd /Users/slg/workspace/Pocket-Codex
+python3 scripts/report_funnel_metrics.py
+```
+
+可选参数：
+
+- `--db /path/to/pocket_codex.db`
+- `--since-days 7`

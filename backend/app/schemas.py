@@ -109,6 +109,17 @@ class TaskMessageAckResponse(BaseModel):
     created_at: str
 
 
+class UiEventRequest(BaseModel):
+    event_name: str = Field(min_length=1, max_length=80)
+    task_id: Optional[str] = None
+    detail: dict[str, Any] = Field(default_factory=dict)
+
+
+class UiEventAckResponse(BaseModel):
+    accepted: bool
+    action: str
+
+
 class TaskMessageResponse(BaseModel):
     id: str
     message: str

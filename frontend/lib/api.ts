@@ -557,6 +557,24 @@ export async function appendTaskMessage(taskId: string, message: string): Promis
   });
 }
 
+export async function trackUiEvent(
+  eventName: string,
+  detail: Record<string, unknown> = {},
+  taskId?: string
+): Promise<void> {
+  await authorizedFetchJson("/api/v1/tasks/telemetry/event", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      event_name: eventName,
+      task_id: taskId,
+      detail
+    })
+  });
+}
+
 export async function getAuditLogs(limit = 20, offset = 0): Promise<AuditLogList> {
   const safeLimit = Math.max(1, Math.floor(limit));
   const safeOffset = Math.max(0, Math.floor(offset));

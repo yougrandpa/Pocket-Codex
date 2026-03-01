@@ -225,3 +225,27 @@ NEXT_PUBLIC_API_BASE_URL=http://192.168.1.10:8000 npm run dev:lan
 ```
 
 根据输出定位后端依赖或前端构建问题。
+
+## 10. 指标脚本（验证优化效果）
+
+已内置指标脚本：
+
+`scripts/report_funnel_metrics.py`
+
+运行示例（默认读取 `backend/pocket_codex.db`）：
+
+```bash
+cd /Users/slg/workspace/Pocket-Codex
+python3 scripts/report_funnel_metrics.py
+```
+
+只看最近 7 天：
+
+```bash
+python3 scripts/report_funnel_metrics.py --since-days 7
+```
+
+当前脚本输出：
+
+- 指标 2：创建任务到进入详情页中位时长（秒）
+- 指标 3：用户找到目标任务的平均点击次数

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -14,6 +15,8 @@ from ..schemas import (
     TaskCreateRequest,
     TaskDetailResponse,
     TaskEventResponse,
+    UiEventAckResponse,
+    UiEventRequest,
     TaskListResponse,
     TaskMessageAckResponse,
     TaskMessageRequest,
@@ -23,6 +26,7 @@ from ..services.task_service import task_service
 
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
+UI_EVENT_NAME_PATTERN = re.compile(r"^[a-z0-9._-]{1,80}$")
 
 
 @router.post("", response_model=TaskResponse, status_code=status.HTTP_201_CREATED)
@@ -57,6 +61,27 @@ async def list_tasks(
         offset=offset,
         items=[TaskResponse.from_model(item) for item in tasks],
     )
+
+
+@router.post("/telemetry/event", response_model=UiEventAckResponse)
+async def track_ui_event(
+    payload: UiEventRequest,
+    current_user: str = Depends(get_current_user),
+) -> UiEventAckResponse:
+    event_name = payload.event_name.strip().lower()
+    if not UI_EVENT_NAME_PATTERN.fullmatch(event_name):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="event_name contains invalid characters",
+        )
+    action = f"ui.event.{event_name}"
+    task_service.append_audit(
+        actor=current_user,
+        action=action,
+        task_id=payload.task_id,
+        detail=payload.detail or {},
+    )
+    return UiEventAckResponse(accepted=True, action=action)
 
 
 @router.get("/{task_id}", response_model=TaskDetailResponse)

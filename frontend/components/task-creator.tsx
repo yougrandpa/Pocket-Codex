@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { createTask, Task } from "@/lib/api";
 import { bi } from "@/lib/i18n";
+import { resetTaskListClickCount, setTaskNavigationContext } from "@/lib/telemetry";
 
 const DEFAULT_PRIORITY = 5;
 const DEFAULT_TIMEOUT_SECONDS = 180;
@@ -90,6 +91,8 @@ export function TaskCreator({ onCreated, workdirSuggestions = [] }: TaskCreatorP
       if (savedWorkdir) {
         saveWorkdirHistory(savedWorkdir);
       }
+      setTaskNavigationContext(created.id, "create", 0);
+      resetTaskListClickCount();
       setPrompt("");
       setWorkdir("");
       onCreated?.(created);

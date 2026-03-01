@@ -5,6 +5,11 @@ import { useEffect, useMemo, useState } from "react";
 import { Task } from "@/lib/api";
 import { formatDateTime } from "@/lib/datetime";
 import { bi, statusText } from "@/lib/i18n";
+import {
+  fireAndForgetUiEvent,
+  nextTaskListClickCount,
+  setTaskNavigationContext
+} from "@/lib/telemetry";
 
 interface TaskListProps {
   tasks: Task[];
@@ -94,7 +99,23 @@ export function TaskList({ tasks, error = null, loading = false }: TaskListProps
               <p className="task-prompt">{task.prompt || bi("(空指令)", "(empty prompt)")}</p>
               <div className="task-item-bottom">
                 <span className="muted">#{task.id.slice(0, 8)}</span>
-                <Link href={`/tasks/${task.id}`} className="link">
+                <Link
+                  href={`/tasks/${task.id}`}
+                  className="link"
+                  onClick={() => {
+                    const clickCount = nextTaskListClickCount();
+                    setTaskNavigationContext(task.id, "list", clickCount);
+                    fireAndForgetUiEvent(
+                      "task.list.item.clicked",
+                      {
+                        list_click_count: clickCount,
+                        page,
+                        page_size: TASK_PAGE_SIZE
+                      },
+                      task.id
+                    );
+                  }}
+                >
                   {bi("查看详情", "View detail")}
                 </Link>
               </div>

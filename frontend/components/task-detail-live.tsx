@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, ReactNode, useEffect, useMemo, useState } from "react";
+import { FormEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import {
   Task,
   TaskControlAction,
@@ -14,6 +14,11 @@ import {
 } from "@/lib/api";
 import { formatDateTime } from "@/lib/datetime";
 import { bi, statusText, useLanguage } from "@/lib/i18n";
+import {
+  consumeTaskNavigationContext,
+  fireAndForgetUiEvent,
+  resetTaskListClickCount
+} from "@/lib/telemetry";
 
 interface TaskDetailLiveProps {
   taskId: string;
@@ -170,6 +175,7 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
   const [busyMessage, setBusyMessage] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
+  const hasTrackedOpenRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -194,6 +200,23 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
       cancelled = true;
     };
   }, [taskId]);
+
+  useEffect(() => {
+    if (!task || hasTrackedOpenRef.current) {
+      return;
+    }
+    hasTrackedOpenRef.current = true;
+    const navigation = consumeTaskNavigationContext(task.id);
+    fireAndForgetUiEvent(
+      "task.detail.opened",
+      {
+        source: navigation.source,
+        list_click_count: navigation.listClickCount
+      },
+      task.id
+    );
+    resetTaskListClickCount();
+  }, [task]);
 
   useEffect(() => {
     let stream: TaskEventStream | null = null;
@@ -248,6 +271,7 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
   useEffect(() => {
     setLogPage(1);
     setLifecyclePage(1);
+    hasTrackedOpenRef.current = false;
   }, [taskId]);
 
   useEffect(() => {
