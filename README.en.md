@@ -42,6 +42,21 @@ Recommended startup order:
 3. Sign in with credentials configured in `backend/.env` (`APP_USERNAME` / `APP_PASSWORD`)
 4. Create a task and verify realtime events with `/api/v1/stream`
 
+## Pre-commit Sub-agent Review Command
+
+Command: `./scripts/commit_with_subagent_review.sh "<commit message>"`
+
+- Runs recursive `review sub-agent -> fix sub-agent -> review sub-agent`
+- Continues until reviewer returns `STATUS:PASS`
+- Runs `./scripts/verify_local_env.sh` by default
+- Then executes `git add -A` and `git commit`
+
+Optional environment variables:
+
+- `CODEX_REVIEW_CLI_PATH`: codex executable path (default: `codex`)
+- `MAX_REVIEW_ROUNDS`: max recursive rounds (default: `5`)
+- `RUN_VERIFY_BEFORE_COMMIT`: run local verification (`1/0`, default: `1`)
+
 ## Documentation Index
 
 - Project plan: `docs/PROJECT_PLAN.md`

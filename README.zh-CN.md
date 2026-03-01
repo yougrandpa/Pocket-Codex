@@ -53,6 +53,27 @@ npm run dev
 - 手机端优先使用“手机登录（需电脑授权）”流程
 - 手机登录详细步骤见：`docs/USAGE.zh-CN.md` 的“2. 登录（重点：手机端需要电脑授权）”
 
+## 提交前子代理审查命令
+
+命令：
+
+```bash
+./scripts/commit_with_subagent_review.sh "<commit message>"
+```
+
+行为：
+
+- 自动执行“review 子代理 -> 修复子代理 -> 再 review 子代理”递归流程
+- 直到 review 输出 `STATUS:PASS` 才继续
+- 默认执行 `./scripts/verify_local_env.sh`
+- 最后自动 `git add -A` + `git commit`
+
+可选环境变量：
+
+- `CODEX_REVIEW_CLI_PATH`：codex 可执行路径（默认 `codex`）
+- `MAX_REVIEW_ROUNDS`：最大递归轮次（默认 `5`）
+- `RUN_VERIFY_BEFORE_COMMIT`：是否执行本地验收（`1/0`，默认 `1`）
+
 ## 文档索引
 
 - 项目计划：`docs/PROJECT_PLAN.md`
