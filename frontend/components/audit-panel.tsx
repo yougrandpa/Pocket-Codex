@@ -90,7 +90,7 @@ export function AuditPanel({
             />
           </label>
         </div>
-        <div className="pagination-actions">
+        <div className="pagination-actions compact-actions">
           <button className="button button-secondary" type="submit" disabled={loading}>
             {bi("检索", "Search")}
           </button>
@@ -107,22 +107,26 @@ export function AuditPanel({
           >
             {bi("清空筛选", "Clear")}
           </button>
-          <button
-            className="button button-secondary"
-            type="button"
-            disabled={loading || total === 0}
-            onClick={() => onExport?.("csv")}
-          >
-            {bi("导出 CSV", "Export CSV")}
-          </button>
-          <button
-            className="button button-secondary"
-            type="button"
-            disabled={loading || total === 0}
-            onClick={() => onExport?.("json")}
-          >
-            {bi("导出 JSON", "Export JSON")}
-          </button>
+          {total > 0 ? (
+            <>
+              <button
+                className="button button-secondary"
+                type="button"
+                disabled={loading}
+                onClick={() => onExport?.("csv")}
+              >
+                {bi("导出 CSV", "Export CSV")}
+              </button>
+              <button
+                className="button button-secondary"
+                type="button"
+                disabled={loading}
+                onClick={() => onExport?.("json")}
+              >
+                {bi("导出 JSON", "Export JSON")}
+              </button>
+            </>
+          ) : null}
         </div>
       </form>
 

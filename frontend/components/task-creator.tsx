@@ -286,7 +286,7 @@ export function TaskCreator({ onCreated, workdirSuggestions = [] }: TaskCreatorP
                 />
               </label>
             </div>
-            <div className="pagination-actions">
+            <div className="pagination-actions compact-actions">
               <button
                 className="button button-secondary"
                 type="button"
@@ -295,36 +295,38 @@ export function TaskCreator({ onCreated, workdirSuggestions = [] }: TaskCreatorP
               >
                 {bi("保存当前为模板", "Save current as template")}
               </button>
-              <button
-                className="button button-secondary"
-                type="button"
-                disabled={!selectedTemplate || submitting}
-                onClick={() => {
-                  if (selectedTemplate) {
-                    applyTemplate(selectedTemplate);
-                  }
-                }}
-              >
-                {bi("应用模板", "Apply template")}
-              </button>
-              <button
-                className="button"
-                type="button"
-                disabled={!selectedTemplate || submitting}
-                onClick={() => {
-                  void handleCreateFromTemplate();
-                }}
-              >
-                {bi("一键创建任务", "Create from template")}
-              </button>
-              <button
-                className="button button-secondary"
-                type="button"
-                disabled={!selectedTemplate || submitting}
-                onClick={handleDeleteTemplate}
-              >
-                {bi("删除模板", "Delete template")}
-              </button>
+              {selectedTemplate ? (
+                <>
+                  <button
+                    className="button button-secondary"
+                    type="button"
+                    disabled={submitting}
+                    onClick={() => {
+                      applyTemplate(selectedTemplate);
+                    }}
+                  >
+                    {bi("应用模板", "Apply template")}
+                  </button>
+                  <button
+                    className="button"
+                    type="button"
+                    disabled={submitting}
+                    onClick={() => {
+                      void handleCreateFromTemplate();
+                    }}
+                  >
+                    {bi("一键创建任务", "Create from template")}
+                  </button>
+                  <button
+                    className="button button-secondary"
+                    type="button"
+                    disabled={submitting}
+                    onClick={handleDeleteTemplate}
+                  >
+                    {bi("删除模板", "Delete template")}
+                  </button>
+                </>
+              ) : null}
             </div>
           </div>
         </div>

@@ -37,9 +37,9 @@ a {
 
 .app-shell {
   margin: 0 auto;
-  max-width: 920px;
+  max-width: 1360px;
   overflow-x: clip;
-  padding: 24px 16px 40px;
+  padding: 24px 18px 42px;
 }
 
 .app-header {
@@ -76,12 +76,12 @@ a {
 
 .page-grid {
   display: grid;
-  gap: 14px;
+  gap: 16px;
 }
 
 .dashboard-columns {
   display: grid;
-  gap: 14px;
+  gap: 16px;
 }
 
 .dashboard-column {
@@ -97,7 +97,7 @@ a {
 
 .task-audit-columns {
   display: grid;
-  gap: 14px;
+  gap: 16px;
 }
 
 .task-audit-columns > * {
@@ -114,7 +114,7 @@ a {
   border: 1px solid var(--panel-border);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
-  padding: 16px;
+  padding: 18px;
   backdrop-filter: blur(8px);
 }
 
@@ -122,7 +122,7 @@ a {
   align-items: center;
   display: flex;
   justify-content: space-between;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
 .panel-title {
@@ -243,7 +243,7 @@ textarea {
 
 .task-list-scroll,
 .audit-list-scroll {
-  max-height: 560px;
+  max-height: 620px;
   min-height: 380px;
   overflow-y: auto;
   padding-right: 4px;
@@ -256,7 +256,7 @@ textarea {
   display: grid;
   gap: 8px;
   min-width: 0;
-  padding: 12px;
+  padding: 14px;
 }
 
 .task-item-top,
@@ -282,13 +282,22 @@ textarea {
 .task-quick-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
 }
 
 .task-quick-actions .button {
-  flex: 1 1 auto;
-  min-height: 40px;
-  padding: 9px 12px;
+  flex: 0 0 auto;
+  min-height: 34px;
+  min-width: 34px;
+  padding: 7px 10px;
+}
+
+.compact-actions .button {
+  border-radius: 10px;
+  font-size: 0.86rem;
+  min-height: 34px;
+  min-width: 34px;
+  padding: 7px 10px;
 }
 
 .status {
@@ -685,6 +694,16 @@ textarea {
   .mobile-sticky-actions .button {
     width: 100%;
   }
+
+  .task-quick-actions .button {
+    flex: 1 1 calc(50% - 6px);
+    min-height: 40px;
+  }
+
+  .compact-actions .button {
+    min-height: 40px;
+    width: 100%;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -705,32 +724,38 @@ textarea {
 
 @media (min-width: 720px) {
   .app-shell {
-    padding: 28px 24px 44px;
+    padding: 28px 24px 48px;
   }
 
   .dashboard-columns {
     align-items: start;
-    grid-template-columns: minmax(280px, 360px) 1fr;
+    grid-template-columns: minmax(340px, 440px) minmax(0, 1fr);
   }
 
   .task-audit-columns {
     align-items: start;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: minmax(340px, 1fr) minmax(340px, 1fr);
   }
 
   .row {
-    grid-template-columns: 120px 1fr;
-  }
-
-  .template-grid {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
 
+  .template-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .audit-filter-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .detail-grid {
     grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (min-width: 1200px) {
+  .template-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
 }

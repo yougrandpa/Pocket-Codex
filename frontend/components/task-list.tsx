@@ -192,7 +192,7 @@ export function TaskList({
                   {bi("查看详情", "View detail")}
                 </Link>
               </div>
-              <div className="task-quick-actions">
+              <div className="task-quick-actions compact-actions">
                 {supportedQuickActions(task).map((action) => {
                   const working = workingKey === `${task.id}:${action}`;
                   return (
