@@ -28,6 +28,13 @@ cd frontend
 npm run dev
 ```
 
+If you hit a local chunk/cache error such as `Cannot find module './xxx.js'`, run:
+
+```bash
+cd frontend
+npm run dev:reset
+```
+
 Open `http://localhost:3000`.
 
 ## Pages and components
