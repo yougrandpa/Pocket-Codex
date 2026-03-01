@@ -67,6 +67,13 @@ export interface AuditLog {
   detail: Record<string, unknown>;
 }
 
+export interface HealthStatus {
+  status: string;
+  timestamp: string;
+  task_executor: string;
+  execution_backend: string;
+}
+
 export interface CreateTaskInput {
   prompt: string;
   priority?: number;
@@ -266,6 +273,17 @@ function asRecord(value: unknown): Record<string, unknown> {
   return {};
 }
 
+function normalizeHealth(raw: unknown): HealthStatus {
+  const value = asRecord(raw);
+  return {
+    status: typeof value.status === "string" ? value.status : "unknown",
+    timestamp: typeof value.timestamp === "string" ? value.timestamp : "",
+    task_executor: typeof value.task_executor === "string" ? value.task_executor : "unknown",
+    execution_backend:
+      typeof value.execution_backend === "string" ? value.execution_backend : "unknown"
+  };
+}
+
 function normalizeTask(raw: unknown): Task {
   const value = asRecord(raw);
   return {
@@ -358,6 +376,11 @@ export async function getAuditLogs(limit = 20): Promise<AuditLog[]> {
     `/api/v1/tasks/audit/logs?limit=${encodeURIComponent(String(limit))}`
   );
   return Array.isArray(body.items) ? body.items : [];
+}
+
+export async function getHealthStatus(): Promise<HealthStatus> {
+  const body = await fetchJson<unknown>(`${API_BASE_URL}/healthz`, { cache: "no-store" });
+  return normalizeHealth(body);
 }
 
 export function openEventStream(taskId?: string): EventSource {

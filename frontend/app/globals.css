@@ -65,6 +65,10 @@ a {
   gap: 14px;
 }
 
+.full-span {
+  grid-column: 1 / -1;
+}
+
 .panel {
   animation: fade-up 0.45s ease both;
   background: var(--panel);
@@ -370,6 +374,56 @@ textarea {
 .event-panel h3 {
   font-size: 0.92rem;
   margin: 0 0 8px;
+}
+
+.executor-status-row {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.executor-status-main {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.executor-indicator {
+  background: #0f766e;
+  border-radius: 999px;
+  height: 10px;
+  width: 10px;
+}
+
+.executor-indicator-error {
+  background: var(--danger);
+}
+
+.executor-pill {
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 4px 10px;
+}
+
+.executor-pill-codex {
+  background: rgba(15, 118, 110, 0.16);
+  color: #0b5f58;
+}
+
+.executor-pill-simulator {
+  background: rgba(172, 103, 9, 0.16);
+  color: #8d4d00;
+}
+
+.executor-pill-unknown {
+  background: rgba(75, 93, 122, 0.14);
+  color: #334155;
+}
+
+.executor-meta {
+  font-size: 0.82rem;
 }
 
 @keyframes fade-up {

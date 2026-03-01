@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { AuditPanel } from "@/components/audit-panel";
+import { ExecutorStatusBar } from "@/components/executor-status-bar";
 import { LoginPanel } from "@/components/login-panel";
 import { NotificationCenter } from "@/components/notification-center";
 import { TaskCreator } from "@/components/task-creator";
@@ -150,6 +151,7 @@ export function TaskDashboard() {
 
   return (
     <div className="page-grid">
+      <ExecutorStatusBar />
       <TaskCreator
         onCreated={(task) => {
           setTasks((prev) => [task, ...prev]);
