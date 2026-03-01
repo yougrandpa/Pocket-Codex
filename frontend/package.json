@@ -5,6 +5,7 @@
   "scripts": {
     "clean": "node -e \"const fs=require('fs');fs.rmSync('.next',{recursive:true,force:true});console.log('cleaned .next');\"",
     "dev": "next dev",
+    "dev:lan": "npm run clean && next dev --hostname 0.0.0.0 --port 3000",
     "dev:reset": "npm run clean && next dev",
     "build": "next build",
     "start": "next start",

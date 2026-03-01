@@ -69,7 +69,7 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```bash
 cd frontend
 npm install
-NEXT_PUBLIC_API_BASE_URL=http://localhost:8000 npm run dev
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8000 npm run dev:lan
 ```
 
 打开 `http://localhost:3000`，应能看到任务列表与创建任务入口。
@@ -247,7 +247,7 @@ Q6: 如何快速确认本地环境是否已就绪？
 A6: 运行 `./scripts/verify_local_env.sh`，会执行后端编译+API 烟测以及前端构建。
 
 Q7: 启动前端时报 `Cannot find module './xxx.js'`（来自 `.next/server/webpack-runtime.js`）怎么办？  
-A7: 这是 Next.js 本地缓存损坏或增量构建残留导致。执行 `cd frontend && npm run clean && npm run dev`（或直接 `npm run dev:reset`）即可。
+A7: 这是 Next.js 本地缓存损坏或增量构建残留导致。执行 `cd frontend && npm run dev:lan`（会先清理 `.next` 再启动），或 `npm run dev:reset` 即可。
 
 Q8: 我发送了追加消息，但任务没有执行新命令？  
 A8: 如果后端是 `APP_TASK_EXECUTOR=simulator`，任务只是模拟执行，不会真正调用 Codex。请切换为 `APP_TASK_EXECUTOR=codex` 并重启后端。可先请求 `GET /healthz`，确认返回 `task_executor=codex`。当前版本在任务已结束后追加消息时，会自动触发一次重跑（`RETRYING -> QUEUED`）。

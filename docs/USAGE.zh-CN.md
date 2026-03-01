@@ -89,7 +89,7 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```bash
 # 终端 2：前端（把 API 指向电脑局域网 IP）
 cd frontend
-NEXT_PUBLIC_API_BASE_URL=http://192.168.1.10:8000 npm run dev
+NEXT_PUBLIC_API_BASE_URL=http://192.168.1.10:8000 npm run dev:lan
 ```
 
 然后手机打开：`http://192.168.1.10:3000`
@@ -204,6 +204,9 @@ NEXT_PUBLIC_API_BASE_URL=http://192.168.1.10:8000 npm run dev
 4. 手机和电脑是否在同一网络，前端/API 地址是否用电脑局域网 IP。
 5. 若有反向代理，确认没有屏蔽轮询接口：
    - `GET /api/v1/auth/mobile/requests/{request_id}`
+6. 如果出现 `Cannot find module './403.js'` 或类似 `.next/server` chunk 丢失错误：
+   - 执行 `cd frontend && NEXT_PUBLIC_API_BASE_URL=http://你的电脑IP:8000 npm run dev:lan`
+   - 该命令会先清理 `.next` 再启动，通常可直接恢复。
 
 ### Q2: 任务长期停在 `QUEUED`
 
