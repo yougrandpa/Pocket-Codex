@@ -355,11 +355,29 @@ export interface TaskEventStream {
   close: () => void;
 }
 
-export async function getTasks(status?: TaskStatus): Promise<Task[]> {
-  const query = status ? `?status=${encodeURIComponent(status)}` : "";
-  const body = await authorizedFetchJson<{ items?: unknown[] }>(`/api/v1/tasks${query}`, {
-    cache: "no-store"
-  });
+interface GetTasksOptions {
+  limit?: number;
+  offset?: number;
+}
+
+export async function getTasks(status?: TaskStatus, options: GetTasksOptions = {}): Promise<Task[]> {
+  const params = new URLSearchParams();
+  if (status) {
+    params.set("status", status);
+  }
+  if (typeof options.limit === "number" && Number.isFinite(options.limit)) {
+    params.set("limit", String(Math.max(1, Math.floor(options.limit))));
+  }
+  if (typeof options.offset === "number" && Number.isFinite(options.offset)) {
+    params.set("offset", String(Math.max(0, Math.floor(options.offset))));
+  }
+  const query = params.toString();
+  const body = await authorizedFetchJson<{ items?: unknown[] }>(
+    `/api/v1/tasks${query ? `?${query}` : ""}`,
+    {
+      cache: "no-store"
+    }
+  );
   const items = Array.isArray(body.items) ? body.items : [];
   return items.map(normalizeTask);
 }

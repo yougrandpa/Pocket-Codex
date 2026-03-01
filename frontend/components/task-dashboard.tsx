@@ -72,7 +72,7 @@ export function TaskDashboard() {
     }
     let cancelled = false;
     setLoading(true);
-    Promise.all([getTasks(), getAuditLogs(20)])
+    Promise.all([getTasks(undefined, { limit: 200 }), getAuditLogs(20)])
       .then(([items, logs]) => {
         if (cancelled) {
           return;
@@ -137,6 +137,12 @@ export function TaskDashboard() {
     () => [...tasks].sort((a, b) => (a.updated_at > b.updated_at ? -1 : 1)),
     [tasks]
   );
+  const workdirSuggestions = useMemo(() => {
+    const values = tasks
+      .map((task) => task.workdir?.trim() || "")
+      .filter((item) => item.length > 0);
+    return Array.from(new Set(values));
+  }, [tasks]);
 
   if (!authed) {
     return <LoginPanel onLoggedIn={() => setAuthed(true)} />;
@@ -151,6 +157,7 @@ export function TaskDashboard() {
             onCreated={(task) => {
               setTasks((prev) => [task, ...prev]);
             }}
+            workdirSuggestions={workdirSuggestions}
           />
           <NotificationCenter events={events} />
           <section className="panel animate-rise delay-2">
