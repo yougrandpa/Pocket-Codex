@@ -29,6 +29,7 @@ def main() -> None:
         login_response = local_client.post(
             "/api/v1/auth/login",
             json={"username": username, "password": password},
+            headers={"X-Real-IP": "127.0.0.1"},
         )
         assert_true(login_response.status_code == 200, f"local login failed: {login_response.text}")
         token = login_response.json()["access_token"]
@@ -42,6 +43,7 @@ def main() -> None:
         direct_login = remote_client.post(
             "/api/v1/auth/login",
             json={"username": username, "password": password},
+            headers={"X-Real-IP": "172.20.10.1"},
         )
         assert_true(
             direct_login.status_code == 403,
@@ -68,7 +70,7 @@ def main() -> None:
                 "password": password,
                 "device_name": "iphone-regression",
             },
-            headers={"Origin": "http://172.20.10.11:3000"},
+            headers={"Origin": "http://172.20.10.11:3000", "X-Real-IP": "172.20.10.1"},
         )
         assert_true(
             mobile_request.status_code == 200,
@@ -76,7 +78,10 @@ def main() -> None:
         )
         cancelled_request_id = mobile_request.json()["request_id"]
 
-        cancel = remote_client.post(f"/api/v1/auth/mobile/requests/{cancelled_request_id}/cancel")
+        cancel = remote_client.post(
+            f"/api/v1/auth/mobile/requests/{cancelled_request_id}/cancel",
+            headers={"X-Real-IP": "172.20.10.1"},
+        )
         assert_true(cancel.status_code == 200, f"cancel failed: {cancel.status_code} {cancel.text}")
 
         mobile_request = remote_client.post(
@@ -86,7 +91,7 @@ def main() -> None:
                 "password": password,
                 "device_name": "iphone-regression-2",
             },
-            headers={"Origin": "http://172.20.10.11:3000"},
+            headers={"Origin": "http://172.20.10.11:3000", "X-Real-IP": "172.20.10.1"},
         )
         assert_true(
             mobile_request.status_code == 200,

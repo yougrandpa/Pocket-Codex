@@ -25,7 +25,11 @@ def main() -> None:
     password = required_env("APP_PASSWORD")
 
     with TestClient(app, base_url="http://127.0.0.1:8000", client=("127.0.0.1", 55000)) as client:
-        login = client.post("/api/v1/auth/login", json={"username": username, "password": password})
+        login = client.post(
+            "/api/v1/auth/login",
+            json={"username": username, "password": password},
+            headers={"X-Real-IP": "127.0.0.1"},
+        )
         assert_true(login.status_code == 200, f"login failed: {login.status_code} {login.text}")
         token = login.json()["access_token"]
         headers = {"Authorization": f"Bearer {token}"}

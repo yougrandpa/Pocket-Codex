@@ -28,9 +28,36 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 def _request_ip(request: Request) -> str:
-    if request.client is None:
-        return "unknown"
-    return request.client.host or "unknown"
+    direct_host = request.client.host if request.client is not None and request.client.host else "unknown"
+
+    if not settings.trust_proxy_headers:
+        return direct_host
+    if direct_host not in set(settings.trusted_proxy_hosts):
+        return direct_host
+    proxy_hints = (
+        request.headers.get("x-forwarded-for"),
+        request.headers.get("x-forwarded-host"),
+        request.headers.get("x-forwarded-proto"),
+    )
+    if not any(proxy_hints):
+        return direct_host
+
+    forwarded_candidates: list[str] = []
+    x_forwarded_for = (request.headers.get("x-forwarded-for") or "").strip()
+    if x_forwarded_for:
+        forwarded_candidates.extend(
+            item.strip() for item in x_forwarded_for.split(",") if item.strip()
+        )
+
+    if direct_host in {"localhost", "127.0.0.1", "::1", "unknown"}:
+        for candidate in reversed(forwarded_candidates):
+            try:
+                ip_address(candidate)
+            except ValueError:
+                continue
+            return candidate
+        return "untrusted-proxy"
+    return direct_host
 
 
 def _is_loopback_request(request: Request) -> bool:

@@ -73,10 +73,20 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```bash
 cd frontend
 npm install
-NEXT_PUBLIC_API_BASE_URL=http://localhost:8000 npm run dev:lan
+npm run dev:lan
 ```
 
 打开 `http://localhost:3000`，应能看到任务列表与创建任务入口。
+
+说明：
+
+- 前端默认会通过 Next.js rewrite 把 `/api/*` 和 `/healthz` 代理到 `http://127.0.0.1:8000`。
+- 这样手机访问前端时，不需要浏览器直接访问 `localhost:8000`，可避免移动端登录 `load failed`。
+- 如果你需要代理到其他后端地址，再设置（注意是 `BACKEND_BASE_URL`，不是 `NEXT_PUBLIC_API_BASE_URL`）：
+
+```bash
+BACKEND_BASE_URL=http://<backend-host>:8000 npm run dev:lan
+```
 
 ## 4. 手工联调步骤
 

@@ -170,6 +170,8 @@ class Settings:
     sse_replay_limit: int
     workdir_whitelist: list[str]
     require_loopback_direct_login: bool
+    trust_proxy_headers: bool
+    trusted_proxy_hosts: list[str]
     mobile_login_request_ttl_seconds: int
     cors_allow_private_network: bool
 
@@ -197,6 +199,11 @@ def load_settings() -> Settings:
         os.getenv("APP_WORKDIR_WHITELIST", str(PROJECT_ROOT.resolve()))
     )
     workdir_whitelist = _resolve_workdir_whitelist(raw_whitelist)
+    trusted_proxy_hosts = _as_csv_list(
+        os.getenv("APP_TRUSTED_PROXY_HOSTS", "127.0.0.1,::1,localhost")
+    )
+    if not trusted_proxy_hosts:
+        trusted_proxy_hosts = ["127.0.0.1", "::1", "localhost"]
     return Settings(
         username=_require_non_empty_env("APP_USERNAME"),
         password=_require_non_empty_env("APP_PASSWORD"),
@@ -249,6 +256,11 @@ def load_settings() -> Settings:
             os.getenv("APP_REQUIRE_LOOPBACK_DIRECT_LOGIN", "true"),
             True,
         ),
+        trust_proxy_headers=_as_bool(
+            os.getenv("APP_TRUST_PROXY_HEADERS", "true"),
+            True,
+        ),
+        trusted_proxy_hosts=trusted_proxy_hosts,
         mobile_login_request_ttl_seconds=mobile_login_request_ttl_seconds,
         cors_allow_private_network=_as_bool(
             os.getenv("APP_CORS_ALLOW_PRIVATE_NETWORK", "true"),

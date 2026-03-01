@@ -33,7 +33,11 @@ username = os.environ["APP_USERNAME"]
 password = os.environ["APP_PASSWORD"]
 
 with TestClient(app, base_url="http://127.0.0.1:8000", client=("127.0.0.1", 54000)) as client:
-    login = client.post("/api/v1/auth/login", json={"username": username, "password": password})
+    login = client.post(
+        "/api/v1/auth/login",
+        json={"username": username, "password": password},
+        headers={"X-Real-IP": "127.0.0.1"},
+    )
     assert login.status_code == 200, login.text
     token = login.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}

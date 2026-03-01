@@ -178,9 +178,7 @@ export interface ExecutorCapability {
   supports_parallel_agents: boolean;
 }
 
-const DEFAULT_API_BASE_URL = "http://localhost:8000";
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") || DEFAULT_API_BASE_URL;
+const API_BASE_URL = "";
 const SESSION_STORAGE_KEY = "pocket_codex_session";
 const LEGACY_LOCAL_STORAGE_KEY = "pocket_codex_session";
 let inMemorySession: SessionTokens | null = null;
