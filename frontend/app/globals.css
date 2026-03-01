@@ -551,6 +551,28 @@ textarea {
   margin-top: 4px;
 }
 
+.login-inline-tip {
+  font-size: 0.82rem;
+  margin: -4px 0 6px;
+}
+
+.login-desktop-entry {
+  display: grid;
+  gap: 8px;
+}
+
+.login-desktop-entry summary {
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+  list-style: none;
+}
+
+.login-desktop-entry summary::-webkit-details-marker {
+  display: none;
+}
+
 .empty-cta {
   display: grid;
   gap: 6px;

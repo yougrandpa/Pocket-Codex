@@ -131,7 +131,8 @@ curl http://localhost:8000/api/v1/tasks/<TASK_ID> \
 ## 4.5 订阅 SSE 事件
 
 ```bash
-curl -N "http://localhost:8000/api/v1/stream?task_id=<TASK_ID>&access_token=$TOKEN"
+curl -N "http://localhost:8000/api/v1/stream?task_id=<TASK_ID>" \
+  -H "Authorization: Bearer $TOKEN"
 ```
 
 预期：可持续收到 `task.status.changed`、`task.log.appended` 等事件。
@@ -202,6 +203,7 @@ REQ=$(curl -s -X POST http://localhost:8000/api/v1/auth/mobile/request \
   -d "{\"username\":\"$APP_USERNAME\",\"password\":\"$APP_PASSWORD\",\"device_name\":\"iphone-15-pro\"}")
 echo "$REQ"
 REQ_ID=$(echo "$REQ" | python3 -c 'import json,sys; print(json.load(sys.stdin)["request_id"])')
+REQ_TOKEN=$(echo "$REQ" | python3 -c 'import json,sys; print(json.load(sys.stdin)["request_token"])')
 ```
 
 ### 4.9.2 电脑端查看待审批请求（需要已登录 token）
@@ -221,7 +223,8 @@ curl -X POST "http://localhost:8000/api/v1/auth/mobile/requests/$REQ_ID/approve"
 ### 4.9.4 手机端轮询状态并获取 token
 
 ```bash
-curl "http://localhost:8000/api/v1/auth/mobile/requests/$REQ_ID"
+curl "http://localhost:8000/api/v1/auth/mobile/requests/$REQ_ID" \
+  -H "X-Mobile-Request-Token: $REQ_TOKEN"
 ```
 
 如果已批准，响应里会包含：

@@ -8,7 +8,7 @@
 
 - 除 `POST /api/v1/auth/login` 与 `POST /api/v1/auth/refresh` 外，其余接口均需鉴权。
 - Header 方式：`Authorization: Bearer <access_token>`
-- SSE（浏览器 `EventSource`）可使用查询参数：`/api/v1/stream?access_token=<access_token>`
+- SSE 仅支持 Header 鉴权（不再支持 URL query token）。
 
 ### 0.1 登录
 
@@ -335,7 +335,7 @@
 
 ## 4. SSE 事件流
 
-`GET /api/v1/stream?task_id={id}&access_token={token}`（`task_id` 可选，不传时返回全量任务事件）
+`GET /api/v1/stream?task_id={id}`（`task_id` 可选，不传时返回全量任务事件；需 `Authorization: Bearer <access_token>`）
 
 响应头建议：
 

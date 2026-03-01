@@ -7,18 +7,21 @@ FastAPI backend skeleton for Pocket Codex mobile control panel.
 - `POST /api/v1/auth/login` and `POST /api/v1/auth/refresh` for single-user JWT auth.
 - Mobile approval auth flow:
   - `POST /api/v1/auth/mobile/request` creates pending mobile login request.
+    - Returns `request_id` and `request_token` (keep both on device).
   - `GET /api/v1/auth/mobile/pending` lists pending requests (desktop session required).
   - `POST /api/v1/auth/mobile/requests/{id}/approve|reject|cancel` approves/rejects/cancels request.
-  - `GET /api/v1/auth/mobile/requests/{id}` polls request status and returns tokens on approval.
+  - `GET /api/v1/auth/mobile/requests/{id}` polls status (must send `X-Mobile-Request-Token` header) and returns tokens on approval.
 - `POST /api/v1/tasks` creates a task (`QUEUED`) and starts a simulated lifecycle.
 - Worker lifecycle transitions `QUEUED -> RUNNING -> SUCCEEDED`, supports pause/resume/timeout.
 - `GET /api/v1/tasks` and `GET /api/v1/tasks/{id}` read persisted task snapshots.
 - `POST /api/v1/tasks/{id}/control` supports `pause`, `resume`, `cancel`, `retry`.
 - `POST /api/v1/tasks/{id}/message` appends user messages to a task.
 - `GET /api/v1/tasks/audit/logs` returns audit logs (auth + control + message actions).
-- `GET /api/v1/stream` exposes SSE events (optional `task_id` filter), auth via bearer or `access_token` query.
+- `GET /api/v1/stream` exposes SSE events (optional `task_id` filter), auth via bearer header only.
 
 ## Local run
+
+Run commands from repository root (`Pocket-Codex/`) unless noted.
 
 ```bash
 ./scripts/setup_local_env.sh
@@ -52,17 +55,23 @@ set -a && source .env && set +a
 # export CODEX_CLI_PATH=codex-cli
 # export CODEX_FULL_AUTO=true
 uvicorn app.main:app --reload --port 8000
+# If file watching is restricted, run without reload:
+# uvicorn app.main:app --port 8000
 ```
 
 ## Quick smoke test
 
-Login and export access token:
+Login and export access token (`backend/` terminal):
 
 ```bash
-source backend/.env
-TOKEN=$(curl -s -X POST http://127.0.0.1:8000/api/v1/auth/login \
+source .env
+LOGIN_JSON=$(curl --fail-with-body -sS -X POST http://127.0.0.1:8000/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d "{\"username\":\"$APP_USERNAME\",\"password\":\"$APP_PASSWORD\"}" | python3 -c 'import json,sys; print(json.load(sys.stdin)["access_token"])')
+  -d "{\"username\":\"$APP_USERNAME\",\"password\":\"$APP_PASSWORD\"}") || {
+  echo "[smoke] login request failed. Is backend running on 127.0.0.1:8000?"
+  exit 1
+}
+TOKEN=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["access_token"])' <<< "$LOGIN_JSON")
 
 curl -X POST http://127.0.0.1:8000/api/v1/tasks \
   -H "Authorization: Bearer $TOKEN" \
@@ -73,7 +82,26 @@ curl -X POST http://127.0.0.1:8000/api/v1/tasks \
 Then check:
 
 - `GET http://127.0.0.1:8000/api/v1/tasks` with bearer token
-- `GET http://127.0.0.1:8000/api/v1/stream?access_token=$TOKEN`
+- `GET http://127.0.0.1:8000/api/v1/stream` with `Authorization: Bearer $TOKEN`
+
+### Mobile approval example
+
+```bash
+source .env
+REQ_JSON=$(curl --fail-with-body -sS -X POST http://127.0.0.1:8000/api/v1/auth/mobile/request \
+  -H "Content-Type: application/json" \
+  -d "{\"username\":\"$APP_USERNAME\",\"password\":\"$APP_PASSWORD\",\"device_name\":\"phone\"}")
+REQUEST_ID=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["request_id"])' <<< "$REQ_JSON")
+REQUEST_TOKEN=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["request_token"])' <<< "$REQ_JSON")
+
+# desktop side approves (use a desktop bearer token):
+curl -X POST "http://127.0.0.1:8000/api/v1/auth/mobile/requests/$REQUEST_ID/approve" \
+  -H "Authorization: Bearer $TOKEN"
+
+# phone side polls by request_id + request_token header:
+curl "http://127.0.0.1:8000/api/v1/auth/mobile/requests/$REQUEST_ID" \
+  -H "X-Mobile-Request-Token: $REQUEST_TOKEN"
+```
 
 ## Notes
 
@@ -83,6 +111,7 @@ Then check:
 - Workdir validation is enforced by `APP_WORKDIR_WHITELIST` for safer local execution boundaries.
 - SSE supports reconnect replay via `Last-Event-ID` / `last_event_id`.
 - By default, direct login (`/auth/login`) is localhost-only (`APP_REQUIRE_LOOPBACK_DIRECT_LOGIN=true`).
+- If `/auth/login` returns `403` from non-localhost traffic, use the mobile approval flow (`/auth/mobile/*`).
 - Mobile login requires desktop approval via `/auth/mobile/*` endpoints.
 - Private-network CORS origins are allowed by default (`APP_CORS_ALLOW_PRIVATE_NETWORK=true`) for phone hotspot/LAN usage.
 - Default task executor is `simulator`; set `APP_TASK_EXECUTOR=codex` or `APP_TASK_EXECUTOR=codex-cli` to run real local CLI commands.

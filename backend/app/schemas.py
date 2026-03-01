@@ -32,6 +32,7 @@ class MobileLoginStartRequest(BaseModel):
 
 class MobileLoginStartResponse(BaseModel):
     request_id: str
+    request_token: str
     status: str
     expires_at: str
     poll_interval_seconds: int

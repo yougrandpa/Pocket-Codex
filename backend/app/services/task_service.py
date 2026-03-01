@@ -1001,11 +1001,12 @@ class TaskService:
         return None
 
     def _normalize_workdir_or_raise(self, workdir: str | None) -> str | None:
+        default_workdir = Path(settings.workdir_whitelist[0]).resolve()
         if workdir is None:
-            return None
+            return str(default_workdir)
         raw = workdir.strip()
         if not raw:
-            return None
+            return str(default_workdir)
         resolved = Path(raw).expanduser().resolve()
         if not resolved.exists() or not resolved.is_dir():
             raise ValueError(f"workdir does not exist or is not a directory: {resolved}")
@@ -1185,7 +1186,7 @@ class TaskService:
         except ValueError as exc:
             await self._mark_task_failed(task_id=task_id, reason=str(exc))
             return
-        workdir = normalized_workdir or str(Path.cwd())
+        workdir = normalized_workdir
         prompt = self._build_codex_prompt(task)
         selected_model = task.model or settings.codex_model
         cmd = [settings.codex_cli_path, "exec", "--skip-git-repo-check", "-C", workdir]

@@ -38,9 +38,11 @@ export function LoginPanel({ onLoggedIn }: LoginPanelProps) {
   const [deviceName, setDeviceName] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [pendingRequestId, setPendingRequestId] = useState<string | null>(null);
+  const [pendingRequestToken, setPendingRequestToken] = useState<string | null>(null);
   const [pendingExpiresAt, setPendingExpiresAt] = useState<string | null>(null);
   const [pollIntervalSeconds, setPollIntervalSeconds] = useState(2);
   const [cancelPending, setCancelPending] = useState(false);
+  const [compactViewport, setCompactViewport] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
 
@@ -53,18 +55,64 @@ export function LoginPanel({ onLoggedIn }: LoginPanelProps) {
     setDeviceName(defaultDeviceName());
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+      return;
+    }
+    const media = window.matchMedia("(max-width: 719px)");
+    const sync = () => setCompactViewport(media.matches);
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
+  }, []);
+
+  const desktopApprovePath = useMemo(() => {
+    if (typeof window === "undefined") {
+      return "http://localhost:3000";
+    }
+    return `${window.location.origin}/`;
+  }, []);
+
+  const mapAuthError = useCallback((raw: unknown): string => {
+    const message = raw instanceof Error ? raw.message : "";
+    if (message.includes("Request validation failed") || message.includes("Invalid request token")) {
+      return bi(
+        "授权请求已失效，请重新发起手机授权。",
+        "Approval request is no longer valid. Please request mobile approval again."
+      );
+    }
+    if (message.includes("Invalid credentials")) {
+      return bi("账号或密码错误，请重试。", "Invalid username or password. Please try again.");
+    }
+    if (message.includes("Request timed out")) {
+      return bi(
+        "请求超时，请确认网络与服务状态后重试。",
+        "Request timed out. Verify network/backend status and retry."
+      );
+    }
+    if (message.includes("Internal Server Error") || message.includes("HTTP 500")) {
+      return bi(
+        "登录服务暂时不可用，请稍后重试；若持续失败请先在电脑端检查服务状态。",
+        "Login service is temporarily unavailable. Retry shortly, or check backend status on desktop."
+      );
+    }
+    return message || bi("登录失败。", "Sign in failed.");
+  }, []);
+
   const pollPendingRequest = useCallback(
-    async (requestId: string): Promise<boolean> => {
-      const status = await getMobileLoginStatus(requestId);
+    async (requestId: string, requestToken: string): Promise<boolean> => {
+      const status = await getMobileLoginStatus(requestId, requestToken);
       if (status.status === "COMPLETED" && status.access_token && status.refresh_token) {
         setNote(null);
         setError(null);
         setPendingRequestId(null);
+        setPendingRequestToken(null);
         onLoggedIn();
         return true;
       }
-      if (status.status === "REJECTED") {
+      if (status.status === "REJECTED" || status.status === "CANCELED") {
         setPendingRequestId(null);
+        setPendingRequestToken(null);
         setError(
           bi(
             "该手机登录请求已被拒绝或取消，请重新发起。",
@@ -76,6 +124,7 @@ export function LoginPanel({ onLoggedIn }: LoginPanelProps) {
       }
       if (status.status === "EXPIRED") {
         setPendingRequestId(null);
+        setPendingRequestToken(null);
         setError(bi("授权请求已过期，请重新发起。", "Approval request expired. Please start again."));
         setNote(null);
         return true;
@@ -92,7 +141,7 @@ export function LoginPanel({ onLoggedIn }: LoginPanelProps) {
   );
 
   useEffect(() => {
-    if (!pendingRequestId) {
+    if (!pendingRequestId || !pendingRequestToken) {
       return;
     }
     let cancelled = false;
@@ -102,17 +151,14 @@ export function LoginPanel({ onLoggedIn }: LoginPanelProps) {
           return;
         }
         try {
-          await pollPendingRequest(pendingRequestId);
+          await pollPendingRequest(pendingRequestId, pendingRequestToken);
         } catch (pollError) {
           if (cancelled) {
             return;
           }
           setPendingRequestId(null);
-          setError(
-            pollError instanceof Error
-              ? pollError.message
-              : bi("轮询授权状态失败。", "Failed to poll approval status.")
-          );
+          setPendingRequestToken(null);
+          setError(mapAuthError(pollError));
         }
       })();
     }, Math.max(1, pollIntervalSeconds) * 1000);
@@ -121,7 +167,7 @@ export function LoginPanel({ onLoggedIn }: LoginPanelProps) {
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, [pendingRequestId, pollIntervalSeconds, pollPendingRequest]);
+  }, [mapAuthError, pendingRequestId, pendingRequestToken, pollIntervalSeconds, pollPendingRequest]);
 
   async function handleDesktopLogin(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
@@ -135,7 +181,7 @@ export function LoginPanel({ onLoggedIn }: LoginPanelProps) {
       await login(username.trim(), password);
       onLoggedIn();
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : bi("登录失败。", "Sign in failed."));
+      setError(mapAuthError(submitError));
     } finally {
       setSubmitting(false);
     }
@@ -155,6 +201,7 @@ export function LoginPanel({ onLoggedIn }: LoginPanelProps) {
         deviceName.trim() || "mobile-browser"
       );
       setPendingRequestId(requestResult.request_id);
+      setPendingRequestToken(requestResult.request_token);
       setPendingExpiresAt(requestResult.expires_at);
       setPollIntervalSeconds(requestResult.poll_interval_seconds || 2);
       setNote(
@@ -164,33 +211,26 @@ export function LoginPanel({ onLoggedIn }: LoginPanelProps) {
         )
       );
     } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : bi("发起手机登录请求失败。", "Failed to request mobile sign-in.")
-      );
+      setError(mapAuthError(requestError));
     } finally {
       setSubmitting(false);
     }
   }
 
   async function handleCancelWaiting(): Promise<void> {
-    if (!pendingRequestId || cancelPending) {
+    if (!pendingRequestId || !pendingRequestToken || cancelPending) {
       return;
     }
     setCancelPending(true);
     setError(null);
     try {
-      await cancelMobileLoginRequest(pendingRequestId);
+      await cancelMobileLoginRequest(pendingRequestId, pendingRequestToken);
       setPendingRequestId(null);
+      setPendingRequestToken(null);
       setPendingExpiresAt(null);
       setNote(bi("已取消等待授权。", "Canceled waiting for approval."));
     } catch (cancelError) {
-      setError(
-        cancelError instanceof Error
-          ? cancelError.message
-          : bi("取消等待失败。", "Failed to cancel waiting.")
-      );
+      setError(mapAuthError(cancelError));
     } finally {
       setCancelPending(false);
     }
@@ -213,6 +253,12 @@ export function LoginPanel({ onLoggedIn }: LoginPanelProps) {
         <li>{bi("2) 在电脑端“手机登录授权”里点击允许。", "2) Approve in desktop Mobile Login Approvals.")}</li>
         <li>{bi("3) 回到手机端自动完成登录。", "3) Return to mobile and sign in automatically.")}</li>
       </ol>
+      <p className="muted login-inline-tip">
+        {bi(
+          "提示：先填写用户名和密码，按钮才可点击。",
+          "Tip: Username and password are required before actions are enabled."
+        )}
+      </p>
       <form className="stack" onSubmit={handleDesktopLogin}>
         <label className="field">
           <span>{bi("用户名", "Username")}</span>
@@ -252,13 +298,20 @@ export function LoginPanel({ onLoggedIn }: LoginPanelProps) {
               <br />
               {bi("到期", "Expires")}: {formatDateTime(pendingExpiresAt)}
             </p>
+            <p className="muted">
+              {bi("请在电脑端打开并审批：", "Open on desktop and approve:")}{" "}
+              <code>{desktopApprovePath}</code>
+            </p>
             <div className="pagination-actions" style={{ marginTop: "8px" }}>
               <button
                 className="button button-secondary"
                 type="button"
                 disabled={submitting}
                 onClick={() => {
-                  void pollPendingRequest(pendingRequestId);
+                  if (!pendingRequestToken) {
+                    return;
+                  }
+                  void pollPendingRequest(pendingRequestId, pendingRequestToken);
                 }}
               >
                 {bi("我已批准，立即检查", "I approved, check now")}
@@ -281,9 +334,22 @@ export function LoginPanel({ onLoggedIn }: LoginPanelProps) {
           >
             {submitting ? bi("提交中...", "Submitting...") : bi("发起手机授权", "Request mobile approval")}
           </button>
-          <button className="button button-secondary" type="submit" disabled={submitting || formInvalid}>
-            {submitting ? bi("登录中...", "Signing in...") : bi("我是电脑端，直接登录", "I'm on desktop, direct sign-in")}
-          </button>
+          {compactViewport ? (
+            <details className="login-desktop-entry">
+              <summary>{bi("电脑端入口", "Desktop entry")}</summary>
+              <button className="button button-secondary" type="submit" disabled={submitting || formInvalid}>
+                {submitting
+                  ? bi("登录中...", "Signing in...")
+                  : bi("我是电脑端，直接登录", "I'm on desktop, direct sign-in")}
+              </button>
+            </details>
+          ) : (
+            <button className="button button-secondary" type="submit" disabled={submitting || formInvalid}>
+              {submitting
+                ? bi("登录中...", "Signing in...")
+                : bi("我是电脑端，直接登录", "I'm on desktop, direct sign-in")}
+            </button>
+          )}
           {pendingRequestId ? (
             <button
               className="button button-secondary"

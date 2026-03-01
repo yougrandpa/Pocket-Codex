@@ -115,6 +115,16 @@ def _is_loopback_request(request: Request) -> bool:
     return _is_loopback_host(host)
 
 
+def _read_mobile_request_token_or_raise(request: Request) -> str:
+    header_value = (request.headers.get("x-mobile-request-token") or "").strip()
+    if header_value:
+        return header_value
+    raise HTTPException(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        detail="Missing X-Mobile-Request-Token header",
+    )
+
+
 async def _append_audit_async(
     *,
     actor: str,
@@ -197,6 +207,7 @@ async def create_mobile_login_request(
     )
     return MobileLoginStartResponse(
         request_id=record.request_id,
+        request_token=record.request_token,
         status=record.status,
         expires_at=record.expires_at,
         poll_interval_seconds=2,
@@ -264,10 +275,15 @@ async def reject_mobile_login_request(
 
 
 @router.post("/mobile/requests/{request_id}/cancel", response_model=MobileLoginDecisionResponse)
-async def cancel_mobile_login_request(request_id: str) -> MobileLoginDecisionResponse:
+async def cancel_mobile_login_request(request_id: str, request: Request) -> MobileLoginDecisionResponse:
+    request_token = _read_mobile_request_token_or_raise(request)
     try:
-        updated = await mobile_auth_service.cancel(request_id=request_id, actor="requester")
-    except KeyError:
+        updated = await mobile_auth_service.cancel(
+            request_id=request_id,
+            request_token=request_token,
+            actor="requester",
+        )
+    except (KeyError, PermissionError):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Request not found") from None
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
@@ -281,12 +297,17 @@ async def cancel_mobile_login_request(request_id: str) -> MobileLoginDecisionRes
 
 
 @router.get("/mobile/requests/{request_id}", response_model=MobileLoginStatusResponse)
-async def get_mobile_login_request_status(request_id: str) -> MobileLoginStatusResponse:
+async def get_mobile_login_request_status(
+    request_id: str,
+    request: Request,
+) -> MobileLoginStatusResponse:
+    request_token = _read_mobile_request_token_or_raise(request)
     try:
         record, access_token, refresh_token = await mobile_auth_service.consume_tokens_if_approved(
-            request_id=request_id
+            request_id=request_id,
+            request_token=request_token,
         )
-    except KeyError:
+    except (KeyError, PermissionError):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Request not found") from None
 
     if access_token and refresh_token:

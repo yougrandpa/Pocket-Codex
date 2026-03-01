@@ -77,12 +77,17 @@ def main() -> None:
             f"mobile request failed: {mobile_request.status_code} {mobile_request.text}",
         )
         cancelled_request_id = mobile_request.json()["request_id"]
+        cancelled_request_token = mobile_request.json()["request_token"]
 
         cancel = remote_client.post(
             f"/api/v1/auth/mobile/requests/{cancelled_request_id}/cancel",
-            headers={"X-Real-IP": "172.20.10.1"},
+            headers={
+                "X-Real-IP": "172.20.10.1",
+                "X-Mobile-Request-Token": cancelled_request_token,
+            },
         )
         assert_true(cancel.status_code == 200, f"cancel failed: {cancel.status_code} {cancel.text}")
+        assert_true(cancel.json().get("status") == "CANCELED", f"cancel status mismatch: {cancel.text}")
 
         mobile_request = remote_client.post(
             "/api/v1/auth/mobile/request",
@@ -98,6 +103,7 @@ def main() -> None:
             f"mobile request failed: {mobile_request.status_code} {mobile_request.text}",
         )
         request_id = mobile_request.json()["request_id"]
+        request_token = mobile_request.json()["request_token"]
 
     with TestClient(app, base_url="http://127.0.0.1:8000", client=("127.0.0.1", 50002)) as local_client:
         pending = local_client.get("/api/v1/auth/mobile/pending", headers=headers)
@@ -116,7 +122,10 @@ def main() -> None:
     ) as remote_client:
         payload = {}
         for _ in range(6):
-            poll = remote_client.get(f"/api/v1/auth/mobile/requests/{request_id}")
+            poll = remote_client.get(
+                f"/api/v1/auth/mobile/requests/{request_id}",
+                headers={"X-Mobile-Request-Token": request_token},
+            )
             assert_true(poll.status_code == 200, f"poll failed: {poll.text}")
             payload = poll.json()
             if payload.get("status") == "COMPLETED":

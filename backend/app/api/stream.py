@@ -7,7 +7,7 @@ from typing import AsyncGenerator, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import StreamingResponse
 
-from ..dependencies import get_optional_current_user, validate_access_token
+from ..dependencies import get_optional_current_user
 from ..services.task_service import task_service
 
 
@@ -18,17 +18,14 @@ router = APIRouter(tags=["stream"])
 async def stream_events(
     request: Request,
     task_id: Optional[str] = Query(default=None),
-    access_token: Optional[str] = Query(default=None),
     last_event_id: Optional[str] = Query(default=None),
     user: Optional[str] = Depends(get_optional_current_user),
 ) -> StreamingResponse:
     if user is None:
-        if access_token is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Missing access token",
-            )
-        user = validate_access_token(access_token)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing access token",
+        )
 
     header_last_event_id = request.headers.get("last-event-id")
     replay_from = header_last_event_id or last_event_id

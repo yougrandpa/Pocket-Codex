@@ -110,11 +110,13 @@ export type MobileLoginRequestStatus =
   | "PENDING"
   | "APPROVED"
   | "REJECTED"
+  | "CANCELED"
   | "EXPIRED"
   | "COMPLETED";
 
 export interface MobileLoginRequestResult {
   request_id: string;
+  request_token: string;
   status: MobileLoginRequestStatus;
   expires_at: string;
   poll_interval_seconds: number;
@@ -183,6 +185,7 @@ const SESSION_STORAGE_KEY = "pocket_codex_session";
 const LEGACY_LOCAL_STORAGE_KEY = "pocket_codex_session";
 let inMemorySession: SessionTokens | null = null;
 const DIRECT_LOGIN_LOOPBACK_HINT = "Direct login is only allowed from localhost";
+const REQUEST_TIMEOUT_MS = 20_000;
 
 interface ErrorPayload {
   error?: {
@@ -300,8 +303,59 @@ export function clearSession(): void {
   window.localStorage.removeItem(LEGACY_LOCAL_STORAGE_KEY);
 }
 
-async function fetchJson<T>(input: RequestInfo, init?: RequestInit): Promise<T> {
-  const response = await fetch(input, init);
+interface JsonRequestInit extends RequestInit {
+  timeoutMs?: number;
+}
+
+function normalizeFetchFailure(error: unknown): Error {
+  if (error instanceof DOMException && (error.name === "AbortError" || error.name === "TimeoutError")) {
+    return new Error(
+      bi("请求超时，请检查网络后重试。", "Request timed out. Please check your network and retry.")
+    );
+  }
+  if (error instanceof TypeError) {
+    return new Error(
+      bi(
+        "网络连接失败，请确认后端服务已启动并可访问。",
+        "Network request failed. Ensure backend service is running and reachable."
+      )
+    );
+  }
+  return error instanceof Error ? error : new Error(bi("请求失败。", "Request failed."));
+}
+
+async function fetchJson<T>(input: RequestInfo, init: JsonRequestInit = {}): Promise<T> {
+  const { timeoutMs = REQUEST_TIMEOUT_MS, signal, ...requestInit } = init;
+  const controller = new AbortController();
+  let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
+  const abortFromOuterSignal = () => controller.abort(signal?.reason);
+
+  if (signal?.aborted) {
+    controller.abort(signal.reason);
+  } else if (signal) {
+    signal.addEventListener("abort", abortFromOuterSignal, { once: true });
+  }
+  if (timeoutMs > 0) {
+    timeoutHandle = setTimeout(() => {
+      controller.abort(new DOMException("timeout", "TimeoutError"));
+    }, timeoutMs);
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(input, {
+      ...requestInit,
+      signal: controller.signal
+    });
+  } catch (error) {
+    throw normalizeFetchFailure(error);
+  } finally {
+    if (timeoutHandle) {
+      clearTimeout(timeoutHandle);
+    }
+    signal?.removeEventListener("abort", abortFromOuterSignal);
+  }
+
   if (!response.ok) {
     const fallback = `HTTP ${response.status}: ${response.statusText}`;
     let message = fallback;
@@ -324,6 +378,7 @@ interface RawTokenResponse {
 
 interface RawMobileLoginRequestResult {
   request_id: string;
+  request_token: string;
   status: MobileLoginRequestStatus;
   expires_at: string;
   poll_interval_seconds: number;
@@ -371,8 +426,9 @@ function normalizeMobileLoginStatus(raw: RawMobileLoginStatus): MobileLoginStatu
 
 export async function login(username: string, password: string): Promise<SessionTokens> {
   const payload = JSON.stringify({ username, password });
-  try {
-    const response = await fetchJson<RawTokenResponse>(`${API_BASE_URL}/api/v1/auth/login`, {
+
+  const tryLogin = async (endpoint: string): Promise<SessionTokens> => {
+    const response = await fetchJson<RawTokenResponse>(endpoint, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -382,6 +438,10 @@ export async function login(username: string, password: string): Promise<Session
     const tokens = normalizeToken(response);
     saveSession(tokens);
     return tokens;
+  };
+
+  try {
+    return await tryLogin(`${API_BASE_URL}/api/v1/auth/login`);
   } catch (error) {
     const fallbackBase = getLoopbackBackendApiBase();
     if (
@@ -391,16 +451,7 @@ export async function login(username: string, password: string): Promise<Session
     ) {
       throw error;
     }
-    const fallbackResponse = await fetchJson<RawTokenResponse>(`${fallbackBase}/api/v1/auth/login`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: payload
-    });
-    const tokens = normalizeToken(fallbackResponse);
-    saveSession(tokens);
-    return tokens;
+    return await tryLogin(`${fallbackBase}/api/v1/auth/login`);
   }
 }
 
@@ -422,10 +473,18 @@ export async function requestMobileLogin(
   });
 }
 
-export async function getMobileLoginStatus(requestId: string): Promise<MobileLoginStatus> {
+export async function getMobileLoginStatus(
+  requestId: string,
+  requestToken: string
+): Promise<MobileLoginStatus> {
   const response = await fetchJson<RawMobileLoginStatus>(
     `${API_BASE_URL}/api/v1/auth/mobile/requests/${encodeURIComponent(requestId)}`,
-    { cache: "no-store" }
+    {
+      cache: "no-store",
+      headers: {
+        "X-Mobile-Request-Token": requestToken
+      }
+    }
   );
   const normalized = normalizeMobileLoginStatus(response);
   if (
@@ -809,9 +868,12 @@ export async function rejectMobileLoginRequest(requestId: string): Promise<void>
   });
 }
 
-export async function cancelMobileLoginRequest(requestId: string): Promise<void> {
+export async function cancelMobileLoginRequest(requestId: string, requestToken: string): Promise<void> {
   await fetchJson(`${API_BASE_URL}/api/v1/auth/mobile/requests/${encodeURIComponent(requestId)}/cancel`, {
-    method: "POST"
+    method: "POST",
+    headers: {
+      "X-Mobile-Request-Token": requestToken
+    }
   });
 }
 

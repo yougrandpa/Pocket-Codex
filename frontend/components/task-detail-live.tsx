@@ -80,6 +80,9 @@ function mergeTaskFromStatus(task: Task, event: TaskEvent): Task {
 }
 
 function controlActions(task: Task): TaskControlAction[] {
+  if (task.status === "QUEUED") {
+    return ["cancel"];
+  }
   if (task.status === "RUNNING") {
     return ["pause", "cancel"];
   }
@@ -125,6 +128,9 @@ function resolveDockPrimaryAction(task: Task | null, availableActions: TaskContr
     return null;
   }
   if (task.status === "RUNNING" && availableActions.includes("cancel")) {
+    return { action: "cancel", className: "button-priority-high" };
+  }
+  if (task.status === "QUEUED" && availableActions.includes("cancel")) {
     return { action: "cancel", className: "button-priority-high" };
   }
   if (task.status === "WAITING_INPUT" && availableActions.includes("resume")) {

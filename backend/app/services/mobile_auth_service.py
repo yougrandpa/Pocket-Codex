@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import hmac
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Literal, Optional
@@ -10,7 +11,7 @@ from ..config import settings
 from ..models import new_id, utc_now_iso
 
 
-MobileLoginStatus = Literal["PENDING", "APPROVED", "REJECTED", "EXPIRED", "COMPLETED"]
+MobileLoginStatus = Literal["PENDING", "APPROVED", "REJECTED", "CANCELED", "EXPIRED", "COMPLETED"]
 
 
 def _iso_after(seconds: int) -> str:
@@ -34,6 +35,7 @@ def _is_expired(expires_at: str) -> bool:
 @dataclass
 class MobileLoginRequestRecord:
     request_id: str
+    request_token: str
     username: str
     device_name: str
     request_ip: str
@@ -47,6 +49,7 @@ class MobileLoginRequestRecord:
     def to_summary(self) -> dict[str, str | None]:
         return {
             "request_id": self.request_id,
+            "request_token": self.request_token,
             "username": self.username,
             "device_name": self.device_name,
             "request_ip": self.request_ip,
@@ -69,8 +72,10 @@ class MobileAuthService:
             self._cleanup_locked()
             now = utc_now_iso()
             request_id = new_id("mlr")
+            request_token = new_id("mlt")
             record = MobileLoginRequestRecord(
                 request_id=request_id,
+                request_token=request_token,
                 username=username,
                 device_name=device_name,
                 request_ip=request_ip,
@@ -114,37 +119,47 @@ class MobileAuthService:
             record.approved_by = actor
             return MobileLoginRequestRecord(**record.__dict__)
 
-    async def cancel(self, *, request_id: str, actor: str) -> MobileLoginRequestRecord:
+    async def cancel(
+        self,
+        *,
+        request_id: str,
+        request_token: str,
+        actor: str,
+    ) -> MobileLoginRequestRecord:
         async with self._lock:
             self._cleanup_locked()
             record = self._requests.get(request_id)
             if record is None:
                 raise KeyError(request_id)
+            self._assert_request_token(record, request_token)
             if record.status != "PENDING":
                 raise ValueError(f"request is not pending: {record.status}")
-            record.status = "REJECTED"
+            record.status = "CANCELED"
             record.approved_at = utc_now_iso()
             record.approved_by = actor
             return MobileLoginRequestRecord(**record.__dict__)
 
-    async def get_status(self, *, request_id: str) -> MobileLoginRequestRecord:
+    async def get_status(self, *, request_id: str, request_token: str) -> MobileLoginRequestRecord:
         async with self._lock:
             self._cleanup_locked()
             record = self._requests.get(request_id)
             if record is None:
                 raise KeyError(request_id)
+            self._assert_request_token(record, request_token)
             return MobileLoginRequestRecord(**record.__dict__)
 
     async def consume_tokens_if_approved(
         self,
         *,
         request_id: str,
+        request_token: str,
     ) -> tuple[MobileLoginRequestRecord, str | None, str | None]:
         async with self._lock:
             self._cleanup_locked()
             record = self._requests.get(request_id)
             if record is None:
                 raise KeyError(request_id)
+            self._assert_request_token(record, request_token)
             if record.status != "APPROVED":
                 return MobileLoginRequestRecord(**record.__dict__), None, None
             access_token = create_access_token(record.username)
@@ -161,7 +176,7 @@ class MobileAuthService:
             if record.status == "PENDING" and _is_expired(record.expires_at):
                 record.status = "EXPIRED"
             keep_alive = True
-            if record.status in {"EXPIRED", "REJECTED"} and _is_expired(record.expires_at):
+            if record.status in {"EXPIRED", "REJECTED", "CANCELED"} and _is_expired(record.expires_at):
                 keep_alive = False
             if record.status == "COMPLETED" and record.completed_at:
                 completed_at = _parse_iso(record.completed_at)
@@ -171,6 +186,11 @@ class MobileAuthService:
                 stale_ids.append(record.request_id)
         for request_id in stale_ids:
             self._requests.pop(request_id, None)
+
+    @staticmethod
+    def _assert_request_token(record: MobileLoginRequestRecord, request_token: str) -> None:
+        if not hmac.compare_digest(record.request_token, request_token):
+            raise PermissionError("invalid request token")
 
 
 mobile_auth_service = MobileAuthService()
