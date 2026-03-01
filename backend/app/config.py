@@ -2,6 +2,11 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
+from pathlib import Path
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+BACKEND_ROOT = Path(__file__).resolve().parents[1]
 
 
 def _as_int(value: str, fallback: int) -> int:
@@ -9,6 +14,24 @@ def _as_int(value: str, fallback: int) -> int:
         return int(value)
     except (TypeError, ValueError):
         return fallback
+
+
+def _normalize_database_url(value: str) -> str:
+    if not value.startswith("sqlite:///"):
+        return value
+
+    path_part = value.removeprefix("sqlite:///")
+    if path_part in {"", ":memory:"}:
+        return value
+    if path_part.startswith("/"):
+        return value
+
+    normalized = (PROJECT_ROOT / path_part).resolve()
+    return f"sqlite:///{normalized}"
+
+
+def _default_database_url() -> str:
+    return f"sqlite:///{(BACKEND_ROOT / 'pocket_codex.db').resolve()}"
 
 
 @dataclass(frozen=True)
@@ -46,7 +69,9 @@ def load_settings() -> Settings:
             fallback=7,
         ),
         cors_origins=allow_origins,
-        database_url=os.getenv("DATABASE_URL", "sqlite:///./backend/pocket_codex.db"),
+        database_url=_normalize_database_url(
+            os.getenv("DATABASE_URL", _default_database_url())
+        ),
         max_auto_retries=_as_int(os.getenv("APP_MAX_AUTO_RETRIES", "1"), fallback=1),
         default_task_timeout_seconds=_as_int(
             os.getenv("APP_DEFAULT_TASK_TIMEOUT_SECONDS", "20"),

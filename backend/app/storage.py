@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import asdict
+from pathlib import Path
 from typing import Any, Optional
 
 from sqlalchemy import JSON, Integer, String, Text, create_engine, func, select
@@ -38,6 +39,10 @@ class AuditLogRecord(Base):
 def _make_engine(database_url: str):
     connect_args: dict[str, Any] = {}
     if database_url.startswith("sqlite"):
+        if database_url.startswith("sqlite:///"):
+            raw_path = database_url.removeprefix("sqlite:///")
+            if raw_path and raw_path != ":memory:":
+                Path(raw_path).expanduser().resolve().parent.mkdir(parents=True, exist_ok=True)
         connect_args["check_same_thread"] = False
     return create_engine(database_url, future=True, connect_args=connect_args)
 
