@@ -29,6 +29,7 @@ interface TaskDetailLiveProps {
 
 const LOG_PAGE_SIZE = 20;
 const LIFECYCLE_PAGE_SIZE = 20;
+type TaskDetailTab = "conversation" | "controls" | "cost" | "events";
 
 function mergeTaskFromStatus(task: Task, event: TaskEvent): Task {
   const next = { ...task };
@@ -99,6 +100,19 @@ function actionLabel(action: TaskControlAction): string {
     retry: bi("重试", "retry")
   };
   return map[action];
+}
+
+function tabLabel(tab: TaskDetailTab): string {
+  if (tab === "conversation") {
+    return bi("对话", "Conversation");
+  }
+  if (tab === "controls") {
+    return bi("控制", "Controls");
+  }
+  if (tab === "cost") {
+    return bi("成本", "Cost");
+  }
+  return bi("事件日志", "Events");
 }
 
 const URL_PATTERN = /(https?:\/\/[^\s]+)/g;
@@ -197,12 +211,14 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
   const [events, setEvents] = useState<TaskEvent[]>([]);
   const [logPage, setLogPage] = useState(1);
   const [lifecyclePage, setLifecyclePage] = useState(1);
+  const [activeTab, setActiveTab] = useState<TaskDetailTab>("conversation");
   const [message, setMessage] = useState("");
   const [workingAction, setWorkingAction] = useState<TaskControlAction | null>(null);
   const [busyMessage, setBusyMessage] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const hasTrackedOpenRef = useRef(false);
+  const messageInputRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -298,6 +314,7 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
   useEffect(() => {
     setLogPage(1);
     setLifecyclePage(1);
+    setActiveTab("conversation");
     hasTrackedOpenRef.current = false;
   }, [taskId]);
 
@@ -374,6 +391,20 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
     return turns;
   }, [events, task]);
 
+  const showConversation = activeTab === "conversation";
+  const showControls = activeTab === "controls";
+  const showCost = activeTab === "cost";
+  const showEvents = activeTab === "events";
+  const primaryAction = availableActions[0] ?? null;
+
+  function focusMessageComposer(): void {
+    setActiveTab("conversation");
+    window.setTimeout(() => {
+      messageInputRef.current?.focus();
+      messageInputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 0);
+  }
+
   async function handleControl(action: TaskControlAction): Promise<void> {
     setWorkingAction(action);
     setError(null);
@@ -437,7 +468,7 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
   }
 
   return (
-    <section className="panel animate-rise" data-lang={language}>
+    <section className="panel animate-rise task-detail-panel" data-lang={language}>
       <Link href={backHref} prefetch={false} className="button button-secondary back-dashboard-button">
         {bi("返回控制台", "Back to dashboard")}
       </Link>
@@ -453,288 +484,341 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
         </div>
       </div>
 
+      <div className="detail-tab-bar">
+        {(["conversation", "controls", "cost", "events"] as TaskDetailTab[]).map((tab) => (
+          <button
+            key={tab}
+            type="button"
+            className={`detail-tab ${activeTab === tab ? "detail-tab-active" : ""}`}
+            onClick={() => setActiveTab(tab)}
+          >
+            {tabLabel(tab)}
+          </button>
+        ))}
+      </div>
+
       {error ? <p className="error">{error}</p> : null}
       {note ? <p className="note">{note}</p> : null}
 
-      <section className="chat-panel">
-        <h3>{bi("对话", "Conversation")}</h3>
-        {conversationTurns.length === 0 ? (
-          <p className="muted">{bi("暂无对话内容。", "No conversation yet.")}</p>
-        ) : (
-          <ul className="chat-list">
-            {conversationTurns.map((turn) => (
-              <li key={turn.id} className={`chat-item chat-item-${turn.role}`}>
-                <div className="chat-meta">
-                  <strong>{roleLabel(turn.role)}</strong>
-                  <time dateTime={turn.timestamp || undefined}>{formatDateTime(turn.timestamp)}</time>
-                </div>
-                <div className="chat-body">
-                  <RichText text={turn.text} />
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <div className="control-row">
-        {availableActions.length === 0 ? (
-          <p className="muted">
-            {bi("当前状态没有可用控制动作。", "No control action available for current state.")}
-          </p>
-        ) : (
-          availableActions.map((action) => (
-            <button
-              key={action}
-              className="button button-secondary"
-              type="button"
-              disabled={workingAction !== null}
-              onClick={() => handleControl(action)}
-            >
-              {workingAction === action ? bi("执行中...", "Working...") : actionLabel(action)}
-            </button>
-          ))
-        )}
-      </div>
-
-      <form className="stack" onSubmit={handleAppendMessage}>
-        <label className="field">
-          <span>{bi("追加指令", "Append instruction")}</span>
-          <textarea
-            value={message}
-            onChange={(event) => setMessage(event.target.value)}
-            rows={3}
-            placeholder={bi("补充指令...", "Add follow-up instruction...")}
-          />
-        </label>
-        <div className="mobile-sticky-actions">
-          <button className="button" type="submit" disabled={busyMessage || !message.trim()}>
-            {busyMessage ? bi("发送中...", "Sending...") : bi("发送消息", "Send Message")}
-          </button>
-        </div>
-      </form>
-
-      <dl className="meta-list">
-        <div>
-          <dt>{bi("任务 ID", "Task ID")}</dt>
-          <dd>{task.id}</dd>
-        </div>
-        <div>
-          <dt>{bi("优先级", "Priority")}</dt>
-          <dd>{task.priority ?? "-"}</dd>
-        </div>
-        <div>
-          <dt>{bi("超时", "Timeout")}</dt>
-          <dd>{task.timeout_seconds ? `${task.timeout_seconds}s` : "-"}</dd>
-        </div>
-        <div>
-          <dt>{bi("工作目录", "Workdir")}</dt>
-          <dd>{task.workdir || "-"}</dd>
-        </div>
-        <div>
-          <dt>{bi("模型", "Model")}</dt>
-          <dd>{task.model || "-"}</dd>
-        </div>
-        <div>
-          <dt>{bi("推理强度", "Reasoning Effort")}</dt>
-          <dd>{task.reasoning_effort || "-"}</dd>
-        </div>
-        <div>
-          <dt>{bi("并行多代理", "Parallel Multi-agent")}</dt>
-          <dd>{task.enable_parallel_agents ? bi("启用", "Enabled") : bi("关闭", "Disabled")}</dd>
-        </div>
-        <div>
-          <dt>{bi("总 Tokens", "Total Tokens")}</dt>
-          <dd>{formatTokenDetailed(task.total_tokens)}</dd>
-        </div>
-        <div>
-          <dt>{bi("输入 Tokens", "Prompt Tokens")}</dt>
-          <dd>{formatTokenDetailed(task.prompt_tokens)}</dd>
-        </div>
-        <div>
-          <dt>{bi("输出 Tokens", "Completion Tokens")}</dt>
-          <dd>{formatTokenDetailed(task.completion_tokens)}</dd>
-        </div>
-        <div>
-          <dt>{bi("缓存读取 Tokens", "Cache Read Tokens")}</dt>
-          <dd>{formatTokenDetailed(task.cache_read_tokens)}</dd>
-        </div>
-        <div>
-          <dt>{bi("输入成本", "Input Cost")}</dt>
-          <dd>{formatUsdDetailed(task.input_cost_usd)}</dd>
-        </div>
-        <div>
-          <dt>{bi("输出成本", "Output Cost")}</dt>
-          <dd>{formatUsdDetailed(task.output_cost_usd)}</dd>
-        </div>
-        <div>
-          <dt>{bi("缓存读取成本", "Cache Read Cost")}</dt>
-          <dd>{formatUsdDetailed(task.cache_read_cost_usd)}</dd>
-        </div>
-        <div>
-          <dt>{bi("倍率", "Multiplier")}</dt>
-          <dd>{typeof task.cost_multiplier === "number" ? `${task.cost_multiplier.toFixed(2)}x` : "1.00x"}</dd>
-        </div>
-        <div>
-          <dt>{bi("原始成本", "Original Cost")}</dt>
-          <dd>{formatUsdDetailed(task.original_cost_usd)}</dd>
-        </div>
-        <div>
-          <dt>{bi("计费成本", "Billed Cost")}</dt>
-          <dd>{formatUsdDetailed(task.billed_cost_usd)}</dd>
-        </div>
-        <div>
-          <dt>{bi("累计花费", "Cost (USD)")}</dt>
-          <dd>{formatUsdDetailed(task.cost_usd)}</dd>
-        </div>
-        <div>
-          <dt>{bi("背景窗口", "Context Window")}</dt>
-          <dd>
-            {formatTokenCompact(task.context_window_used_tokens)} /{" "}
-            {formatTokenCompact(task.context_window_total_tokens)}
-          </dd>
-        </div>
-        <div>
-          <dt>{bi("创建时间", "Created At")}</dt>
-          <dd>{formatDateTime(task.created_at)}</dd>
-        </div>
-        <div>
-          <dt>{bi("更新时间", "Updated At")}</dt>
-          <dd>{formatDateTime(task.updated_at)}</dd>
-        </div>
-        <div>
-          <dt>{bi("开始时间", "Started At")}</dt>
-          <dd>{formatDateTime(task.started_at)}</dd>
-        </div>
-        <div>
-          <dt>{bi("完成时间", "Finished At")}</dt>
-          <dd>{formatDateTime(task.finished_at)}</dd>
-        </div>
-        <div>
-          <dt>{bi("最后心跳", "Last Heartbeat")}</dt>
-          <dd>{formatDateTime(task.last_heartbeat_at)}</dd>
-        </div>
-        <div>
-          <dt>{bi("当前运行", "Current Run")}</dt>
-          <dd>{task.current_run_id ? `${task.current_run_id} (#${task.run_sequence ?? "-"})` : "-"}</dd>
-        </div>
-      </dl>
-
-      <section className="event-panel">
-        <h3>{bi("状态事件", "Lifecycle Events")}</h3>
-        {timelineEvents.length === 0 ? (
-          <p className="muted">{bi("暂无状态事件。", "No lifecycle events yet.")}</p>
-        ) : (
-          <>
-            <div className="pagination-row">
-              <p className="muted">
-                {bi("第", "Page")} {lifecyclePage} / {totalLifecyclePages} · {bi("共", "Total")}{" "}
-                {timelineEvents.length} {bi("条", "items")}
-              </p>
-              <div className="pagination-actions">
-                <button
-                  className="button button-secondary"
-                  type="button"
-                  disabled={lifecyclePage <= 1}
-                  onClick={() => setLifecyclePage((previous) => Math.max(1, previous - 1))}
-                >
-                  {bi("上一页", "Previous")}
-                </button>
-                <button
-                  className="button button-secondary"
-                  type="button"
-                  disabled={lifecyclePage >= totalLifecyclePages}
-                  onClick={() =>
-                    setLifecyclePage((previous) => Math.min(totalLifecyclePages, previous + 1))
-                  }
-                >
-                  {bi("下一页", "Next")}
-                </button>
-              </div>
-            </div>
-            <ul className="notification-list">
-              {pagedLifecycleEvents.map((event) => (
-                <li key={`${event.id}-${event.seq}`} className="notification-item">
-                  <div className="task-item-top">
-                    <span className={`status status-${(event.status || "queued").toLowerCase()}`}>
-                      {event.event_type}
-                    </span>
-                    <time dateTime={event.timestamp}>{formatDateTime(event.timestamp)}</time>
-                  </div>
-                  {typeof event.payload.run_id === "string" ? (
-                    <p className="muted">
-                      {bi("运行", "Run")}: {event.payload.run_id}
-                    </p>
-                  ) : null}
-                  <code>{JSON.stringify(event.payload)}</code>
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
-      </section>
-
-      <section className="event-panel">
-        <h3>{bi("执行日志", "Execution Logs")}</h3>
-        {logEvents.length === 0 ? (
-          <p className="muted">{bi("暂无执行日志。", "No execution logs yet.")}</p>
-        ) : (
-          <>
-            <div className="pagination-row">
-              <p className="muted">
-                {bi("第", "Page")} {logPage} / {totalLogPages} · {bi("共", "Total")} {logEvents.length}{" "}
-                {bi("条", "items")}
-              </p>
-              <div className="pagination-actions">
-                <button
-                  className="button button-secondary"
-                  type="button"
-                  disabled={logPage <= 1}
-                  onClick={() => setLogPage((previous) => Math.max(1, previous - 1))}
-                >
-                  {bi("上一页", "Previous")}
-                </button>
-                <button
-                  className="button button-secondary"
-                  type="button"
-                  disabled={logPage >= totalLogPages}
-                  onClick={() => setLogPage((previous) => Math.min(totalLogPages, previous + 1))}
-                >
-                  {bi("下一页", "Next")}
-                </button>
-              </div>
-            </div>
-            <ul className="notification-list">
-              {pagedLogEvents.map((event) => {
-                const source =
-                  typeof event.payload.source === "string" ? event.payload.source : bi("系统", "system");
-                const level =
-                  typeof event.payload.level === "string" ? event.payload.level : bi("信息", "info");
-                const runId =
-                  typeof event.payload.run_id === "string" ? event.payload.run_id : task.current_run_id;
-                const messageText =
-                  typeof event.payload.message === "string"
-                    ? event.payload.message
-                    : JSON.stringify(event.payload);
-                return (
-                  <li key={`${event.id}-${event.seq}`} className="notification-item">
-                    <div className="task-item-top">
-                      <span className="chip">
-                        {source}
-                        {runId ? ` · ${runId.slice(0, 8)}` : ""}
-                      </span>
-                      <time dateTime={event.timestamp}>{formatDateTime(event.timestamp)}</time>
+      {showConversation ? (
+        <>
+          <section className="chat-panel">
+            <h3>{bi("对话", "Conversation")}</h3>
+            {conversationTurns.length === 0 ? (
+              <p className="muted">{bi("暂无对话内容。", "No conversation yet.")}</p>
+            ) : (
+              <ul className="chat-list">
+                {conversationTurns.map((turn) => (
+                  <li key={turn.id} className={`chat-item chat-item-${turn.role}`}>
+                    <div className="chat-meta">
+                      <strong>{roleLabel(turn.role)}</strong>
+                      <time dateTime={turn.timestamp || undefined}>{formatDateTime(turn.timestamp)}</time>
                     </div>
-                    <p className="muted">{bi("级别", "Level")}: {level}</p>
-                    <code>{messageText}</code>
+                    <div className="chat-body">
+                      <RichText text={turn.text} />
+                    </div>
                   </li>
-                );
-              })}
-            </ul>
-          </>
-        )}
-      </section>
+                ))}
+              </ul>
+            )}
+          </section>
 
+          <form className="stack" onSubmit={handleAppendMessage}>
+            <label className="field">
+              <span>{bi("追加指令", "Append instruction")}</span>
+              <textarea
+                ref={messageInputRef}
+                value={message}
+                onChange={(event) => setMessage(event.target.value)}
+                rows={3}
+                placeholder={bi("补充指令...", "Add follow-up instruction...")}
+              />
+            </label>
+            <div className="mobile-sticky-actions">
+              <button className="button" type="submit" disabled={busyMessage || !message.trim()}>
+                {busyMessage ? bi("发送中...", "Sending...") : bi("发送消息", "Send Message")}
+              </button>
+            </div>
+          </form>
+        </>
+      ) : null}
+
+      {showControls ? (
+        <>
+          <div className="control-row">
+            {availableActions.length === 0 ? (
+              <p className="muted">
+                {bi("当前状态没有可用控制动作。", "No control action available for current state.")}
+              </p>
+            ) : (
+              availableActions.map((action) => (
+                <button
+                  key={action}
+                  className="button button-secondary"
+                  type="button"
+                  disabled={workingAction !== null}
+                  onClick={() => handleControl(action)}
+                >
+                  {workingAction === action ? bi("执行中...", "Working...") : actionLabel(action)}
+                </button>
+              ))
+            )}
+          </div>
+          <dl className="meta-list">
+            <div>
+              <dt>{bi("任务 ID", "Task ID")}</dt>
+              <dd>{task.id}</dd>
+            </div>
+            <div>
+              <dt>{bi("优先级", "Priority")}</dt>
+              <dd>{task.priority ?? "-"}</dd>
+            </div>
+            <div>
+              <dt>{bi("超时", "Timeout")}</dt>
+              <dd>{task.timeout_seconds ? `${task.timeout_seconds}s` : "-"}</dd>
+            </div>
+            <div>
+              <dt>{bi("工作目录", "Workdir")}</dt>
+              <dd>{task.workdir || "-"}</dd>
+            </div>
+            <div>
+              <dt>{bi("模型", "Model")}</dt>
+              <dd>{task.model || "-"}</dd>
+            </div>
+            <div>
+              <dt>{bi("推理强度", "Reasoning Effort")}</dt>
+              <dd>{task.reasoning_effort || "-"}</dd>
+            </div>
+            <div>
+              <dt>{bi("并行多代理", "Parallel Multi-agent")}</dt>
+              <dd>{task.enable_parallel_agents ? bi("启用", "Enabled") : bi("关闭", "Disabled")}</dd>
+            </div>
+            <div>
+              <dt>{bi("当前运行", "Current Run")}</dt>
+              <dd>{task.current_run_id ? `${task.current_run_id} (#${task.run_sequence ?? "-"})` : "-"}</dd>
+            </div>
+            <div>
+              <dt>{bi("创建时间", "Created At")}</dt>
+              <dd>{formatDateTime(task.created_at)}</dd>
+            </div>
+            <div>
+              <dt>{bi("更新时间", "Updated At")}</dt>
+              <dd>{formatDateTime(task.updated_at)}</dd>
+            </div>
+            <div>
+              <dt>{bi("开始时间", "Started At")}</dt>
+              <dd>{formatDateTime(task.started_at)}</dd>
+            </div>
+            <div>
+              <dt>{bi("完成时间", "Finished At")}</dt>
+              <dd>{formatDateTime(task.finished_at)}</dd>
+            </div>
+            <div>
+              <dt>{bi("最后心跳", "Last Heartbeat")}</dt>
+              <dd>{formatDateTime(task.last_heartbeat_at)}</dd>
+            </div>
+          </dl>
+        </>
+      ) : null}
+
+      {showCost ? (
+        <dl className="meta-list">
+          <div>
+            <dt>{bi("总 Tokens", "Total Tokens")}</dt>
+            <dd>{formatTokenDetailed(task.total_tokens)}</dd>
+          </div>
+          <div>
+            <dt>{bi("输入 Tokens", "Prompt Tokens")}</dt>
+            <dd>{formatTokenDetailed(task.prompt_tokens)}</dd>
+          </div>
+          <div>
+            <dt>{bi("输出 Tokens", "Completion Tokens")}</dt>
+            <dd>{formatTokenDetailed(task.completion_tokens)}</dd>
+          </div>
+          <div>
+            <dt>{bi("缓存读取 Tokens", "Cache Read Tokens")}</dt>
+            <dd>{formatTokenDetailed(task.cache_read_tokens)}</dd>
+          </div>
+          <div>
+            <dt>{bi("输入成本", "Input Cost")}</dt>
+            <dd>{formatUsdDetailed(task.input_cost_usd)}</dd>
+          </div>
+          <div>
+            <dt>{bi("输出成本", "Output Cost")}</dt>
+            <dd>{formatUsdDetailed(task.output_cost_usd)}</dd>
+          </div>
+          <div>
+            <dt>{bi("缓存读取成本", "Cache Read Cost")}</dt>
+            <dd>{formatUsdDetailed(task.cache_read_cost_usd)}</dd>
+          </div>
+          <div>
+            <dt>{bi("倍率", "Multiplier")}</dt>
+            <dd>{typeof task.cost_multiplier === "number" ? `${task.cost_multiplier.toFixed(2)}x` : "1.00x"}</dd>
+          </div>
+          <div>
+            <dt>{bi("原始成本", "Original Cost")}</dt>
+            <dd>{formatUsdDetailed(task.original_cost_usd)}</dd>
+          </div>
+          <div>
+            <dt>{bi("计费成本", "Billed Cost")}</dt>
+            <dd>{formatUsdDetailed(task.billed_cost_usd)}</dd>
+          </div>
+          <div>
+            <dt>{bi("累计花费", "Cost (USD)")}</dt>
+            <dd>{formatUsdDetailed(task.cost_usd)}</dd>
+          </div>
+          <div>
+            <dt>{bi("背景窗口", "Context Window")}</dt>
+            <dd>
+              {formatTokenCompact(task.context_window_used_tokens)} /{" "}
+              {formatTokenCompact(task.context_window_total_tokens)}
+            </dd>
+          </div>
+        </dl>
+      ) : null}
+
+      {showEvents ? (
+        <>
+          <section className="event-panel">
+            <h3>{bi("状态事件", "Lifecycle Events")}</h3>
+            {timelineEvents.length === 0 ? (
+              <p className="muted">{bi("暂无状态事件。", "No lifecycle events yet.")}</p>
+            ) : (
+              <>
+                <div className="pagination-row">
+                  <p className="muted">
+                    {bi("第", "Page")} {lifecyclePage} / {totalLifecyclePages} · {bi("共", "Total")}{" "}
+                    {timelineEvents.length} {bi("条", "items")}
+                  </p>
+                  <div className="pagination-actions">
+                    <button
+                      className="button button-secondary"
+                      type="button"
+                      disabled={lifecyclePage <= 1}
+                      onClick={() => setLifecyclePage((previous) => Math.max(1, previous - 1))}
+                    >
+                      {bi("上一页", "Previous")}
+                    </button>
+                    <button
+                      className="button button-secondary"
+                      type="button"
+                      disabled={lifecyclePage >= totalLifecyclePages}
+                      onClick={() =>
+                        setLifecyclePage((previous) => Math.min(totalLifecyclePages, previous + 1))
+                      }
+                    >
+                      {bi("下一页", "Next")}
+                    </button>
+                  </div>
+                </div>
+                <ul className="notification-list">
+                  {pagedLifecycleEvents.map((event) => (
+                    <li key={`${event.id}-${event.seq}`} className="notification-item">
+                      <div className="task-item-top">
+                        <span className={`status status-${(event.status || "queued").toLowerCase()}`}>
+                          {event.event_type}
+                        </span>
+                        <time dateTime={event.timestamp}>{formatDateTime(event.timestamp)}</time>
+                      </div>
+                      {typeof event.payload.run_id === "string" ? (
+                        <p className="muted">
+                          {bi("运行", "Run")}: {event.payload.run_id}
+                        </p>
+                      ) : null}
+                      <code>{JSON.stringify(event.payload)}</code>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </section>
+
+          <section className="event-panel">
+            <h3>{bi("执行日志", "Execution Logs")}</h3>
+            {logEvents.length === 0 ? (
+              <p className="muted">{bi("暂无执行日志。", "No execution logs yet.")}</p>
+            ) : (
+              <>
+                <div className="pagination-row">
+                  <p className="muted">
+                    {bi("第", "Page")} {logPage} / {totalLogPages} · {bi("共", "Total")} {logEvents.length}{" "}
+                    {bi("条", "items")}
+                  </p>
+                  <div className="pagination-actions">
+                    <button
+                      className="button button-secondary"
+                      type="button"
+                      disabled={logPage <= 1}
+                      onClick={() => setLogPage((previous) => Math.max(1, previous - 1))}
+                    >
+                      {bi("上一页", "Previous")}
+                    </button>
+                    <button
+                      className="button button-secondary"
+                      type="button"
+                      disabled={logPage >= totalLogPages}
+                      onClick={() => setLogPage((previous) => Math.min(totalLogPages, previous + 1))}
+                    >
+                      {bi("下一页", "Next")}
+                    </button>
+                  </div>
+                </div>
+                <ul className="notification-list">
+                  {pagedLogEvents.map((event) => {
+                    const source =
+                      typeof event.payload.source === "string" ? event.payload.source : bi("系统", "system");
+                    const level =
+                      typeof event.payload.level === "string" ? event.payload.level : bi("信息", "info");
+                    const runId =
+                      typeof event.payload.run_id === "string" ? event.payload.run_id : task.current_run_id;
+                    const messageText =
+                      typeof event.payload.message === "string"
+                        ? event.payload.message
+                        : JSON.stringify(event.payload);
+                    return (
+                      <li key={`${event.id}-${event.seq}`} className="notification-item">
+                        <div className="task-item-top">
+                          <span className="chip">
+                            {source}
+                            {runId ? ` · ${runId.slice(0, 8)}` : ""}
+                          </span>
+                          <time dateTime={event.timestamp}>{formatDateTime(event.timestamp)}</time>
+                        </div>
+                        <p className="muted">{bi("级别", "Level")}: {level}</p>
+                        <code>{messageText}</code>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </>
+            )}
+          </section>
+        </>
+      ) : null}
+
+      <div className="detail-bottom-dock">
+        <button className="button button-secondary" type="button" onClick={() => setActiveTab("conversation")}>
+          {bi("对话", "Chat")}
+        </button>
+        <button className="button button-secondary" type="button" onClick={() => setActiveTab("controls")}>
+          {bi("控制", "Control")}
+        </button>
+        <button
+          className="button button-secondary"
+          type="button"
+          disabled={primaryAction === null || workingAction !== null}
+          onClick={() => {
+            if (primaryAction) {
+              void handleControl(primaryAction);
+            }
+          }}
+        >
+          {primaryAction ? actionLabel(primaryAction) : bi("无动作", "No action")}
+        </button>
+        <button className="button" type="button" onClick={focusMessageComposer}>
+          {bi("发消息", "Message")}
+        </button>
+      </div>
     </section>
   );
 }
