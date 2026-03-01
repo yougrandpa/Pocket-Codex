@@ -16,6 +16,9 @@ echo "[verify] backend compile"
 PYTHONPYCACHEPREFIX=/tmp/pycache python3 -m compileall "$BACKEND_DIR/app"
 
 echo "[verify] backend api smoke"
+# Force deterministic simulator mode for smoke checks. Real codex execution can
+# exceed short polling windows and depends on local CLI state.
+export APP_TASK_EXECUTOR=simulator
 PYTHONPATH="$BACKEND_DIR" python3 - <<'PY'
 import time
 from fastapi.testclient import TestClient

@@ -52,6 +52,8 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 - 健康检查：`http://localhost:8000/healthz`
 - OpenAPI：`http://localhost:8000/docs`
 
+说明：`/healthz` 现在会返回 `task_executor` 和 `execution_backend`，便于确认后端实际运行模式。
+
 ## 3. 启动前端（Next.js）
 
 新开一个终端，在仓库根目录执行：
@@ -197,4 +199,4 @@ Q7: 启动前端时报 `Cannot find module './xxx.js'`（来自 `.next/server/we
 A7: 这是 Next.js 本地缓存损坏或增量构建残留导致。执行 `cd frontend && npm run clean && npm run dev`（或直接 `npm run dev:reset`）即可。
 
 Q8: 我发送了追加消息，但任务没有执行新命令？  
-A8: 如果后端是 `APP_TASK_EXECUTOR=simulator`，任务只是模拟执行，不会真正调用 Codex。请切换为 `APP_TASK_EXECUTOR=codex` 并重启后端。当前版本在任务已结束后追加消息时，会自动触发一次重跑（`RETRYING -> QUEUED`）。
+A8: 如果后端是 `APP_TASK_EXECUTOR=simulator`，任务只是模拟执行，不会真正调用 Codex。请切换为 `APP_TASK_EXECUTOR=codex` 并重启后端。可先请求 `GET /healthz`，确认返回 `task_executor=codex`。当前版本在任务已结束后追加消息时，会自动触发一次重跑（`RETRYING -> QUEUED`）。

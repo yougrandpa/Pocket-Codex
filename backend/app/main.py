@@ -45,4 +45,9 @@ async def _shutdown() -> None:
 
 @app.get("/healthz")
 async def healthz() -> dict[str, str]:
-    return {"status": "ok", "timestamp": utc_now_iso()}
+    return {
+        "status": "ok",
+        "timestamp": utc_now_iso(),
+        "task_executor": settings.task_executor,
+        "execution_backend": settings.execution_backend,
+    }
