@@ -178,6 +178,13 @@ textarea {
   box-shadow: 0 10px 24px rgba(20, 33, 61, 0.12);
 }
 
+.back-dashboard-button {
+  align-items: center;
+  display: inline-flex;
+  margin-bottom: 10px;
+  text-decoration: none;
+}
+
 .task-list {
   display: grid;
   gap: 10px;

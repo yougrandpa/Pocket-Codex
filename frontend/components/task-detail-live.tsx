@@ -372,6 +372,10 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
 
   return (
     <section className="panel animate-rise">
+      <Link href="/" className="button button-secondary back-dashboard-button">
+        {bi("返回控制台", "Back to dashboard")}
+      </Link>
+
       <div className="panel-title-row">
         <h2 className="panel-title">{bi("任务详情", "Task Detail")}</h2>
         <span className={`status status-${task.status.toLowerCase()}`}>{statusText(task.status)}</span>
@@ -552,9 +556,6 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
         )}
       </section>
 
-      <Link href="/" className="link">
-        {bi("返回控制台", "Back to dashboard")}
-      </Link>
     </section>
   );
 }
