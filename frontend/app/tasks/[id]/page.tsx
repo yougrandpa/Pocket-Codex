@@ -1,4 +1,4 @@
-import { TaskDetailLive } from "@/components/task-detail-live";
+import { TaskDetailShell } from "@/components/task-detail-shell";
 
 interface TaskPageProps {
   params: Promise<{
@@ -8,5 +8,5 @@ interface TaskPageProps {
 
 export default async function TaskPage({ params }: TaskPageProps) {
   const { id } = await params;
-  return <TaskDetailLive taskId={id} />;
+  return <TaskDetailShell taskId={id} />;
 }

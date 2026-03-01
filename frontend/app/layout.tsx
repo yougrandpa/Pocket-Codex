@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
-import { AppHeader } from "@/components/app-header";
+import { AppHeaderShell } from "@/components/app-header-shell";
 
 export const metadata: Metadata = {
   title: "Pocket Codex Dashboard",
@@ -14,10 +14,10 @@ interface RootLayoutProps {
 
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
-    <html lang="zh-CN">
+    <html lang="zh-CN" suppressHydrationWarning>
       <body>
         <main className="app-shell">
-          <AppHeader />
+          <AppHeaderShell />
           {children}
         </main>
       </body>

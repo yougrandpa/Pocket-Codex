@@ -1,5 +1,5 @@
-import { TaskDashboard } from "@/components/task-dashboard";
+import { TaskDashboardShell } from "@/components/task-dashboard-shell";
 
 export default function HomePage() {
-  return <TaskDashboard />;
+  return <TaskDashboardShell />;
 }
