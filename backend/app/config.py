@@ -58,6 +58,15 @@ def _as_csv_list(value: str | None) -> list[str]:
     return [item.strip() for item in value.split(",") if item.strip()]
 
 
+def _require_non_empty_env(name: str) -> str:
+    value = os.getenv(name, "").strip()
+    if value:
+        return value
+    raise RuntimeError(
+        f"Missing required env var {name}. Configure backend/.env before starting the server."
+    )
+
+
 def _normalize_database_url(value: str) -> str:
     if not value.startswith("sqlite:///"):
         return value
@@ -178,8 +187,8 @@ def load_settings() -> Settings:
     )
     workdir_whitelist = _resolve_workdir_whitelist(raw_whitelist)
     return Settings(
-        username=os.getenv("APP_USERNAME", "admin"),
-        password=os.getenv("APP_PASSWORD", "admin123"),
+        username=_require_non_empty_env("APP_USERNAME"),
+        password=_require_non_empty_env("APP_PASSWORD"),
         jwt_secret=os.getenv("APP_JWT_SECRET", "dev-secret-change-me"),
         jwt_algorithm="HS256",
         access_token_expires_minutes=_as_int(

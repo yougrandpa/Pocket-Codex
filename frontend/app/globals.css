@@ -150,6 +150,11 @@ a {
   gap: 10px;
 }
 
+.template-grid {
+  display: grid;
+  gap: 10px;
+}
+
 .field {
   display: grid;
   gap: 6px;
@@ -272,6 +277,18 @@ textarea {
   margin: 0;
   overflow-wrap: anywhere;
   word-break: break-word;
+}
+
+.task-quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.task-quick-actions .button {
+  flex: 1 1 auto;
+  min-height: 40px;
+  padding: 9px 12px;
 }
 
 .status {
@@ -544,6 +561,11 @@ textarea {
   word-break: break-word;
 }
 
+.audit-filter-grid {
+  display: grid;
+  gap: 10px;
+}
+
 .event-panel {
   margin: 12px 0;
 }
@@ -698,6 +720,14 @@ textarea {
 
   .row {
     grid-template-columns: 120px 1fr;
+  }
+
+  .template-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .audit-filter-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .detail-grid {

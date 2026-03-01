@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   PendingMobileLoginRequest,
   approveMobileLoginRequest,
@@ -14,49 +14,128 @@ interface MobileLoginApprovalsProps {
   enabled?: boolean;
 }
 
+const POLL_FAST_MS = 2000;
+const POLL_IDLE_MS = 8000;
+const POLL_HIDDEN_MS = 30000;
+const POLL_MAX_BACKOFF_MS = 60000;
+
 export function MobileLoginApprovals({ enabled = true }: MobileLoginApprovalsProps) {
   const [requests, setRequests] = useState<PendingMobileLoginRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actingId, setActingId] = useState<string | null>(null);
-
-  const loadRequests = useCallback(async (silent = false) => {
-    if (!enabled) {
-      setRequests([]);
-      setLoading(false);
-      setError(null);
-      return;
-    }
-    if (!silent) {
-      setLoading(true);
-    }
-    try {
-      const items = await getPendingMobileLoginRequests();
-      setRequests(items);
-      setError(null);
-    } catch (loadError) {
-      setError(
-        loadError instanceof Error
-          ? loadError.message
-          : bi("读取授权请求失败。", "Failed to load approval requests.")
-      );
-    } finally {
-      if (!silent) {
-        setLoading(false);
-      }
-    }
-  }, [enabled]);
+  const pendingCountRef = useRef(0);
 
   useEffect(() => {
-    void loadRequests(false);
+    pendingCountRef.current = requests.length;
+  }, [requests.length]);
+
+  const loadRequests = useCallback(
+    async (silent = false): Promise<boolean> => {
+      if (!enabled) {
+        setRequests([]);
+        setLoading(false);
+        setError(null);
+        return true;
+      }
+      if (!silent) {
+        setLoading(true);
+      }
+      try {
+        const items = await getPendingMobileLoginRequests();
+        setRequests(items);
+        setError(null);
+        return true;
+      } catch (loadError) {
+        setError(
+          loadError instanceof Error
+            ? loadError.message
+            : bi("读取授权请求失败。", "Failed to load approval requests.")
+        );
+        return false;
+      } finally {
+        if (!silent) {
+          setLoading(false);
+        }
+      }
+    },
+    [enabled]
+  );
+
+  useEffect(() => {
     if (!enabled) {
+      void loadRequests(false);
       return;
     }
-    const timer = window.setInterval(() => {
-      void loadRequests(true);
-    }, 3000);
+
+    let cancelled = false;
+    let timer: number | null = null;
+    let consecutiveFailures = 0;
+
+    const schedule = (delayMs: number): void => {
+      if (cancelled) {
+        return;
+      }
+      if (timer) {
+        window.clearTimeout(timer);
+      }
+      timer = window.setTimeout(() => {
+        void tick();
+      }, delayMs);
+    };
+
+    const computeBaseDelay = (): number => {
+      if (typeof document !== "undefined" && document.hidden) {
+        return POLL_HIDDEN_MS;
+      }
+      return pendingCountRef.current > 0 ? POLL_FAST_MS : POLL_IDLE_MS;
+    };
+
+    const tick = async (): Promise<void> => {
+      if (cancelled) {
+        return;
+      }
+      const ok = await loadRequests(true);
+      if (cancelled) {
+        return;
+      }
+      if (ok) {
+        consecutiveFailures = 0;
+        schedule(computeBaseDelay());
+        return;
+      }
+      consecutiveFailures = Math.min(consecutiveFailures + 1, 6);
+      const backoff = computeBaseDelay() * 2 ** (consecutiveFailures - 1);
+      schedule(Math.min(POLL_MAX_BACKOFF_MS, backoff));
+    };
+
+    const handleVisibilityChange = (): void => {
+      if (typeof document !== "undefined" && !document.hidden) {
+        if (timer) {
+          window.clearTimeout(timer);
+          timer = null;
+        }
+        void tick();
+      }
+    };
+
+    void loadRequests(false).then((ok) => {
+      if (cancelled) {
+        return;
+      }
+      if (!ok) {
+        consecutiveFailures = 1;
+      }
+      schedule(ok ? computeBaseDelay() : Math.min(POLL_MAX_BACKOFF_MS, computeBaseDelay() * 2));
+    });
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
     return () => {
-      window.clearInterval(timer);
+      cancelled = true;
+      if (timer) {
+        window.clearTimeout(timer);
+      }
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [enabled, loadRequests]);
 
@@ -107,8 +186,8 @@ export function MobileLoginApprovals({ enabled = true }: MobileLoginApprovalsPro
                 <time dateTime={item.created_at}>{formatDateTime(item.created_at)}</time>
               </div>
               <p className="muted">
-                IP: {item.request_ip} · ID: {item.request_id.slice(0, 10)} ·{" "}
-                {bi("到期", "Expires")}: {formatDateTime(item.expires_at)}
+                IP: {item.request_ip} · ID: {item.request_id.slice(0, 10)} · {bi("到期", "Expires")}: {" "}
+                {formatDateTime(item.expires_at)}
               </p>
               <div className="pagination-actions">
                 <button

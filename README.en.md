@@ -39,7 +39,7 @@ Recommended startup order:
 
 1. Start backend (`backend/`, FastAPI on `:8000`)
 2. Start frontend (`frontend/`, Next.js on `:3000`)
-3. Sign in with default local credentials (`admin` / `admin123`)
+3. Sign in with credentials configured in `backend/.env` (`APP_USERNAME` / `APP_PASSWORD`)
 4. Create a task and verify realtime events with `/api/v1/stream`
 
 ## Documentation Index

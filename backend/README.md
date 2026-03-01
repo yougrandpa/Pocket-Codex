@@ -57,9 +57,10 @@ uvicorn app.main:app --reload --port 8000
 Login and export access token:
 
 ```bash
+source backend/.env
 TOKEN=$(curl -s -X POST http://127.0.0.1:8000/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"admin123"}' | python3 -c 'import json,sys; print(json.load(sys.stdin)["access_token"])')
+  -d "{\"username\":\"$APP_USERNAME\",\"password\":\"$APP_PASSWORD\"}" | python3 -c 'import json,sys; print(json.load(sys.stdin)["access_token"])')
 
 curl -X POST http://127.0.0.1:8000/api/v1/tasks \
   -H "Authorization: Bearer $TOKEN" \
@@ -83,4 +84,4 @@ Then check:
 - Mobile login requires desktop approval via `/auth/mobile/*` endpoints.
 - Private-network CORS origins are allowed by default (`APP_CORS_ALLOW_PRIVATE_NETWORK=true`) for phone hotspot/LAN usage.
 - Default task executor is `simulator`; set `APP_TASK_EXECUTOR=codex` to run real local Codex commands.
-- Default credentials are `admin / admin123` and should be overridden with env vars for non-local environments.
+- `APP_USERNAME` and `APP_PASSWORD` are required and must be set before startup.

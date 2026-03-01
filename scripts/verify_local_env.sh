@@ -19,13 +19,21 @@ echo "[verify] backend api smoke"
 # Force deterministic simulator mode for smoke checks. Real codex execution can
 # exceed short polling windows and depends on local CLI state.
 export APP_TASK_EXECUTOR=simulator
+if [[ -z "${APP_USERNAME:-}" || -z "${APP_PASSWORD:-}" ]]; then
+  echo "[verify] missing APP_USERNAME/APP_PASSWORD in backend/.env"
+  exit 1
+fi
 PYTHONPATH="$BACKEND_DIR" python3 - <<'PY'
 import time
+import os
 from fastapi.testclient import TestClient
 from app.main import app
 
+username = os.environ["APP_USERNAME"]
+password = os.environ["APP_PASSWORD"]
+
 with TestClient(app, base_url="http://127.0.0.1:8000", client=("127.0.0.1", 54000)) as client:
-    login = client.post("/api/v1/auth/login", json={"username": "admin", "password": "admin123"})
+    login = client.post("/api/v1/auth/login", json={"username": username, "password": password})
     assert login.status_code == 200, login.text
     token = login.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
@@ -52,6 +60,13 @@ with TestClient(app, base_url="http://127.0.0.1:8000", client=("127.0.0.1", 5400
     assert status in {"SUCCEEDED", "FAILED", "TIMEOUT", "CANCELED"}, status
     print(f"backend smoke ok: task={task_id} status={status}")
 PY
+
+echo "[verify] task api regression"
+(
+  cd "$ROOT_DIR"
+  source "$BACKEND_DIR/.venv/bin/activate"
+  PYTHONPATH="$BACKEND_DIR" python3 scripts/test_task_api_regression.py
+)
 
 echo "[verify] mobile auth regression"
 (

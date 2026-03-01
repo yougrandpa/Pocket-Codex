@@ -42,14 +42,14 @@ cd frontend
 npm run dev
 ```
 
-打开 `http://localhost:3000`，使用默认账号登录：
+打开 `http://localhost:3000`，使用 `backend/.env` 中配置的账号登录：
 
-- 用户名：`admin`
-- 密码：`admin123`
+- 用户名：`APP_USERNAME`
+- 密码：`APP_PASSWORD`
 
 建议：
 
-- 首次启动后立即修改为自定义强口令（通过环境变量 `APP_USERNAME` / `APP_PASSWORD`）
+- 先在 `backend/.env` 中设置强口令（`APP_USERNAME` / `APP_PASSWORD`）
 - 手机端优先使用“手机登录（需电脑授权）”流程
 - 手机登录详细步骤见：`docs/USAGE.zh-CN.md` 的“2. 登录（重点：手机端需要电脑授权）”
 

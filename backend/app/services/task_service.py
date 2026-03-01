@@ -98,8 +98,22 @@ class TaskService:
             task = self._repo.get(task_id)
             return copy.deepcopy(task) if task else None
 
-    async def list_audits(self, *, limit: int = 100, offset: int = 0) -> tuple[list[dict[str, Any]], int]:
-        items, total = self._storage.list_audits(limit=limit, offset=offset)
+    async def list_audits(
+        self,
+        *,
+        limit: int = 100,
+        offset: int = 0,
+        actor: str | None = None,
+        task_id: str | None = None,
+        action: str | None = None,
+    ) -> tuple[list[dict[str, Any]], int]:
+        items, total = self._storage.list_audits(
+            limit=limit,
+            offset=offset,
+            actor=actor,
+            task_id=task_id,
+            action=action,
+        )
         return items, total
 
     def append_audit(

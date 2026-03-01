@@ -513,6 +513,60 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
       </dl>
 
       <section className="event-panel">
+        <h3>{bi("状态事件", "Lifecycle Events")}</h3>
+        {timelineEvents.length === 0 ? (
+          <p className="muted">{bi("暂无状态事件。", "No lifecycle events yet.")}</p>
+        ) : (
+          <>
+            <div className="pagination-row">
+              <p className="muted">
+                {bi("第", "Page")} {lifecyclePage} / {totalLifecyclePages} · {bi("共", "Total")}{" "}
+                {timelineEvents.length} {bi("条", "items")}
+              </p>
+              <div className="pagination-actions">
+                <button
+                  className="button button-secondary"
+                  type="button"
+                  disabled={lifecyclePage <= 1}
+                  onClick={() => setLifecyclePage((previous) => Math.max(1, previous - 1))}
+                >
+                  {bi("上一页", "Previous")}
+                </button>
+                <button
+                  className="button button-secondary"
+                  type="button"
+                  disabled={lifecyclePage >= totalLifecyclePages}
+                  onClick={() =>
+                    setLifecyclePage((previous) => Math.min(totalLifecyclePages, previous + 1))
+                  }
+                >
+                  {bi("下一页", "Next")}
+                </button>
+              </div>
+            </div>
+            <ul className="notification-list">
+              {pagedLifecycleEvents.map((event) => (
+                <li key={`${event.id}-${event.seq}`} className="notification-item">
+                  <div className="task-item-top">
+                    <span className={`status status-${(event.status || "queued").toLowerCase()}`}>
+                      {event.event_type}
+                    </span>
+                    <time dateTime={event.timestamp}>{formatDateTime(event.timestamp)}</time>
+                  </div>
+                  {typeof event.payload.run_id === "string" ? (
+                    <p className="muted">
+                      {bi("运行", "Run")}: {event.payload.run_id}
+                    </p>
+                  ) : null}
+                  <code>{JSON.stringify(event.payload)}</code>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+      </section>
+
+      <section className="event-panel">
         <h3>{bi("执行日志", "Execution Logs")}</h3>
         {logEvents.length === 0 ? (
           <p className="muted">{bi("暂无执行日志。", "No execution logs yet.")}</p>
@@ -568,60 +622,6 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
                   </li>
                 );
               })}
-            </ul>
-          </>
-        )}
-      </section>
-
-      <section className="event-panel">
-        <h3>{bi("状态事件", "Lifecycle Events")}</h3>
-        {timelineEvents.length === 0 ? (
-          <p className="muted">{bi("暂无状态事件。", "No lifecycle events yet.")}</p>
-        ) : (
-          <>
-            <div className="pagination-row">
-              <p className="muted">
-                {bi("第", "Page")} {lifecyclePage} / {totalLifecyclePages} · {bi("共", "Total")}{" "}
-                {timelineEvents.length} {bi("条", "items")}
-              </p>
-              <div className="pagination-actions">
-                <button
-                  className="button button-secondary"
-                  type="button"
-                  disabled={lifecyclePage <= 1}
-                  onClick={() => setLifecyclePage((previous) => Math.max(1, previous - 1))}
-                >
-                  {bi("上一页", "Previous")}
-                </button>
-                <button
-                  className="button button-secondary"
-                  type="button"
-                  disabled={lifecyclePage >= totalLifecyclePages}
-                  onClick={() =>
-                    setLifecyclePage((previous) => Math.min(totalLifecyclePages, previous + 1))
-                  }
-                >
-                  {bi("下一页", "Next")}
-                </button>
-              </div>
-            </div>
-            <ul className="notification-list">
-              {pagedLifecycleEvents.map((event) => (
-                <li key={`${event.id}-${event.seq}`} className="notification-item">
-                  <div className="task-item-top">
-                    <span className={`status status-${(event.status || "queued").toLowerCase()}`}>
-                      {event.event_type}
-                    </span>
-                    <time dateTime={event.timestamp}>{formatDateTime(event.timestamp)}</time>
-                  </div>
-                  {typeof event.payload.run_id === "string" ? (
-                    <p className="muted">
-                      {bi("运行", "Run")}: {event.payload.run_id}
-                    </p>
-                  ) : null}
-                  <code>{JSON.stringify(event.payload)}</code>
-                </li>
-              ))}
             </ul>
           </>
         )}

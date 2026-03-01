@@ -147,9 +147,18 @@ async def append_message(
 async def list_audit_logs(
     limit: int = Query(default=100, ge=1, le=500),
     offset: int = Query(default=0, ge=0),
+    actor: str | None = Query(default=None, min_length=1, max_length=128),
+    task_id: str | None = Query(default=None, min_length=1, max_length=64),
+    action: str | None = Query(default=None, min_length=1, max_length=128),
     _: str = Depends(get_current_user),
 ) -> AuditLogListResponse:
-    items, total = await task_service.list_audits(limit=limit, offset=offset)
+    items, total = await task_service.list_audits(
+        limit=limit,
+        offset=offset,
+        actor=actor,
+        task_id=task_id,
+        action=action,
+    )
     return AuditLogListResponse(
         total=total,
         limit=limit,

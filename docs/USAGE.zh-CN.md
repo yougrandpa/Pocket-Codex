@@ -36,12 +36,7 @@ npm run dev
 - **电脑本机（localhost）**可以直接登录。
 - **手机端**不能直接拿账号密码进系统，必须走“请求 -> 电脑批准 -> 手机登录成功”流程。
 
-默认账号：
-
-- 用户名：`admin`
-- 密码：`admin123`
-
-建议在 `backend/.env` 中修改：
+请先在 `backend/.env` 中设置账号：
 
 - `APP_USERNAME`
 - `APP_PASSWORD`

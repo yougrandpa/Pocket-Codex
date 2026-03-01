@@ -81,9 +81,10 @@ NEXT_PUBLIC_API_BASE_URL=http://localhost:8000 npm run dev:lan
 ## 4.1 登录并获取 Token
 
 ```bash
+source backend/.env
 TOKEN=$(curl -s -X POST http://localhost:8000/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"admin123"}' | python3 -c 'import json,sys; print(json.load(sys.stdin)["access_token"])')
+  -d "{\"username\":\"$APP_USERNAME\",\"password\":\"$APP_PASSWORD\"}" | python3 -c 'import json,sys; print(json.load(sys.stdin)["access_token"])')
 ```
 
 ## 4.2 创建任务
@@ -186,7 +187,7 @@ curl "http://localhost:8000/api/v1/tasks/audit/logs?limit=20&offset=0" \
 ```bash
 REQ=$(curl -s -X POST http://localhost:8000/api/v1/auth/mobile/request \
   -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"admin123","device_name":"iphone-15-pro"}')
+  -d "{\"username\":\"$APP_USERNAME\",\"password\":\"$APP_PASSWORD\",\"device_name\":\"iphone-15-pro\"}")
 echo "$REQ"
 REQ_ID=$(echo "$REQ" | python3 -c 'import json,sys; print(json.load(sys.stdin)["request_id"])')
 ```

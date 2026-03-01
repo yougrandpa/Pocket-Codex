@@ -90,14 +90,33 @@ class Storage:
             session.add(record)
             session.commit()
 
-    def list_audits(self, *, limit: int = 100, offset: int = 0) -> tuple[list[dict[str, Any]], int]:
+    def list_audits(
+        self,
+        *,
+        limit: int = 100,
+        offset: int = 0,
+        actor: str | None = None,
+        task_id: str | None = None,
+        action: str | None = None,
+    ) -> tuple[list[dict[str, Any]], int]:
+        filters = []
+        if actor:
+            filters.append(AuditLogRecord.actor.ilike(f"%{actor}%"))
+        if task_id:
+            filters.append(AuditLogRecord.task_id.ilike(f"%{task_id}%"))
+        if action:
+            filters.append(AuditLogRecord.action.ilike(f"%{action}%"))
+
         with Session(self._engine) as session:
-            total = session.scalar(select(func.count(AuditLogRecord.id))) or 0
+            count_query = select(func.count(AuditLogRecord.id))
+            records_query = select(AuditLogRecord)
+            for query_filter in filters:
+                count_query = count_query.where(query_filter)
+                records_query = records_query.where(query_filter)
+
+            total = session.scalar(count_query) or 0
             records = session.scalars(
-                select(AuditLogRecord)
-                .order_by(AuditLogRecord.id.desc())
-                .offset(offset)
-                .limit(limit)
+                records_query.order_by(AuditLogRecord.id.desc()).offset(offset).limit(limit)
             ).all()
             items = [
                 {

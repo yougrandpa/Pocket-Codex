@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AuditPanel } from "@/components/audit-panel";
 import { ExecutorStatusBar } from "@/components/executor-status-bar";
 import { LoginPanel } from "@/components/login-panel";
@@ -10,11 +10,16 @@ import { TaskCreator } from "@/components/task-creator";
 import { TaskList } from "@/components/task-list";
 import { bi, useLanguage } from "@/lib/i18n";
 import {
+  AuditLog,
+  AuditLogFilters,
   AuditLogList,
   TaskEvent,
   Task,
+  TaskDetail,
+  TaskListResult,
   clearSession,
   getAuditLogs,
+  getTask,
   getTasks,
   openEventStream,
   TaskEventStream,
@@ -22,6 +27,8 @@ import {
 } from "@/lib/api";
 
 const AUDIT_PAGE_SIZE = 20;
+const TASK_PAGE_SIZE = 20;
+const EXPORT_PAGE_SIZE = 500;
 
 function mergeTaskFromEvent(tasks: Task[], event: TaskEvent): Task[] {
   const index = tasks.findIndex((task) => task.id === event.task_id);
@@ -54,10 +61,66 @@ function mergeTaskFromEvent(tasks: Task[], event: TaskEvent): Task[] {
   return next;
 }
 
+function normalizeAuditFilters(filters: AuditLogFilters): AuditLogFilters {
+  const normalized: AuditLogFilters = {};
+  if (filters.actor?.trim()) {
+    normalized.actor = filters.actor.trim();
+  }
+  if (filters.task_id?.trim()) {
+    normalized.task_id = filters.task_id.trim();
+  }
+  if (filters.action?.trim()) {
+    normalized.action = filters.action.trim();
+  }
+  return normalized;
+}
+
+function toCsvField(value: string): string {
+  const escaped = value.replace(/"/g, '""');
+  return `"${escaped}"`;
+}
+
+function buildAuditCsv(items: AuditLog[]): string {
+  const header = ["id", "timestamp", "actor", "action", "task_id", "detail"];
+  const rows = items.map((item) => {
+    return [
+      String(item.id),
+      item.timestamp,
+      item.actor,
+      item.action,
+      item.task_id ?? "",
+      JSON.stringify(item.detail ?? {})
+    ]
+      .map(toCsvField)
+      .join(",");
+  });
+  return [header.join(","), ...rows].join("\n");
+}
+
+function downloadTextFile(fileName: string, content: string, contentType: string): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+  const blob = new Blob([content], { type: contentType });
+  const url = window.URL.createObjectURL(blob);
+  const anchor = window.document.createElement("a");
+  anchor.href = url;
+  anchor.download = fileName;
+  window.document.body.append(anchor);
+  anchor.click();
+  anchor.remove();
+  window.URL.revokeObjectURL(url);
+}
+
 export function TaskDashboard() {
   const [language] = useLanguage();
   const [authed, setAuthed] = useState(false);
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [taskState, setTaskState] = useState<TaskListResult>({
+    total: 0,
+    limit: TASK_PAGE_SIZE,
+    offset: 0,
+    items: []
+  });
   const [events, setEvents] = useState<TaskEvent[]>([]);
   const [auditState, setAuditState] = useState<AuditLogList>({
     total: 0,
@@ -65,56 +128,126 @@ export function TaskDashboard() {
     offset: 0,
     items: []
   });
+  const [auditFilters, setAuditFilters] = useState<AuditLogFilters>({});
   const [auditLoading, setAuditLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [taskLoading, setTaskLoading] = useState(true);
+
+  const taskPage = Math.floor(taskState.offset / Math.max(1, taskState.limit)) + 1;
+  const taskPageRef = useRef(taskPage);
+  const backfillingTaskIdsRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    taskPageRef.current = taskPage;
+  }, [taskPage]);
 
   useEffect(() => {
     const session = readSession();
     setAuthed(Boolean(session?.accessToken));
   }, []);
 
-  async function loadAuditPage(page: number, silent = false): Promise<void> {
-    if (!authed) {
-      return;
-    }
-    const safePage = Math.max(1, page);
-    const offset = (safePage - 1) * AUDIT_PAGE_SIZE;
-    if (!silent) {
-      setAuditLoading(true);
-    }
-    try {
-      const logs = await getAuditLogs(AUDIT_PAGE_SIZE, offset);
-      setAuditState(logs);
-      setError(null);
-    } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : bi("审计日志加载失败。", "Failed to load audit logs.")
-      );
-    } finally {
-      if (!silent) {
-        setAuditLoading(false);
+  const loadTaskPage = useCallback(
+    async (page: number, silent = false): Promise<void> => {
+      if (!authed) {
+        return;
       }
-    }
-  }
+      const safePage = Math.max(1, page);
+      const offset = (safePage - 1) * TASK_PAGE_SIZE;
+      if (!silent) {
+        setTaskLoading(true);
+      }
+      try {
+        const result = await getTasks(undefined, { limit: TASK_PAGE_SIZE, offset });
+        setTaskState(result);
+        setError(null);
+      } catch (requestError) {
+        setError(
+          requestError instanceof Error
+            ? requestError.message
+            : bi("任务加载失败。", "Failed to load tasks.")
+        );
+      } finally {
+        if (!silent) {
+          setTaskLoading(false);
+        }
+      }
+    },
+    [authed]
+  );
+
+  const loadAuditPage = useCallback(
+    async (page: number, filters: AuditLogFilters, silent = false): Promise<void> => {
+      if (!authed) {
+        return;
+      }
+      const safePage = Math.max(1, page);
+      const offset = (safePage - 1) * AUDIT_PAGE_SIZE;
+      if (!silent) {
+        setAuditLoading(true);
+      }
+      try {
+        const logs = await getAuditLogs(AUDIT_PAGE_SIZE, offset, filters);
+        setAuditState(logs);
+        setError(null);
+      } catch (requestError) {
+        setError(
+          requestError instanceof Error
+            ? requestError.message
+            : bi("审计日志加载失败。", "Failed to load audit logs.")
+        );
+      } finally {
+        if (!silent) {
+          setAuditLoading(false);
+        }
+      }
+    },
+    [authed]
+  );
+
+  const backfillUnknownTask = useCallback(
+    async (taskId: string): Promise<void> => {
+      if (!authed || !taskId || backfillingTaskIdsRef.current.has(taskId)) {
+        return;
+      }
+      backfillingTaskIdsRef.current.add(taskId);
+      try {
+        const detail: TaskDetail = await getTask(taskId);
+        if (taskPageRef.current === 1) {
+          setTaskState((previous) => {
+            const existing = previous.items.filter((item) => item.id !== detail.task.id);
+            const nextItems = [detail.task, ...existing].slice(0, previous.limit || TASK_PAGE_SIZE);
+            return { ...previous, items: nextItems };
+          });
+        }
+        await loadTaskPage(taskPageRef.current, true);
+      } catch {
+        await loadTaskPage(taskPageRef.current, true);
+      } finally {
+        backfillingTaskIdsRef.current.delete(taskId);
+      }
+    },
+    [authed, loadTaskPage]
+  );
 
   useEffect(() => {
     if (!authed) {
-      setLoading(false);
+      setTaskLoading(false);
       setAuditLoading(false);
       return;
     }
     let cancelled = false;
-    setLoading(true);
+    setTaskLoading(true);
     setAuditLoading(true);
-    Promise.all([getTasks(undefined, { limit: 200 }), getAuditLogs(AUDIT_PAGE_SIZE, 0)])
-      .then(([items, logs]) => {
+
+    Promise.all([
+      getTasks(undefined, { limit: TASK_PAGE_SIZE, offset: 0 }),
+      getAuditLogs(AUDIT_PAGE_SIZE, 0, auditFilters)
+    ])
+      .then(([taskResult, logs]) => {
         if (cancelled) {
           return;
         }
-        setTasks(items);
+        setTaskState(taskResult);
         setAuditState(logs);
         setError(null);
       })
@@ -130,7 +263,7 @@ export function TaskDashboard() {
       })
       .finally(() => {
         if (!cancelled) {
-          setLoading(false);
+          setTaskLoading(false);
           setAuditLoading(false);
         }
       });
@@ -147,8 +280,19 @@ export function TaskDashboard() {
     try {
       stream = openEventStream({
         onEvent: (parsed) => {
-          setTasks((previous) => mergeTaskFromEvent(previous, parsed));
+          let missingTask = false;
+          setTaskState((previous) => {
+            const merged = mergeTaskFromEvent(previous.items, parsed);
+            if (merged === previous.items) {
+              missingTask = true;
+              return previous;
+            }
+            return { ...previous, items: merged };
+          });
           setEvents((previous) => [parsed, ...previous].slice(0, 80));
+          if (missingTask) {
+            void backfillUnknownTask(parsed.task_id);
+          }
         },
         onError: () => {
           setError(
@@ -169,18 +313,64 @@ export function TaskDashboard() {
     return () => {
       stream?.close();
     };
-  }, [authed]);
+  }, [authed, backfillUnknownTask]);
 
   const sortedTasks = useMemo(
-    () => [...tasks].sort((a, b) => (a.updated_at > b.updated_at ? -1 : 1)),
-    [tasks]
+    () => [...taskState.items].sort((a, b) => (a.updated_at > b.updated_at ? -1 : 1)),
+    [taskState.items]
   );
+
   const workdirSuggestions = useMemo(() => {
-    const values = tasks
+    const values = taskState.items
       .map((task) => task.workdir?.trim() || "")
       .filter((item) => item.length > 0);
     return Array.from(new Set(values));
-  }, [tasks]);
+  }, [taskState.items]);
+
+  async function handleExportAudit(format: "csv" | "json"): Promise<void> {
+    if (!authed) {
+      return;
+    }
+    setAuditLoading(true);
+    try {
+      const activeFilters = normalizeAuditFilters(auditFilters);
+      const allItems: AuditLog[] = [];
+      let offset = 0;
+      let total = 1;
+      while (offset < total) {
+        const page = await getAuditLogs(EXPORT_PAGE_SIZE, offset, activeFilters);
+        total = Math.max(page.total, 0);
+        allItems.push(...page.items);
+        if (page.items.length === 0) {
+          break;
+        }
+        offset += page.items.length;
+      }
+
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+      if (format === "json") {
+        downloadTextFile(
+          `audit-logs-${timestamp}.json`,
+          JSON.stringify(allItems, null, 2),
+          "application/json;charset=utf-8"
+        );
+      } else {
+        downloadTextFile(
+          `audit-logs-${timestamp}.csv`,
+          buildAuditCsv(allItems),
+          "text/csv;charset=utf-8"
+        );
+      }
+    } catch (exportError) {
+      setError(
+        exportError instanceof Error
+          ? exportError.message
+          : bi("导出审计日志失败。", "Failed to export audit logs.")
+      );
+    } finally {
+      setAuditLoading(false);
+    }
+  }
 
   if (!authed) {
     return <LoginPanel onLoggedIn={() => setAuthed(true)} />;
@@ -192,8 +382,8 @@ export function TaskDashboard() {
       <div className="dashboard-columns">
         <div className="dashboard-column">
           <TaskCreator
-            onCreated={(task) => {
-              setTasks((prev) => [task, ...prev]);
+            onCreated={() => {
+              void loadTaskPage(1, true);
             }}
             workdirSuggestions={workdirSuggestions}
           />
@@ -213,7 +403,12 @@ export function TaskDashboard() {
               onClick={() => {
                 clearSession();
                 setAuthed(false);
-                setTasks([]);
+                setTaskState({
+                  total: 0,
+                  limit: TASK_PAGE_SIZE,
+                  offset: 0,
+                  items: []
+                });
                 setEvents([]);
                 setAuditState({
                   total: 0,
@@ -230,15 +425,37 @@ export function TaskDashboard() {
 
         <div className="dashboard-column dashboard-column-right">
           <div className="task-audit-columns">
-            <TaskList tasks={sortedTasks} error={error} loading={loading} />
+            <TaskList
+              tasks={sortedTasks}
+              total={taskState.total}
+              limit={taskState.limit || TASK_PAGE_SIZE}
+              offset={taskState.offset}
+              error={error}
+              loading={taskLoading}
+              onPageChange={(page) => {
+                void loadTaskPage(page);
+              }}
+              onTaskMutated={() => {
+                void loadTaskPage(taskPageRef.current, true);
+              }}
+            />
             <AuditPanel
               logs={auditState.items}
               total={auditState.total}
               limit={auditState.limit || AUDIT_PAGE_SIZE}
               offset={auditState.offset}
               loading={auditLoading}
+              filters={auditFilters}
+              onFilterChange={(nextFilters) => {
+                const normalized = normalizeAuditFilters(nextFilters);
+                setAuditFilters(normalized);
+                void loadAuditPage(1, normalized);
+              }}
               onPageChange={(page) => {
-                void loadAuditPage(page);
+                void loadAuditPage(page, auditFilters);
+              }}
+              onExport={(format) => {
+                void handleExportAudit(format);
               }}
             />
           </div>

@@ -35,7 +35,7 @@ English version: `README.en.md`
 
 1. 启动后端（`backend/`，端口 `8000`）
 2. 启动前端（`frontend/`，端口 `3000`）
-3. 使用默认账号登录（`admin` / `admin123`，建议立刻改为自定义强口令）
+3. 使用 `backend/.env` 中配置的 `APP_USERNAME` / `APP_PASSWORD` 登录
 4. 手机端登录建议走“手机登录（需电脑授权）”流程
 5. 手机登录详细步骤见：`docs/USAGE.zh-CN.md` 的“2. 登录（重点：手机端需要电脑授权）”
 

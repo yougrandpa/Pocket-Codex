@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import os
 import time
 
 from fastapi.testclient import TestClient
@@ -13,11 +14,21 @@ def assert_true(condition: bool, message: str) -> None:
         raise AssertionError(message)
 
 
+def required_env(name: str) -> str:
+    value = os.getenv(name, "").strip()
+    if not value:
+        raise RuntimeError(f"Missing env var {name} for mobile auth regression test")
+    return value
+
+
 def main() -> None:
+    username = required_env("APP_USERNAME")
+    password = required_env("APP_PASSWORD")
+
     with TestClient(app, base_url="http://127.0.0.1:8000", client=("127.0.0.1", 50000)) as local_client:
         login_response = local_client.post(
             "/api/v1/auth/login",
-            json={"username": "admin", "password": "admin123"},
+            json={"username": username, "password": password},
         )
         assert_true(login_response.status_code == 200, f"local login failed: {login_response.text}")
         token = login_response.json()["access_token"]
@@ -30,7 +41,7 @@ def main() -> None:
     ) as remote_client:
         direct_login = remote_client.post(
             "/api/v1/auth/login",
-            json={"username": "admin", "password": "admin123"},
+            json={"username": username, "password": password},
         )
         assert_true(
             direct_login.status_code == 403,
@@ -53,8 +64,8 @@ def main() -> None:
         mobile_request = remote_client.post(
             "/api/v1/auth/mobile/request",
             json={
-                "username": "admin",
-                "password": "admin123",
+                "username": username,
+                "password": password,
                 "device_name": "iphone-regression",
             },
             headers={"Origin": "http://172.20.10.11:3000"},

@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { Task } from "@/lib/api";
+import { useState } from "react";
+import { Task, TaskControlAction, controlTask } from "@/lib/api";
 import { formatDateTime } from "@/lib/datetime";
 import { bi, statusText } from "@/lib/i18n";
 import {
@@ -13,43 +13,116 @@ import {
 
 interface TaskListProps {
   tasks: Task[];
+  total: number;
+  limit: number;
+  offset: number;
   error?: string | null;
   loading?: boolean;
+  onPageChange?: (page: number) => void;
+  onTaskMutated?: () => void;
 }
 
-const TASK_PAGE_SIZE = 20;
+function supportedQuickActions(task: Task): TaskControlAction[] {
+  if (["RUNNING", "WAITING_INPUT", "QUEUED", "RETRYING"].includes(task.status)) {
+    return ["cancel"];
+  }
+  if (["FAILED", "CANCELED", "TIMEOUT", "SUCCEEDED"].includes(task.status)) {
+    return ["retry"];
+  }
+  return [];
+}
 
-export function TaskList({ tasks, error = null, loading = false }: TaskListProps) {
-  const [page, setPage] = useState(1);
+function actionLabel(action: TaskControlAction): string {
+  if (action === "retry") {
+    return bi("重试", "Retry");
+  }
+  if (action === "cancel") {
+    return bi("取消", "Cancel");
+  }
+  return action;
+}
 
-  const totalPages = Math.max(1, Math.ceil(tasks.length / TASK_PAGE_SIZE));
-  const pagedTasks = useMemo(() => {
-    const start = (page - 1) * TASK_PAGE_SIZE;
-    return tasks.slice(start, start + TASK_PAGE_SIZE);
-  }, [page, tasks]);
+async function copyToClipboard(value: string): Promise<void> {
+  if (typeof window === "undefined") {
+    return;
+  }
+  if (window.navigator?.clipboard?.writeText) {
+    await window.navigator.clipboard.writeText(value);
+    return;
+  }
+  const area = window.document.createElement("textarea");
+  area.value = value;
+  area.setAttribute("readonly", "true");
+  area.style.position = "absolute";
+  area.style.left = "-9999px";
+  window.document.body.append(area);
+  area.select();
+  window.document.execCommand("copy");
+  area.remove();
+}
 
-  useEffect(() => {
-    if (page > totalPages) {
-      setPage(totalPages);
+export function TaskList({
+  tasks,
+  total,
+  limit,
+  offset,
+  error = null,
+  loading = false,
+  onPageChange,
+  onTaskMutated
+}: TaskListProps) {
+  const [workingKey, setWorkingKey] = useState<string | null>(null);
+  const [note, setNote] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const safeLimit = Math.max(1, limit || 20);
+  const currentPage = Math.floor(Math.max(0, offset) / safeLimit) + 1;
+  const totalPages = Math.max(1, Math.ceil(Math.max(total, 0) / safeLimit));
+
+  async function handleTaskAction(task: Task, action: TaskControlAction): Promise<void> {
+    setWorkingKey(`${task.id}:${action}`);
+    setActionError(null);
+    setNote(null);
+    try {
+      const result = await controlTask(task.id, action);
+      setNote(result.message || bi("操作已提交。", "Action submitted."));
+      onTaskMutated?.();
+    } catch (submitError) {
+      setActionError(
+        submitError instanceof Error
+          ? submitError.message
+          : bi("任务操作失败。", "Task action failed.")
+      );
+    } finally {
+      setWorkingKey(null);
     }
-  }, [page, totalPages]);
+  }
 
-  useEffect(() => {
-    setPage(1);
-  }, [tasks.length]);
+  async function handleCopyTaskId(taskId: string): Promise<void> {
+    setActionError(null);
+    setNote(null);
+    try {
+      await copyToClipboard(taskId);
+      setNote(bi("任务 ID 已复制。", "Task ID copied."));
+    } catch {
+      setActionError(bi("复制任务 ID 失败。", "Failed to copy task ID."));
+    }
+  }
 
   return (
     <section className="panel animate-rise delay-1">
       <div className="panel-title-row">
         <h2 className="panel-title">{bi("任务队列", "Task Queue")}</h2>
-        <span className="chip">{tasks.length}</span>
+        <span className="chip">{total}</span>
       </div>
 
       {error ? <p className="error">{error}</p> : null}
+      {actionError ? <p className="error">{actionError}</p> : null}
+      {note ? <p className="note">{note}</p> : null}
 
       {loading ? <p className="muted">{bi("任务加载中...", "Loading tasks...")}</p> : null}
 
-      {!loading && !error && tasks.length === 0 ? (
+      {!loading && !error && total === 0 ? (
         <div className="empty-cta">
           <p className="muted">
             {bi("暂无任务，请先创建一个任务开始监控。", "No tasks yet. Create one to start monitoring from mobile.")}
@@ -60,25 +133,25 @@ export function TaskList({ tasks, error = null, loading = false }: TaskListProps
         </div>
       ) : null}
 
-      {!loading && !error && tasks.length > 0 ? (
+      {!loading && !error && total > 0 ? (
         <div className="pagination-row">
           <p className="muted">
-            {bi("第", "Page")} {page} / {totalPages} · {bi("共", "Total")} {tasks.length} {bi("个任务", "tasks")}
+            {bi("第", "Page")} {currentPage} / {totalPages} · {bi("共", "Total")} {total} {bi("个任务", "tasks")}
           </p>
           <div className="pagination-actions">
             <button
               className="button button-secondary"
               type="button"
-              disabled={page <= 1}
-              onClick={() => setPage((previous) => Math.max(1, previous - 1))}
+              disabled={currentPage <= 1}
+              onClick={() => onPageChange?.(Math.max(1, currentPage - 1))}
             >
               {bi("上一页", "Previous")}
             </button>
             <button
               className="button button-secondary"
               type="button"
-              disabled={page >= totalPages}
-              onClick={() => setPage((previous) => Math.min(totalPages, previous + 1))}
+              disabled={currentPage >= totalPages}
+              onClick={() => onPageChange?.(Math.min(totalPages, currentPage + 1))}
             >
               {bi("下一页", "Next")}
             </button>
@@ -88,7 +161,7 @@ export function TaskList({ tasks, error = null, loading = false }: TaskListProps
 
       <div className="task-list-scroll">
         <ul className="task-list">
-          {pagedTasks.map((task) => (
+          {tasks.map((task) => (
             <li key={task.id} className="task-item">
               <div className="task-item-top">
                 <span className={`status status-${task.status.toLowerCase()}`}>
@@ -109,8 +182,8 @@ export function TaskList({ tasks, error = null, loading = false }: TaskListProps
                       "task.list.item.clicked",
                       {
                         list_click_count: clickCount,
-                        page,
-                        page_size: TASK_PAGE_SIZE
+                        page: currentPage,
+                        page_size: safeLimit
                       },
                       task.id
                     );
@@ -118,6 +191,34 @@ export function TaskList({ tasks, error = null, loading = false }: TaskListProps
                 >
                   {bi("查看详情", "View detail")}
                 </Link>
+              </div>
+              <div className="task-quick-actions">
+                {supportedQuickActions(task).map((action) => {
+                  const working = workingKey === `${task.id}:${action}`;
+                  return (
+                    <button
+                      key={`${task.id}:${action}`}
+                      className="button button-secondary"
+                      type="button"
+                      disabled={Boolean(workingKey)}
+                      onClick={() => {
+                        void handleTaskAction(task, action);
+                      }}
+                    >
+                      {working ? bi("处理中...", "Working...") : actionLabel(action)}
+                    </button>
+                  );
+                })}
+                <button
+                  className="button button-secondary"
+                  type="button"
+                  disabled={Boolean(workingKey)}
+                  onClick={() => {
+                    void handleCopyTaskId(task.id);
+                  }}
+                >
+                  {bi("复制任务ID", "Copy ID")}
+                </button>
               </div>
             </li>
           ))}

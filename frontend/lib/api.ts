@@ -53,6 +53,13 @@ export interface TaskDetail {
   events: TaskEvent[];
 }
 
+export interface TaskListResult {
+  total: number;
+  limit: number;
+  offset: number;
+  items: Task[];
+}
+
 export interface TaskControlResult {
   task_id: string;
   action: TaskControlAction;
@@ -75,6 +82,12 @@ export interface AuditLogList {
   limit: number;
   offset: number;
   items: AuditLog[];
+}
+
+export interface AuditLogFilters {
+  actor?: string;
+  task_id?: string;
+  action?: string;
 }
 
 export type MobileLoginRequestStatus =
@@ -143,6 +156,8 @@ const DEFAULT_API_BASE_URL = "http://localhost:8000";
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") || DEFAULT_API_BASE_URL;
 const SESSION_STORAGE_KEY = "pocket_codex_session";
+const LEGACY_LOCAL_STORAGE_KEY = "pocket_codex_session";
+let inMemorySession: SessionTokens | null = null;
 
 interface ErrorPayload {
   error?: {
@@ -191,32 +206,58 @@ function parseSession(value: unknown): SessionTokens | null {
 }
 
 export function readSession(): SessionTokens | null {
+  if (inMemorySession) {
+    return inMemorySession;
+  }
   if (!isBrowser()) {
     return null;
   }
-  const raw = window.localStorage.getItem(SESSION_STORAGE_KEY);
-  if (!raw) {
+  const raw = window.sessionStorage.getItem(SESSION_STORAGE_KEY);
+  if (raw) {
+    try {
+      const parsed = parseSession(JSON.parse(raw));
+      if (parsed) {
+        inMemorySession = parsed;
+      }
+      return parsed;
+    } catch {
+      window.sessionStorage.removeItem(SESSION_STORAGE_KEY);
+    }
+  }
+
+  const legacyRaw = window.localStorage.getItem(LEGACY_LOCAL_STORAGE_KEY);
+  if (!legacyRaw) {
     return null;
   }
   try {
-    return parseSession(JSON.parse(raw));
+    const parsed = parseSession(JSON.parse(legacyRaw));
+    if (parsed) {
+      inMemorySession = parsed;
+      window.sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(parsed));
+      window.localStorage.removeItem(LEGACY_LOCAL_STORAGE_KEY);
+    }
+    return parsed;
   } catch {
     return null;
   }
 }
 
 export function saveSession(tokens: SessionTokens): void {
+  inMemorySession = tokens;
   if (!isBrowser()) {
     return;
   }
-  window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(tokens));
+  window.sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(tokens));
+  window.localStorage.removeItem(LEGACY_LOCAL_STORAGE_KEY);
 }
 
 export function clearSession(): void {
+  inMemorySession = null;
   if (!isBrowser()) {
     return;
   }
-  window.localStorage.removeItem(SESSION_STORAGE_KEY);
+  window.sessionStorage.removeItem(SESSION_STORAGE_KEY);
+  window.localStorage.removeItem(LEGACY_LOCAL_STORAGE_KEY);
 }
 
 async function fetchJson<T>(input: RequestInfo, init?: RequestInit): Promise<T> {
@@ -493,26 +534,43 @@ interface GetTasksOptions {
   offset?: number;
 }
 
-export async function getTasks(status?: TaskStatus, options: GetTasksOptions = {}): Promise<Task[]> {
+export async function getTasks(
+  status?: TaskStatus,
+  options: GetTasksOptions = {}
+): Promise<TaskListResult> {
   const params = new URLSearchParams();
   if (status) {
     params.set("status", status);
   }
-  if (typeof options.limit === "number" && Number.isFinite(options.limit)) {
-    params.set("limit", String(Math.max(1, Math.floor(options.limit))));
-  }
-  if (typeof options.offset === "number" && Number.isFinite(options.offset)) {
-    params.set("offset", String(Math.max(0, Math.floor(options.offset))));
-  }
+  const safeLimit =
+    typeof options.limit === "number" && Number.isFinite(options.limit)
+      ? Math.max(1, Math.floor(options.limit))
+      : 20;
+  const safeOffset =
+    typeof options.offset === "number" && Number.isFinite(options.offset)
+      ? Math.max(0, Math.floor(options.offset))
+      : 0;
+  params.set("limit", String(safeLimit));
+  params.set("offset", String(safeOffset));
   const query = params.toString();
-  const body = await authorizedFetchJson<{ items?: unknown[] }>(
+  const body = await authorizedFetchJson<{
+    items?: unknown[];
+    total?: number;
+    limit?: number;
+    offset?: number;
+  }>(
     `/api/v1/tasks${query ? `?${query}` : ""}`,
     {
       cache: "no-store"
     }
   );
   const items = Array.isArray(body.items) ? body.items : [];
-  return items.map(normalizeTask);
+  return {
+    total: typeof body.total === "number" ? body.total : items.length,
+    limit: typeof body.limit === "number" ? body.limit : safeLimit,
+    offset: typeof body.offset === "number" ? body.offset : safeOffset,
+    items: items.map(normalizeTask)
+  };
 }
 
 export async function getTask(taskId: string): Promise<TaskDetail> {
@@ -575,17 +633,31 @@ export async function trackUiEvent(
   });
 }
 
-export async function getAuditLogs(limit = 20, offset = 0): Promise<AuditLogList> {
+export async function getAuditLogs(
+  limit = 20,
+  offset = 0,
+  filters: AuditLogFilters = {}
+): Promise<AuditLogList> {
   const safeLimit = Math.max(1, Math.floor(limit));
   const safeOffset = Math.max(0, Math.floor(offset));
+  const params = new URLSearchParams();
+  params.set("limit", String(safeLimit));
+  params.set("offset", String(safeOffset));
+  if (filters.actor?.trim()) {
+    params.set("actor", filters.actor.trim());
+  }
+  if (filters.task_id?.trim()) {
+    params.set("task_id", filters.task_id.trim());
+  }
+  if (filters.action?.trim()) {
+    params.set("action", filters.action.trim());
+  }
   const body = await authorizedFetchJson<{
     items?: AuditLog[];
     total?: number;
     limit?: number;
     offset?: number;
-  }>(
-    `/api/v1/tasks/audit/logs?limit=${encodeURIComponent(String(safeLimit))}&offset=${encodeURIComponent(String(safeOffset))}`
-  );
+  }>(`/api/v1/tasks/audit/logs?${params.toString()}`);
   const items = Array.isArray(body.items) ? body.items : [];
   return {
     total: typeof body.total === "number" ? body.total : items.length,
