@@ -230,7 +230,8 @@ textarea {
   padding: 0;
 }
 
-.task-list-scroll {
+.task-list-scroll,
+.audit-list-scroll {
   max-height: 560px;
   min-height: 380px;
   overflow-y: auto;
