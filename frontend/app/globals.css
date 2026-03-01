@@ -164,6 +164,8 @@ a {
   align-items: center;
   display: flex;
   justify-content: space-between;
+  min-height: 44px;
+  padding: 2px 0;
 }
 
 .field-inline > input[type="checkbox"] {
@@ -172,9 +174,9 @@ a {
   background: transparent;
   border: 0;
   flex: 0 0 auto;
-  height: 18px;
-  min-height: 18px;
-  min-width: 18px;
+  height: 22px;
+  min-height: 22px;
+  min-width: 22px;
   padding: 0;
   width: 18px;
 }
@@ -245,6 +247,33 @@ textarea {
   box-shadow: 0 10px 24px rgba(20, 33, 61, 0.12);
 }
 
+.button-priority-high {
+  background: linear-gradient(135deg, #b42318 0%, #912018 100%);
+}
+
+.button-priority-high:not(:disabled):hover {
+  box-shadow: 0 10px 24px rgba(180, 35, 24, 0.34);
+}
+
+.button-priority-medium {
+  background: linear-gradient(135deg, #0f766e 0%, #0b5f58 100%);
+}
+
+.button-priority-medium:not(:disabled):hover {
+  box-shadow: 0 10px 24px rgba(15, 118, 110, 0.32);
+}
+
+.button-priority-low {
+  background: rgba(20, 33, 61, 0.08);
+  border: 1px solid rgba(20, 33, 61, 0.15);
+  color: var(--text);
+}
+
+.detail-dock-nav-active {
+  outline: 2px solid rgba(15, 118, 110, 0.24);
+  outline-offset: 0;
+}
+
 .back-dashboard-button {
   align-items: center;
   display: inline-flex;
@@ -312,21 +341,21 @@ textarea {
 .task-quick-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 10px;
 }
 
 .task-quick-actions .button {
   flex: 0 0 auto;
-  min-height: 34px;
-  min-width: 34px;
+  min-height: 44px;
+  min-width: 44px;
   padding: 7px 10px;
 }
 
 .compact-actions .button {
   border-radius: 10px;
   font-size: 0.86rem;
-  min-height: 34px;
-  min-width: 34px;
+  min-height: 44px;
+  min-width: 44px;
   padding: 7px 10px;
 }
 
@@ -622,17 +651,27 @@ textarea {
   align-items: center;
   background: rgba(20, 33, 61, 0.08);
   border: 1px solid rgba(20, 33, 61, 0.16);
-  border-radius: 999px;
+  border-radius: 10px;
   color: var(--muted);
   cursor: pointer;
   display: inline-flex;
   font-size: 0.76rem;
   font-weight: 700;
-  height: 20px;
   justify-content: center;
-  line-height: 1;
-  padding: 0;
-  width: 20px;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 10px;
+}
+
+.task-detail-compose-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.task-detail-compose-actions .button {
+  min-height: 44px;
+  justify-content: center;
 }
 
 .context-window-popover {
@@ -688,6 +727,7 @@ textarea {
 }
 
 .task-detail-panel {
+  animation: none;
   padding-bottom: 18px;
 }
 
@@ -845,11 +885,11 @@ textarea {
 
   .task-quick-actions .button {
     flex: 1 1 calc(50% - 6px);
-    min-height: 40px;
+    min-height: 44px;
   }
 
   .compact-actions .button {
-    min-height: 40px;
+    min-height: 44px;
     width: 100%;
   }
 
@@ -881,6 +921,10 @@ textarea {
     font-size: 0.78rem;
     min-height: 44px;
     padding: 8px 6px;
+  }
+
+  .task-detail-compose-actions {
+    margin-bottom: 8px;
   }
 
   .task-detail-panel {

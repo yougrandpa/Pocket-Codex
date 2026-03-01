@@ -17,14 +17,13 @@ export function ContextWindowIndicator({
 
   return (
     <div className="context-window-indicator">
-      <span
+      <button
+        type="button"
         className="context-window-toggle"
-        tabIndex={0}
-        role="img"
         aria-label={bi("背景信息窗口提示", "Context window hint")}
       >
-        i
-      </span>
+        {bi("上下文", "Ctx")}
+      </button>
       <div className="context-window-popover" role="dialog" aria-label={bi("背景信息窗口", "Context Window")}>
         <p className="context-window-title">{bi("背景信息窗口", "Context Window")}</p>
         <p className="context-window-percent">

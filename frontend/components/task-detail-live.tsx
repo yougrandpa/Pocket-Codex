@@ -115,6 +115,29 @@ function tabLabel(tab: TaskDetailTab): string {
   return bi("事件日志", "Events");
 }
 
+interface DockPrimaryAction {
+  action: TaskControlAction;
+  className: string;
+}
+
+function resolveDockPrimaryAction(task: Task | null, availableActions: TaskControlAction[]): DockPrimaryAction | null {
+  if (!task || availableActions.length === 0) {
+    return null;
+  }
+  if (task.status === "RUNNING" && availableActions.includes("cancel")) {
+    return { action: "cancel", className: "button-priority-high" };
+  }
+  if (task.status === "WAITING_INPUT" && availableActions.includes("resume")) {
+    return { action: "resume", className: "button-priority-medium" };
+  }
+  if (["FAILED", "CANCELED", "TIMEOUT", "SUCCEEDED"].includes(task.status) && availableActions.includes("retry")) {
+    return { action: "retry", className: "button-priority-medium" };
+  }
+  const fallback = availableActions[0];
+  const className = fallback === "cancel" ? "button-priority-high" : "button-priority-low";
+  return { action: fallback, className };
+}
+
 const URL_PATTERN = /(https?:\/\/[^\s]+)/g;
 
 interface ConversationTurn {
@@ -204,6 +227,17 @@ function roleLabel(role: ConversationTurn["role"]): string {
   return bi("系统", "System");
 }
 
+function isTransientStreamError(message: string | null): boolean {
+  if (!message) {
+    return false;
+  }
+  return (
+    message.includes("实时流已断开") ||
+    message.includes("Realtime stream disconnected") ||
+    message.includes("网络波动，正在重连")
+  );
+}
+
 export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
   const [language] = useLanguage();
   const searchParams = useSearchParams();
@@ -269,14 +303,18 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
         onEvent: (event) => {
           setEvents((previous) => [event, ...previous].slice(0, 400));
           setTask((previous) => (previous ? mergeTaskFromStatus(previous, event) : previous));
+          setError((previous) => (isTransientStreamError(previous) ? null : previous));
         },
         onError: () => {
           setError(
             bi(
-              "实时流已断开，正在自动重连...",
-              "Realtime stream disconnected. Retrying automatically..."
+              "网络波动，正在重连（不影响已提交操作）...",
+              "Network unstable, reconnecting (submitted actions are unaffected)..."
             )
           );
+          window.setTimeout(() => {
+            setError((previous) => (isTransientStreamError(previous) ? null : previous));
+          }, 5000);
         }
       });
     } catch (streamError) {
@@ -395,7 +433,10 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
   const showControls = activeTab === "controls";
   const showCost = activeTab === "cost";
   const showEvents = activeTab === "events";
-  const primaryAction = availableActions[0] ?? null;
+  const dockPrimaryAction = useMemo(
+    () => resolveDockPrimaryAction(task, availableActions),
+    [availableActions, task]
+  );
 
   function focusMessageComposer(): void {
     setActiveTab("conversation");
@@ -444,6 +485,10 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
       await appendTaskMessage(taskId, message.trim());
       setMessage("");
       setNote(bi("消息已发送。", "Message sent."));
+      window.setTimeout(() => {
+        messageInputRef.current?.focus();
+        messageInputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 0);
     } catch (appendError) {
       setError(
         appendError instanceof Error
@@ -468,7 +513,7 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
   }
 
   return (
-    <section className="panel animate-rise task-detail-panel" data-lang={language}>
+    <section className="panel task-detail-panel" data-lang={language}>
       <Link href={backHref} prefetch={false} className="button button-secondary back-dashboard-button">
         {bi("返回控制台", "Back to dashboard")}
       </Link>
@@ -498,7 +543,7 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
       </div>
 
       {error ? <p className="error">{error}</p> : null}
-      {note ? <p className="note">{note}</p> : null}
+      {note ? <p className="note" role="status" aria-live="polite">{note}</p> : null}
 
       {showConversation ? (
         <>
@@ -534,7 +579,7 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
                 placeholder={bi("补充指令...", "Add follow-up instruction...")}
               />
             </label>
-            <div className="mobile-sticky-actions">
+            <div className="task-detail-compose-actions">
               <button className="button" type="submit" disabled={busyMessage || !message.trim()}>
                 {busyMessage ? bi("发送中...", "Sending...") : bi("发送消息", "Send Message")}
               </button>
@@ -797,25 +842,39 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
       ) : null}
 
       <div className="detail-bottom-dock">
-        <button className="button button-secondary" type="button" onClick={() => setActiveTab("conversation")}>
+        <button
+          className={`button button-secondary ${showConversation ? "detail-dock-nav-active" : ""}`}
+          type="button"
+          onClick={() => setActiveTab("conversation")}
+        >
           {bi("对话", "Chat")}
         </button>
-        <button className="button button-secondary" type="button" onClick={() => setActiveTab("controls")}>
+        <button
+          className={`button button-secondary ${showControls ? "detail-dock-nav-active" : ""}`}
+          type="button"
+          onClick={() => setActiveTab("controls")}
+        >
           {bi("控制", "Control")}
         </button>
         <button
-          className="button button-secondary"
+          className={`button ${
+            dockPrimaryAction ? dockPrimaryAction.className : "button-secondary button-priority-low"
+          }`}
           type="button"
-          disabled={primaryAction === null || workingAction !== null}
+          disabled={dockPrimaryAction === null || workingAction !== null}
           onClick={() => {
-            if (primaryAction) {
-              void handleControl(primaryAction);
+            if (dockPrimaryAction) {
+              void handleControl(dockPrimaryAction.action);
             }
           }}
         >
-          {primaryAction ? actionLabel(primaryAction) : bi("无动作", "No action")}
+          {workingAction
+            ? bi("执行中...", "Working...")
+            : dockPrimaryAction
+              ? actionLabel(dockPrimaryAction.action)
+              : bi("无动作", "No action")}
         </button>
-        <button className="button" type="button" onClick={focusMessageComposer}>
+        <button className={`button ${showConversation ? "detail-dock-nav-active" : ""}`} type="button" onClick={focusMessageComposer}>
           {bi("发消息", "Message")}
         </button>
       </div>
