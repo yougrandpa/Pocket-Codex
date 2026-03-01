@@ -8,7 +8,7 @@ from typing import Any, Optional
 from sqlalchemy import JSON, Integer, String, Text, create_engine, func, select
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column
 
-from .models import Task, TaskEvent, TaskMessage, TaskStatus, utc_now_iso
+from .models import Task, TaskEvent, TaskMessage, TaskRun, TaskStatus, utc_now_iso
 
 
 class Base(DeclarativeBase):
@@ -119,6 +119,9 @@ class Storage:
         for event in payload.get("events", []):
             if isinstance(event.get("status"), TaskStatus):
                 event["status"] = event["status"].value
+        for run in payload.get("runs", []):
+            if isinstance(run.get("status"), TaskStatus):
+                run["status"] = run["status"].value
         return payload
 
     @staticmethod
@@ -134,6 +137,7 @@ class Storage:
         events = [
             TaskEvent(
                 id=str(item.get("id", "")),
+                stream_id=int(item.get("stream_id", 0)),
                 seq=int(item.get("seq", 0)),
                 task_id=str(item.get("task_id", "")),
                 event_type=str(item.get("event_type", "task.event")),
@@ -142,6 +146,19 @@ class Storage:
                 payload=dict(item.get("payload", {})),
             )
             for item in payload.get("events", [])
+        ]
+        runs = [
+            TaskRun(
+                run_id=str(item.get("run_id", "")),
+                sequence=int(item.get("sequence", 0)),
+                reason=str(item.get("reason", "")),
+                created_at=str(item.get("created_at", "")),
+                status=TaskStatus(item["status"]) if item.get("status") else TaskStatus.QUEUED,
+                started_at=str(item["started_at"]) if item.get("started_at") is not None else None,
+                finished_at=str(item["finished_at"]) if item.get("finished_at") is not None else None,
+                summary=str(item["summary"]) if item.get("summary") is not None else None,
+            )
+            for item in payload.get("runs", [])
         ]
         return Task(
             id=str(payload.get("id", "")),
@@ -162,6 +179,11 @@ class Storage:
             paused_at=str(payload["paused_at"]) if payload.get("paused_at") is not None else None,
             retry_count=int(payload.get("retry_count", 0)),
             timeout_seconds=int(payload.get("timeout_seconds", 20)),
+            current_run_id=(
+                str(payload["current_run_id"]) if payload.get("current_run_id") is not None else None
+            ),
+            run_sequence=int(payload.get("run_sequence", 0)),
+            runs=runs,
             messages=messages,
             events=events,
         )

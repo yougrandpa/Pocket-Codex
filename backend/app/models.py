@@ -36,12 +36,25 @@ class TaskMessage:
 @dataclass
 class TaskEvent:
     id: str
+    stream_id: int
     seq: int
     task_id: str
     event_type: str
     status: Optional[TaskStatus]
     timestamp: str
     payload: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class TaskRun:
+    run_id: str
+    sequence: int
+    reason: str
+    created_at: str
+    status: TaskStatus = TaskStatus.QUEUED
+    started_at: Optional[str] = None
+    finished_at: Optional[str] = None
+    summary: Optional[str] = None
 
 
 @dataclass
@@ -60,6 +73,9 @@ class Task:
     paused_at: Optional[str] = None
     retry_count: int = 0
     timeout_seconds: int = 20
+    current_run_id: Optional[str] = None
+    run_sequence: int = 0
+    runs: list[TaskRun] = field(default_factory=list)
     messages: list[TaskMessage] = field(default_factory=list)
     events: list[TaskEvent] = field(default_factory=list)
 

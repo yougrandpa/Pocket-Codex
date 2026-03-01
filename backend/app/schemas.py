@@ -5,7 +5,7 @@ from typing import Any, Optional
 
 from pydantic import BaseModel, Field
 
-from .models import Task, TaskEvent, TaskMessage, TaskStatus
+from .models import Task, TaskEvent, TaskMessage, TaskRun, TaskStatus
 
 
 class LoginRequest(BaseModel):
@@ -73,6 +73,7 @@ class TaskMessageResponse(BaseModel):
 
 class TaskEventResponse(BaseModel):
     id: str
+    stream_id: int
     seq: int
     task_id: str
     event_type: str
@@ -84,12 +85,37 @@ class TaskEventResponse(BaseModel):
     def from_model(cls, event: TaskEvent) -> "TaskEventResponse":
         return cls(
             id=event.id,
+            stream_id=event.stream_id,
             seq=event.seq,
             task_id=event.task_id,
             event_type=event.event_type,
             status=event.status,
             timestamp=event.timestamp,
             payload=event.payload,
+        )
+
+
+class TaskRunResponse(BaseModel):
+    run_id: str
+    sequence: int
+    reason: str
+    status: TaskStatus
+    created_at: str
+    started_at: Optional[str]
+    finished_at: Optional[str]
+    summary: Optional[str]
+
+    @classmethod
+    def from_model(cls, run: TaskRun) -> "TaskRunResponse":
+        return cls(
+            run_id=run.run_id,
+            sequence=run.sequence,
+            reason=run.reason,
+            status=run.status,
+            created_at=run.created_at,
+            started_at=run.started_at,
+            finished_at=run.finished_at,
+            summary=run.summary,
         )
 
 
@@ -108,6 +134,9 @@ class TaskResponse(BaseModel):
     paused_at: Optional[str]
     retry_count: int
     timeout_seconds: int
+    current_run_id: Optional[str]
+    run_sequence: int
+    runs: list[TaskRunResponse] = Field(default_factory=list)
     messages: list[TaskMessageResponse] = Field(default_factory=list)
 
     @classmethod
@@ -127,6 +156,9 @@ class TaskResponse(BaseModel):
             paused_at=task.paused_at,
             retry_count=task.retry_count,
             timeout_seconds=task.timeout_seconds,
+            current_run_id=task.current_run_id,
+            run_sequence=task.run_sequence,
+            runs=[TaskRunResponse.from_model(item) for item in task.runs],
             messages=[TaskMessageResponse.from_model(item) for item in task.messages],
         )
 

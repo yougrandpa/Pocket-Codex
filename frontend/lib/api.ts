@@ -33,10 +33,13 @@ export interface Task {
   paused_at?: string | null;
   retry_count?: number;
   timeout_seconds?: number;
+  current_run_id?: string | null;
+  run_sequence?: number;
 }
 
 export interface TaskEvent {
   id: string;
+  stream_id?: number;
   seq: number;
   task_id: string;
   event_type: string;
@@ -72,6 +75,9 @@ export interface HealthStatus {
   timestamp: string;
   task_executor: string;
   execution_backend: string;
+  worker_concurrency?: number;
+  sse_replay_limit?: number;
+  workdir_whitelist?: string[];
   codex_min_timeout_seconds?: number;
   codex_hard_timeout_seconds?: number;
   codex_cli_path?: string;
@@ -279,6 +285,13 @@ function normalizeHealth(raw: unknown): HealthStatus {
     task_executor: typeof value.task_executor === "string" ? value.task_executor : "unknown",
     execution_backend:
       typeof value.execution_backend === "string" ? value.execution_backend : "unknown",
+    worker_concurrency:
+      typeof value.worker_concurrency === "number" ? value.worker_concurrency : undefined,
+    sse_replay_limit:
+      typeof value.sse_replay_limit === "number" ? value.sse_replay_limit : undefined,
+    workdir_whitelist: Array.isArray(value.workdir_whitelist)
+      ? value.workdir_whitelist.filter((item): item is string => typeof item === "string")
+      : undefined,
     codex_min_timeout_seconds:
       typeof value.codex_min_timeout_seconds === "number"
         ? value.codex_min_timeout_seconds
@@ -311,7 +324,9 @@ function normalizeTask(raw: unknown): Task {
     paused_at: typeof value.paused_at === "string" ? value.paused_at : null,
     retry_count: typeof value.retry_count === "number" ? value.retry_count : undefined,
     timeout_seconds:
-      typeof value.timeout_seconds === "number" ? value.timeout_seconds : undefined
+      typeof value.timeout_seconds === "number" ? value.timeout_seconds : undefined,
+    current_run_id: typeof value.current_run_id === "string" ? value.current_run_id : null,
+    run_sequence: typeof value.run_sequence === "number" ? value.run_sequence : undefined
   };
 }
 
@@ -320,6 +335,7 @@ function normalizeEvent(raw: unknown): TaskEvent {
   const payload = asRecord(value.payload);
   return {
     id: String(value.id ?? ""),
+    stream_id: typeof value.stream_id === "number" ? value.stream_id : undefined,
     seq: typeof value.seq === "number" ? value.seq : 0,
     task_id: String(value.task_id ?? ""),
     event_type: String(value.event_type ?? "task.event"),
@@ -417,13 +433,18 @@ function parseSseFrame(frame: string): string | null {
   return payload || null;
 }
 
-export function bindTaskEventStream(onEvent: (event: TaskEvent) => void): (rawData: string) => void {
+export function bindTaskEventStream(
+  onEvent: (event: TaskEvent) => void
+): (rawData: string) => TaskEvent | null {
   return (rawData: string) => {
     try {
       const parsed = JSON.parse(rawData) as unknown;
-      onEvent(normalizeEvent(parsed));
+      const event = normalizeEvent(parsed);
+      onEvent(event);
+      return event;
     } catch {
       // Ignore malformed event payload.
+      return null;
     }
   };
 }
@@ -437,6 +458,7 @@ export function openEventStream({
   let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   let controller: AbortController | null = null;
   let reconnectAttempts = 0;
+  let lastStreamId = 0;
   const consume = bindTaskEventStream(onEvent);
 
   const scheduleReconnect = (immediate = false) => {
@@ -474,7 +496,8 @@ export function openEventStream({
         method: "GET",
         headers: {
           Accept: "text/event-stream",
-          Authorization: `Bearer ${session.accessToken}`
+          Authorization: `Bearer ${session.accessToken}`,
+          ...(lastStreamId > 0 ? { "Last-Event-ID": String(lastStreamId) } : {})
         },
         cache: "no-store",
         signal: controller.signal
@@ -513,7 +536,10 @@ export function openEventStream({
         for (const frame of frames) {
           const payload = parseSseFrame(frame);
           if (payload) {
-            consume(payload);
+            const event = consume(payload);
+            if (event?.stream_id && event.stream_id > lastStreamId) {
+              lastStreamId = event.stream_id;
+            }
           }
         }
       }

@@ -25,6 +25,12 @@ set -a && source .env && set +a
 # Optional: retry policy
 # export APP_MAX_AUTO_RETRIES=2
 # export APP_RETRY_BACKOFF_BASE_SECONDS=1
+# Optional: local worker concurrency (2~4 recommended)
+# export APP_WORKER_CONCURRENCY=2
+# Optional: allowed workdir roots (comma-separated)
+# export APP_WORKDIR_WHITELIST=/Users/slg/workspace/Pocket-Codex
+# Optional: SSE replay limit on reconnect
+# export APP_SSE_REPLAY_LIMIT=500
 # Optional: switch executor queue backend to Redis
 # export APP_EXECUTION_BACKEND=redis
 # export REDIS_URL=redis://localhost:6379/0
@@ -60,5 +66,8 @@ Then check:
 
 - Default persistence uses SQLite at `backend/pocket_codex.db` and survives process restarts.
 - Default queue backend is in-process (`APP_EXECUTION_BACKEND=local`); set it to `redis` for shared queue consumption.
+- Queue execution uses priority scheduling and supports multi-worker concurrency via `APP_WORKER_CONCURRENCY`.
+- Workdir validation is enforced by `APP_WORKDIR_WHITELIST` for safer local execution boundaries.
+- SSE supports reconnect replay via `Last-Event-ID` / `last_event_id`.
 - Default task executor is `simulator`; set `APP_TASK_EXECUTOR=codex` to run real local Codex commands.
 - Default credentials are `admin / admin123` and should be overridden with env vars for non-local environments.

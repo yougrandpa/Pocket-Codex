@@ -30,13 +30,16 @@ async def create_task(
     payload: TaskCreateRequest,
     current_user: str = Depends(get_current_user),
 ) -> TaskResponse:
-    task = await task_service.create_task(
-        prompt=payload.prompt,
-        priority=payload.priority,
-        workdir=payload.workdir,
-        timeout_seconds=payload.timeout_seconds,
-        actor=current_user,
-    )
+    try:
+        task = await task_service.create_task(
+            prompt=payload.prompt,
+            priority=payload.priority,
+            workdir=payload.workdir,
+            timeout_seconds=payload.timeout_seconds,
+            actor=current_user,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     return TaskResponse.from_model(task)
 
 

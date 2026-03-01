@@ -19,6 +19,7 @@ async def stream_events(
     request: Request,
     task_id: Optional[str] = Query(default=None),
     access_token: Optional[str] = Query(default=None),
+    last_event_id: Optional[str] = Query(default=None),
     user: Optional[str] = Depends(get_optional_current_user),
 ) -> StreamingResponse:
     if user is None:
@@ -29,10 +30,20 @@ async def stream_events(
             )
         user = validate_access_token(access_token)
 
-    queue = await task_service.subscribe(task_id=task_id)
+    header_last_event_id = request.headers.get("last-event-id")
+    replay_from = header_last_event_id or last_event_id
+    queue, replay_events = await task_service.subscribe(
+        task_id=task_id,
+        last_event_id=replay_from,
+    )
 
     async def event_generator() -> AsyncGenerator[str, None]:
         try:
+            for event in replay_events:
+                data = json.dumps(event, separators=(",", ":"))
+                event_name = event.get("event_type", "task.event")
+                event_id = str(event.get("stream_id", 0))
+                yield f"id: {event_id}\nevent: {event_name}\ndata: {data}\n\n"
             while True:
                 if await request.is_disconnected():
                     break
@@ -40,7 +51,7 @@ async def stream_events(
                     event = await asyncio.wait_for(queue.get(), timeout=20.0)
                     data = json.dumps(event, separators=(",", ":"))
                     event_name = event.get("event_type", "task.event")
-                    event_id = f"{event.get('task_id', 'task')}:{event.get('seq', 0)}"
+                    event_id = str(event.get("stream_id", 0))
                     yield f"id: {event_id}\nevent: {event_name}\ndata: {data}\n\n"
                 except asyncio.TimeoutError:
                     yield ": ping\n\n"

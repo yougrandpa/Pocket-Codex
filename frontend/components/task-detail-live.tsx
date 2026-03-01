@@ -480,6 +480,10 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
           <dt>{bi("最后心跳", "Last Heartbeat")}</dt>
           <dd>{formatDateTime(task.last_heartbeat_at)}</dd>
         </div>
+        <div>
+          <dt>{bi("当前运行", "Current Run")}</dt>
+          <dd>{task.current_run_id ? `${task.current_run_id} (#${task.run_sequence ?? "-"})` : "-"}</dd>
+        </div>
       </dl>
 
       <section className="event-panel">
@@ -518,6 +522,8 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
                   typeof event.payload.source === "string" ? event.payload.source : bi("系统", "system");
                 const level =
                   typeof event.payload.level === "string" ? event.payload.level : bi("信息", "info");
+                const runId =
+                  typeof event.payload.run_id === "string" ? event.payload.run_id : task.current_run_id;
                 const messageText =
                   typeof event.payload.message === "string"
                     ? event.payload.message
@@ -525,7 +531,10 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
                 return (
                   <li key={`${event.id}-${event.seq}`} className="notification-item">
                     <div className="task-item-top">
-                      <span className="chip">{source}</span>
+                      <span className="chip">
+                        {source}
+                        {runId ? ` · ${runId.slice(0, 8)}` : ""}
+                      </span>
                       <time dateTime={event.timestamp}>{formatDateTime(event.timestamp)}</time>
                     </div>
                     <p className="muted">{bi("级别", "Level")}: {level}</p>
@@ -579,6 +588,11 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
                     </span>
                     <time dateTime={event.timestamp}>{formatDateTime(event.timestamp)}</time>
                   </div>
+                  {typeof event.payload.run_id === "string" ? (
+                    <p className="muted">
+                      {bi("运行", "Run")}: {event.payload.run_id}
+                    </p>
+                  ) : null}
                   <code>{JSON.stringify(event.payload)}</code>
                 </li>
               ))}

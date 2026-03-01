@@ -52,6 +52,12 @@ def _as_bool(value: str, fallback: bool) -> bool:
     return fallback
 
 
+def _as_csv_list(value: str | None) -> list[str]:
+    if value is None:
+        return []
+    return [item.strip() for item in value.split(",") if item.strip()]
+
+
 def _normalize_database_url(value: str) -> str:
     if not value.startswith("sqlite:///"):
         return value
@@ -68,6 +74,32 @@ def _normalize_database_url(value: str) -> str:
 
 def _default_database_url() -> str:
     return f"sqlite:///{(BACKEND_ROOT / 'pocket_codex.db').resolve()}"
+
+
+def _is_subpath(path: Path, base: Path) -> bool:
+    try:
+        path.relative_to(base)
+        return True
+    except ValueError:
+        return False
+
+
+def _resolve_workdir_whitelist(raw_items: list[str]) -> list[str]:
+    resolved: list[str] = []
+    for item in raw_items:
+        candidate = Path(item).expanduser()
+        if not candidate.is_absolute():
+            candidate = (PROJECT_ROOT / candidate).resolve()
+        else:
+            candidate = candidate.resolve()
+        if not candidate.exists() or not candidate.is_dir():
+            continue
+        normalized = str(candidate)
+        if normalized not in resolved:
+            resolved.append(normalized)
+    if not resolved:
+        resolved.append(str(PROJECT_ROOT.resolve()))
+    return resolved
 
 
 def _resolve_codex_cli_path(value: str) -> str:
@@ -106,6 +138,7 @@ class Settings:
     default_task_timeout_seconds: int
     retry_backoff_base_seconds: int
     execution_backend: str
+    worker_concurrency: int
     redis_url: str
     redis_queue_prefix: str
     task_executor: str
@@ -115,11 +148,27 @@ class Settings:
     codex_model: str | None
     codex_full_auto: bool
     auto_rerun_on_message: bool
+    sse_replay_limit: int
+    workdir_whitelist: list[str]
 
 
 def load_settings() -> Settings:
     cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000")
     allow_origins = [origin.strip() for origin in cors_origins.split(",") if origin.strip()]
+    worker_concurrency = _as_int(
+        os.getenv("APP_WORKER_CONCURRENCY", "2"),
+        fallback=2,
+    )
+    worker_concurrency = max(1, min(worker_concurrency, 4))
+    sse_replay_limit = _as_int(
+        os.getenv("APP_SSE_REPLAY_LIMIT", "500"),
+        fallback=500,
+    )
+    sse_replay_limit = max(10, min(sse_replay_limit, 5000))
+    raw_whitelist = _as_csv_list(
+        os.getenv("APP_WORKDIR_WHITELIST", str(PROJECT_ROOT.resolve()))
+    )
+    workdir_whitelist = _resolve_workdir_whitelist(raw_whitelist)
     return Settings(
         username=os.getenv("APP_USERNAME", "admin"),
         password=os.getenv("APP_PASSWORD", "admin123"),
@@ -147,6 +196,7 @@ def load_settings() -> Settings:
             fallback=1,
         ),
         execution_backend=os.getenv("APP_EXECUTION_BACKEND", "local").strip().lower() or "local",
+        worker_concurrency=worker_concurrency,
         redis_url=os.getenv("REDIS_URL", "redis://localhost:6379/0"),
         redis_queue_prefix=os.getenv("REDIS_QUEUE_PREFIX", "pocket_codex:tasks"),
         task_executor=os.getenv("APP_TASK_EXECUTOR", "simulator").strip().lower() or "simulator",
@@ -162,6 +212,8 @@ def load_settings() -> Settings:
         codex_model=os.getenv("CODEX_MODEL", "").strip() or None,
         codex_full_auto=_as_bool(os.getenv("CODEX_FULL_AUTO", "true"), True),
         auto_rerun_on_message=_as_bool(os.getenv("APP_AUTO_RERUN_ON_MESSAGE", "true"), True),
+        sse_replay_limit=sse_replay_limit,
+        workdir_whitelist=workdir_whitelist,
     )
 
 

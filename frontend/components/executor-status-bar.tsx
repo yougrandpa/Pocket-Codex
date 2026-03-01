@@ -42,6 +42,9 @@ export function ExecutorStatusBar() {
   const executorMode = (health?.task_executor || "unknown").toLowerCase();
   const executorBackend = health?.execution_backend || "unknown";
   const checkedAt = formatDateTime(health?.timestamp || "", "--");
+  const workerConcurrency = health?.worker_concurrency;
+  const replayLimit = health?.sse_replay_limit;
+  const workdirWhitelist = health?.workdir_whitelist ?? [];
   const codexMinTimeout = health?.codex_min_timeout_seconds;
   const codexHardTimeout = health?.codex_hard_timeout_seconds;
   const codexCliPath = health?.codex_cli_path || "codex";
@@ -86,6 +89,17 @@ export function ExecutorStatusBar() {
         <p className="muted executor-meta">
           {bi("队列后端", "Execution Backend")}: {executorBackend} · {bi("更新时间", "Updated")}: {checkedAt}
         </p>
+        {typeof workerConcurrency === "number" ? (
+          <p className="muted executor-meta">
+            {bi("Worker 并发", "Worker Concurrency")}: {workerConcurrency}
+            {typeof replayLimit === "number" ? ` · ${bi("SSE 重放上限", "SSE Replay Limit")}: ${replayLimit}` : ""}
+          </p>
+        ) : null}
+        {workdirWhitelist.length > 0 ? (
+          <p className="muted executor-meta">
+            {bi("允许目录", "Allowed Workdirs")}: {workdirWhitelist.join(" | ")}
+          </p>
+        ) : null}
         <p className="muted executor-meta">
           {bi("Codex 路径", "Codex Path")}: <code>{codexCliPath}</code>
         </p>

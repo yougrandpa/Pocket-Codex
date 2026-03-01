@@ -10,7 +10,16 @@ from typing import Any, Optional
 
 from ..config import settings
 from ..execution_queue import create_execution_queue
-from ..models import InMemoryTaskRepository, Task, TaskEvent, TaskMessage, TaskStatus, new_id, utc_now_iso
+from ..models import (
+    InMemoryTaskRepository,
+    Task,
+    TaskEvent,
+    TaskMessage,
+    TaskRun,
+    TaskStatus,
+    new_id,
+    utc_now_iso,
+)
 from ..state import TERMINAL_STATUSES, ensure_transition
 from ..storage import Storage
 
@@ -39,13 +48,34 @@ class TaskService:
         self._global_subscribers: set[asyncio.Queue[dict[str, Any]]] = set()
         self._task_subscribers: dict[str, set[asyncio.Queue[dict[str, Any]]]] = {}
         self._execution_queue = create_execution_queue()
-        self._worker_task: asyncio.Task[None] | None = None
+        self._worker_tasks: list[asyncio.Task[None]] = []
         self._active_processes: dict[str, asyncio.subprocess.Process] = {}
+        self._next_stream_id = 1
         self._load_persisted_tasks()
 
     def _load_persisted_tasks(self) -> None:
+        max_stream_id = 0
         for task in self._storage.load_tasks():
+            if not task.runs:
+                fallback_run_id = task.current_run_id or new_id("run")
+                task.run_sequence = max(task.run_sequence, 1)
+                task.current_run_id = fallback_run_id
+                task.runs.append(
+                    TaskRun(
+                        run_id=fallback_run_id,
+                        sequence=task.run_sequence,
+                        reason="migrated_legacy_task",
+                        created_at=task.created_at,
+                        status=task.status,
+                        started_at=task.started_at,
+                        finished_at=task.finished_at,
+                        summary=task.summary,
+                    )
+                )
+            if task.events:
+                max_stream_id = max(max_stream_id, max(event.stream_id for event in task.events))
             self._repo.add(task)
+        self._next_stream_id = max_stream_id + 1
 
     async def list_tasks(
         self,
@@ -83,20 +113,26 @@ class TaskService:
         self._storage.append_audit(actor=actor, action=action, task_id=task_id, detail=detail)
 
     async def start_worker(self) -> None:
-        if self._worker_task is None or self._worker_task.done():
-            await self._execution_queue.start()
-            self._worker_task = asyncio.create_task(self._worker_loop())
+        if self._worker_tasks and all(not task.done() for task in self._worker_tasks):
+            return
+        await self._execution_queue.start()
+        self._worker_tasks = [
+            asyncio.create_task(self._worker_loop(index + 1))
+            for index in range(settings.worker_concurrency)
+        ]
 
     async def stop_worker(self) -> None:
-        if self._worker_task is None:
+        if not self._worker_tasks:
             await self._execution_queue.stop()
             return
-        self._worker_task.cancel()
-        try:
-            await self._worker_task
-        except asyncio.CancelledError:
-            pass
-        self._worker_task = None
+        for worker_task in self._worker_tasks:
+            worker_task.cancel()
+        for worker_task in self._worker_tasks:
+            try:
+                await worker_task
+            except asyncio.CancelledError:
+                pass
+        self._worker_tasks = []
         await self._execution_queue.stop()
 
     async def create_task(
@@ -108,6 +144,7 @@ class TaskService:
         timeout_seconds: Optional[int] = None,
         actor: str = "system",
     ) -> Task:
+        normalized_workdir = self._normalize_workdir_or_raise(workdir)
         now = utc_now_iso()
         base_timeout = timeout_seconds or settings.default_task_timeout_seconds
         effective_timeout = self._normalize_timeout_for_executor(base_timeout)
@@ -115,7 +152,7 @@ class TaskService:
             id=new_id("task"),
             prompt=prompt,
             priority=priority,
-            workdir=workdir,
+            workdir=normalized_workdir,
             status=TaskStatus.QUEUED,
             created_at=now,
             updated_at=now,
@@ -126,6 +163,7 @@ class TaskService:
         async with self._lock:
             self._repo.add(task)
             queued_events: list[dict[str, Any]] = []
+            self._create_run_locked(task, reason="task_created", events_out=queued_events)
             self._append_status_event_locked(
                 task=task,
                 from_status=None,
@@ -141,13 +179,17 @@ class TaskService:
             actor=actor,
             action="task.create",
             task_id=task.id,
-            detail={"priority": priority, "workdir": workdir, "timeout_seconds": task.timeout_seconds},
+            detail={
+                "priority": priority,
+                "workdir": normalized_workdir,
+                "timeout_seconds": task.timeout_seconds,
+            },
         )
 
         for event in queued_events:
             await self._broadcast(event, subscribers)
 
-        await self._schedule_execution(task.id, delay_seconds=0.2)
+        await self._schedule_execution(task.id, delay_seconds=0.2, priority=task.priority)
         return task_copy
 
     async def control_task(self, *, task_id: str, action: str, actor: str = "system") -> ControlResult:
@@ -251,7 +293,7 @@ class TaskService:
 
         if schedule_retry:
             retry_delay = settings.retry_backoff_base_seconds * max(1, task_copy.retry_count)
-            await self._schedule_execution(task_id, delay_seconds=retry_delay)
+            await self._schedule_execution(task_id, delay_seconds=retry_delay, priority=task_copy.priority)
 
         return ControlResult(task=task_copy, accepted=accepted, message=message)
 
@@ -273,8 +315,6 @@ class TaskService:
             )
 
             if settings.auto_rerun_on_message and task.status in TERMINAL_STATUSES:
-                previous_prompt = task.prompt
-                task.prompt = message
                 self._schedule_retry_locked(
                     task,
                     reason="message_followup",
@@ -285,7 +325,7 @@ class TaskService:
                     event_type="task.summary.updated",
                     status=task.status,
                     payload={
-                        "summary": f"Follow-up message accepted; rerun scheduled. previous_prompt={previous_prompt[:120]}"
+                        "summary": "Follow-up message accepted; rerun scheduled."
                     },
                     events_out=queued_events,
                 )
@@ -306,17 +346,27 @@ class TaskService:
 
         if settings.auto_rerun_on_message and task_copy.status == TaskStatus.QUEUED:
             retry_delay = settings.retry_backoff_base_seconds * max(1, task_copy.retry_count)
-            await self._schedule_execution(task_id, delay_seconds=retry_delay)
+            await self._schedule_execution(task_id, delay_seconds=retry_delay, priority=task_copy.priority)
         return task_copy, item
 
-    async def subscribe(self, task_id: Optional[str] = None) -> asyncio.Queue[dict[str, Any]]:
+    async def subscribe(
+        self,
+        task_id: Optional[str] = None,
+        *,
+        last_event_id: str | None = None,
+    ) -> tuple[asyncio.Queue[dict[str, Any]], list[dict[str, Any]]]:
         queue: asyncio.Queue[dict[str, Any]] = asyncio.Queue(maxsize=200)
+        replay_events: list[dict[str, Any]] = []
         async with self._lock:
             if task_id:
                 self._task_subscribers.setdefault(task_id, set()).add(queue)
             else:
                 self._global_subscribers.add(queue)
-        return queue
+            replay_events = self._collect_replay_events_locked(
+                task_id=task_id,
+                last_event_id=last_event_id,
+            )
+        return queue, replay_events
 
     async def unsubscribe(
         self, queue: asyncio.Queue[dict[str, Any]], task_id: Optional[str] = None
@@ -330,6 +380,46 @@ class TaskService:
                     self._task_subscribers.pop(task_id, None)
             else:
                 self._global_subscribers.discard(queue)
+
+    def _collect_replay_events_locked(
+        self,
+        *,
+        task_id: str | None,
+        last_event_id: str | None,
+    ) -> list[dict[str, Any]]:
+        last_stream_id = self._parse_last_stream_id(last_event_id)
+        if last_stream_id < 0:
+            return []
+
+        if task_id:
+            task = self._repo.get(task_id)
+            source_tasks = [task] if task is not None else []
+        else:
+            source_tasks = self._repo.list()
+
+        replay_events: list[TaskEvent] = []
+        for task in source_tasks:
+            if task is None:
+                continue
+            for event in task.events:
+                if event.stream_id > last_stream_id:
+                    replay_events.append(event)
+        replay_events.sort(key=lambda item: item.stream_id)
+        if len(replay_events) > settings.sse_replay_limit:
+            replay_events = replay_events[-settings.sse_replay_limit :]
+        return [self._event_to_payload(event) for event in replay_events]
+
+    @staticmethod
+    def _parse_last_stream_id(raw_value: str | None) -> int:
+        if raw_value is None:
+            return -1
+        value = raw_value.strip()
+        if not value:
+            return -1
+        try:
+            return max(0, int(value))
+        except ValueError:
+            return -1
 
     async def _simulate_run(self, task_id: str) -> None:
         if settings.task_executor == "codex":
@@ -421,8 +511,13 @@ class TaskService:
                 if schedule_auto_retry:
                     retry_task = await self.get_task(retry_task_id)
                     retry_count = retry_task.retry_count if retry_task else 1
+                    retry_priority = retry_task.priority if retry_task else 0
                     retry_delay = settings.retry_backoff_base_seconds * max(1, retry_count)
-                    await self._schedule_execution(retry_task_id, delay_seconds=retry_delay)
+                    await self._schedule_execution(
+                        retry_task_id,
+                        delay_seconds=retry_delay,
+                        priority=retry_priority,
+                    )
                 return
 
         done_events: list[dict[str, Any]] = []
@@ -451,6 +546,45 @@ class TaskService:
         for event in done_events:
             await self._broadcast(event, subscribers)
 
+    def _create_run_locked(
+        self,
+        task: Task,
+        *,
+        reason: str,
+        events_out: list[dict[str, Any]],
+    ) -> TaskRun:
+        now = utc_now_iso()
+        task.run_sequence += 1
+        run = TaskRun(
+            run_id=new_id("run"),
+            sequence=task.run_sequence,
+            reason=reason,
+            created_at=now,
+        )
+        task.current_run_id = run.run_id
+        task.runs.append(run)
+        self._append_event_locked(
+            task=task,
+            event_type="task.run.created",
+            status=task.status,
+            payload={
+                "run_id": run.run_id,
+                "run_sequence": run.sequence,
+                "reason": reason,
+            },
+            events_out=events_out,
+        )
+        return run
+
+    @staticmethod
+    def _current_run(task: Task) -> TaskRun | None:
+        if not task.current_run_id:
+            return None
+        for run in reversed(task.runs):
+            if run.run_id == task.current_run_id:
+                return run
+        return None
+
     def _schedule_retry_locked(
         self,
         task: Task,
@@ -458,6 +592,7 @@ class TaskService:
         reason: str,
         events_out: list[dict[str, Any]],
     ) -> None:
+        self._create_run_locked(task, reason=reason, events_out=events_out)
         next_timeout = self._normalize_timeout_for_executor(task.timeout_seconds)
         if next_timeout != task.timeout_seconds:
             task.timeout_seconds = next_timeout
@@ -496,6 +631,27 @@ class TaskService:
             return max(normalized, settings.codex_min_timeout_seconds)
         return normalized
 
+    def _normalize_workdir_or_raise(self, workdir: str | None) -> str | None:
+        if workdir is None:
+            return None
+        raw = workdir.strip()
+        if not raw:
+            return None
+        resolved = Path(raw).expanduser().resolve()
+        if not resolved.exists() or not resolved.is_dir():
+            raise ValueError(f"workdir does not exist or is not a directory: {resolved}")
+        for allowed_raw in settings.workdir_whitelist:
+            allowed = Path(allowed_raw).resolve()
+            try:
+                resolved.relative_to(allowed)
+                return str(resolved)
+            except ValueError:
+                continue
+        raise ValueError(
+            "workdir is outside allowed roots: "
+            + ", ".join(settings.workdir_whitelist)
+        )
+
     def _is_timed_out(self, task: Task) -> bool:
         started = _parse_iso(task.started_at)
         if started is None:
@@ -524,6 +680,14 @@ class TaskService:
             task.paused_at = task.paused_at or now
         if target_status in TERMINAL_STATUSES:
             task.finished_at = now
+        run = self._current_run(task)
+        if run is not None:
+            run.status = target_status
+            if target_status == TaskStatus.RUNNING and run.started_at is None:
+                run.started_at = now
+            if target_status in TERMINAL_STATUSES:
+                run.finished_at = now
+                run.summary = task.summary
 
         self._append_status_event_locked(
             task=task,
@@ -579,8 +743,15 @@ class TaskService:
         payload: dict[str, Any],
         events_out: list[dict[str, Any]],
     ) -> None:
+        if task.current_run_id:
+            payload = dict(payload)
+            payload.setdefault("run_id", task.current_run_id)
+            payload.setdefault("run_sequence", task.run_sequence)
+        stream_id = self._next_stream_id
+        self._next_stream_id += 1
         event = TaskEvent(
             id=new_id("evt"),
+            stream_id=stream_id,
             seq=len(task.events) + 1,
             task_id=task.id,
             event_type=event_type,
@@ -601,11 +772,15 @@ class TaskService:
     def _persist_task_locked(self, task: Task) -> None:
         self._storage.save_task(task)
 
-    async def _schedule_execution(self, task_id: str, *, delay_seconds: float) -> None:
+    async def _schedule_execution(self, task_id: str, *, delay_seconds: float, priority: int) -> None:
         await self.start_worker()
-        await self._execution_queue.enqueue(task_id, max(0.0, delay_seconds))
+        await self._execution_queue.enqueue(
+            task_id,
+            delay_seconds=max(0.0, delay_seconds),
+            priority=priority,
+        )
 
-    async def _worker_loop(self) -> None:
+    async def _worker_loop(self, worker_index: int) -> None:
         while True:
             task_id = await self._execution_queue.dequeue(timeout_seconds=1)
             if task_id is None:
@@ -635,7 +810,12 @@ class TaskService:
         for event in running_events:
             await self._broadcast(event, subscribers)
 
-        workdir = task.workdir or str(Path.cwd())
+        try:
+            normalized_workdir = self._normalize_workdir_or_raise(task.workdir)
+        except ValueError as exc:
+            await self._mark_task_failed(task_id=task_id, reason=str(exc))
+            return
+        workdir = normalized_workdir or str(Path.cwd())
         prompt = self._build_codex_prompt(task)
         cmd = [settings.codex_cli_path, "exec", "--skip-git-repo-check", "-C", workdir]
         if settings.codex_full_auto:
@@ -822,11 +1002,16 @@ class TaskService:
             self._persist_task_locked(task)
             subscribers = self._collect_subscribers_locked(task.id)
             retry_count = task.retry_count
+            retry_priority = task.priority
         for event in events_out:
             await self._broadcast(event, subscribers)
         if schedule_auto_retry:
             retry_delay = settings.retry_backoff_base_seconds * max(1, retry_count)
-            await self._schedule_execution(task_id, delay_seconds=retry_delay)
+            await self._schedule_execution(
+                task_id,
+                delay_seconds=retry_delay,
+                priority=retry_priority,
+            )
 
     async def _mark_task_failed(
         self,
@@ -908,6 +1093,7 @@ class TaskService:
     def _event_to_payload(event: TaskEvent) -> dict[str, Any]:
         return {
             "id": event.id,
+            "stream_id": event.stream_id,
             "seq": event.seq,
             "task_id": event.task_id,
             "event_type": event.event_type,
