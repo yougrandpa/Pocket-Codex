@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, ReactNode, useEffect, useMemo, useState } from "react";
 import {
   Task,
   TaskControlAction,
@@ -76,6 +76,95 @@ function actionLabel(action: TaskControlAction): string {
   return map[action];
 }
 
+const URL_PATTERN = /(https?:\/\/[^\s]+)/g;
+
+interface ConversationTurn {
+  id: string;
+  role: "user" | "assistant" | "system";
+  text: string;
+  timestamp?: string | null;
+}
+
+function renderInlineText(text: string): ReactNode[] {
+  if (!text) {
+    return [""];
+  }
+  const nodes: ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  URL_PATTERN.lastIndex = 0;
+  while ((match = URL_PATTERN.exec(text)) !== null) {
+    const url = match[0];
+    const start = match.index;
+    if (start > lastIndex) {
+      nodes.push(text.slice(lastIndex, start));
+    }
+    nodes.push(
+      <a key={`${url}-${start}`} href={url} target="_blank" rel="noreferrer" className="rich-link">
+        {url}
+      </a>
+    );
+    lastIndex = start + url.length;
+  }
+  if (lastIndex < text.length) {
+    nodes.push(text.slice(lastIndex));
+  }
+  return nodes;
+}
+
+function RichText({ text }: { text: string }) {
+  const lines = text.split(/\r?\n/);
+  const blocks: ReactNode[] = [];
+  let index = 0;
+
+  while (index < lines.length) {
+    const line = lines[index];
+    const trimmed = line.trim();
+    if (!trimmed) {
+      index += 1;
+      continue;
+    }
+
+    if (trimmed.startsWith("- ")) {
+      const items: string[] = [];
+      while (index < lines.length && lines[index].trim().startsWith("- ")) {
+        items.push(lines[index].trim().slice(2));
+        index += 1;
+      }
+      blocks.push(
+        <ul key={`list-${index}`} className="rich-list">
+          {items.map((item, itemIndex) => (
+            <li key={`item-${itemIndex}`}>{renderInlineText(item)}</li>
+          ))}
+        </ul>
+      );
+      continue;
+    }
+
+    blocks.push(
+      <p key={`line-${index}`} className="rich-line">
+        {renderInlineText(line)}
+      </p>
+    );
+    index += 1;
+  }
+
+  if (blocks.length === 0) {
+    return <p className="rich-line">-</p>;
+  }
+  return <>{blocks}</>;
+}
+
+function roleLabel(role: ConversationTurn["role"]): string {
+  if (role === "user") {
+    return bi("你", "You");
+  }
+  if (role === "assistant") {
+    return bi("助手", "Assistant");
+  }
+  return bi("系统", "System");
+}
+
 export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
   const [task, setTask] = useState<Task | null>(null);
   const [events, setEvents] = useState<TaskEvent[]>([]);
@@ -143,6 +232,54 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
   }, [taskId]);
 
   const availableActions = useMemo(() => (task ? controlActions(task) : []), [task]);
+  const conversationTurns = useMemo<ConversationTurn[]>(() => {
+    if (!task) {
+      return [];
+    }
+    const turns: ConversationTurn[] = [
+      {
+        id: `${task.id}-prompt`,
+        role: "user",
+        text: task.prompt,
+        timestamp: task.created_at
+      }
+    ];
+
+    const orderedEvents = [...events].reverse();
+    for (const event of orderedEvents) {
+      if (event.event_type !== "task.message.appended") {
+        continue;
+      }
+      const message = event.payload.message;
+      if (typeof message !== "string" || !message.trim()) {
+        continue;
+      }
+      turns.push({
+        id: event.id,
+        role: "user",
+        text: message,
+        timestamp: event.timestamp
+      });
+    }
+
+    if (typeof task.summary === "string" && task.summary.trim()) {
+      turns.push({
+        id: `${task.id}-summary`,
+        role: "assistant",
+        text: task.summary,
+        timestamp: task.updated_at
+      });
+    } else if (task.status === "RUNNING") {
+      turns.push({
+        id: `${task.id}-running`,
+        role: "assistant",
+        text: bi("正在处理你的消息，请稍候...", "Processing your message, please wait..."),
+        timestamp: task.updated_at
+      });
+    }
+
+    return turns;
+  }, [events, task]);
 
   async function handleControl(action: TaskControlAction): Promise<void> {
     setWorkingAction(action);
@@ -216,16 +353,26 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
       {error ? <p className="error">{error}</p> : null}
       {note ? <p className="note">{note}</p> : null}
 
-      <div className="detail-grid">
-        <div className="detail-block">
-          <h3>{bi("任务指令", "Prompt")}</h3>
-          <p>{task.prompt}</p>
-        </div>
-        <div className="detail-block">
-          <h3>{bi("任务摘要", "Summary")}</h3>
-          <p>{task.summary || bi("暂无摘要。", "No summary yet.")}</p>
-        </div>
-      </div>
+      <section className="chat-panel">
+        <h3>{bi("对话", "Conversation")}</h3>
+        {conversationTurns.length === 0 ? (
+          <p className="muted">{bi("暂无对话内容。", "No conversation yet.")}</p>
+        ) : (
+          <ul className="chat-list">
+            {conversationTurns.map((turn) => (
+              <li key={turn.id} className={`chat-item chat-item-${turn.role}`}>
+                <div className="chat-meta">
+                  <strong>{roleLabel(turn.role)}</strong>
+                  <time dateTime={turn.timestamp || undefined}>{formatValue(turn.timestamp)}</time>
+                </div>
+                <div className="chat-body">
+                  <RichText text={turn.text} />
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <div className="control-row">
         {availableActions.length === 0 ? (
