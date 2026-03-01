@@ -426,6 +426,12 @@ textarea {
   font-size: 0.82rem;
 }
 
+.executor-meta code {
+  background: rgba(20, 33, 61, 0.08);
+  border-radius: 6px;
+  padding: 1px 6px;
+}
+
 @keyframes fade-up {
   from {
     opacity: 0;

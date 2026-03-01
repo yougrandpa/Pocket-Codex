@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import shutil
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -69,6 +70,28 @@ def _default_database_url() -> str:
     return f"sqlite:///{(BACKEND_ROOT / 'pocket_codex.db').resolve()}"
 
 
+def _resolve_codex_cli_path(value: str) -> str:
+    candidate = (value or "").strip() or "codex"
+    expanded = Path(candidate).expanduser()
+    if expanded.is_absolute():
+        return str(expanded)
+    if "/" in candidate and expanded.exists():
+        return str(expanded.resolve())
+
+    found = shutil.which(candidate)
+    if found:
+        return found
+
+    fallback_candidates = [
+        Path("/Applications/Codex.app/Contents/Resources/codex"),
+        Path.home() / "Applications/Codex.app/Contents/Resources/codex",
+    ]
+    for fallback in fallback_candidates:
+        if fallback.exists():
+            return str(fallback)
+    return candidate
+
+
 @dataclass(frozen=True)
 class Settings:
     username: str
@@ -125,7 +148,7 @@ def load_settings() -> Settings:
         redis_url=os.getenv("REDIS_URL", "redis://localhost:6379/0"),
         redis_queue_prefix=os.getenv("REDIS_QUEUE_PREFIX", "pocket_codex:tasks"),
         task_executor=os.getenv("APP_TASK_EXECUTOR", "simulator").strip().lower() or "simulator",
-        codex_cli_path=os.getenv("CODEX_CLI_PATH", "codex"),
+        codex_cli_path=_resolve_codex_cli_path(os.getenv("CODEX_CLI_PATH", "codex")),
         codex_model=os.getenv("CODEX_MODEL", "").strip() or None,
         codex_full_auto=_as_bool(os.getenv("CODEX_FULL_AUTO", "true"), True),
         auto_rerun_on_message=_as_bool(os.getenv("APP_AUTO_RERUN_ON_MESSAGE", "true"), True),

@@ -200,3 +200,6 @@ A7: 这是 Next.js 本地缓存损坏或增量构建残留导致。执行 `cd fr
 
 Q8: 我发送了追加消息，但任务没有执行新命令？  
 A8: 如果后端是 `APP_TASK_EXECUTOR=simulator`，任务只是模拟执行，不会真正调用 Codex。请切换为 `APP_TASK_EXECUTOR=codex` 并重启后端。可先请求 `GET /healthz`，确认返回 `task_executor=codex`。当前版本在任务已结束后追加消息时，会自动触发一次重跑（`RETRYING -> QUEUED`）。
+
+Q9: 日志提示 `codex cli not found at 'codex'` 怎么办？  
+A9: 先查看 `GET /healthz` 返回的 `codex_cli_path` 和 `codex_cli_exists`。如果 `codex_cli_exists=false`，请在 `backend/.env` 里设置绝对路径，例如 `CODEX_CLI_PATH=/Applications/Codex.app/Contents/Resources/codex`，然后重启后端。

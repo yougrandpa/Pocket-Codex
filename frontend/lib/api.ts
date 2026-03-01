@@ -72,6 +72,8 @@ export interface HealthStatus {
   timestamp: string;
   task_executor: string;
   execution_backend: string;
+  codex_cli_path?: string;
+  codex_cli_exists?: boolean;
 }
 
 export interface CreateTaskInput {
@@ -280,7 +282,10 @@ function normalizeHealth(raw: unknown): HealthStatus {
     timestamp: typeof value.timestamp === "string" ? value.timestamp : "",
     task_executor: typeof value.task_executor === "string" ? value.task_executor : "unknown",
     execution_backend:
-      typeof value.execution_backend === "string" ? value.execution_backend : "unknown"
+      typeof value.execution_backend === "string" ? value.execution_backend : "unknown",
+    codex_cli_path: typeof value.codex_cli_path === "string" ? value.codex_cli_path : undefined,
+    codex_cli_exists:
+      typeof value.codex_cli_exists === "boolean" ? value.codex_cli_exists : undefined
   };
 }
 

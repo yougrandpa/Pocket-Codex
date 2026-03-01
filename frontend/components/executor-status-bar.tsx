@@ -52,6 +52,8 @@ export function ExecutorStatusBar() {
   const executorMode = (health?.task_executor || "unknown").toLowerCase();
   const executorBackend = health?.execution_backend || "unknown";
   const checkedAt = formatHealthTimestamp(health?.timestamp || "");
+  const codexCliPath = health?.codex_cli_path || "codex";
+  const codexCliExists = health?.codex_cli_exists;
 
   const executorText = useMemo(() => {
     if (executorMode === "codex") {
@@ -92,12 +94,23 @@ export function ExecutorStatusBar() {
         <p className="muted executor-meta">
           {bi("队列后端", "Execution Backend")}: {executorBackend} · {bi("更新时间", "Updated")}: {checkedAt}
         </p>
+        <p className="muted executor-meta">
+          {bi("Codex 路径", "Codex Path")}: <code>{codexCliPath}</code>
+        </p>
       </div>
       {executorMode === "simulator" ? (
         <p className="note">
           {bi(
             "当前为模拟模式，发送消息后不会真正执行本地 Codex 命令。",
             "Simulator mode does not execute real local Codex commands."
+          )}
+        </p>
+      ) : null}
+      {executorMode === "codex" && codexCliExists === false ? (
+        <p className="error">
+          {bi(
+            "Codex 可执行文件不存在，请检查 CODEX_CLI_PATH。",
+            "Codex executable not found. Check CODEX_CLI_PATH."
           )}
         </p>
       ) : null}

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -44,10 +46,12 @@ async def _shutdown() -> None:
 
 
 @app.get("/healthz")
-async def healthz() -> dict[str, str]:
+async def healthz() -> dict[str, str | bool]:
     return {
         "status": "ok",
         "timestamp": utc_now_iso(),
         "task_executor": settings.task_executor,
         "execution_backend": settings.execution_backend,
+        "codex_cli_path": settings.codex_cli_path,
+        "codex_cli_exists": Path(settings.codex_cli_path).exists(),
     }
