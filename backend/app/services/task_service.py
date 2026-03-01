@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import copy
 import json
+import os
 import re
 import shutil
 import time
@@ -893,12 +894,15 @@ class TaskService:
     def _load_cli_capabilities_sync(self) -> dict[str, Any]:
         model_options: list[str] = []
         model_seen: set[str] = set()
+        discovered_from_cli = False
 
         for args in (["models", "--json"], ["model", "list", "--json"], ["models"]):
             return_code, output = self._run_cli_probe(args)
             if return_code != 0 or not output:
                 continue
             discovered = self._parse_model_output(output)
+            if discovered:
+                discovered_from_cli = True
             for item in discovered:
                 if item not in model_seen:
                     model_seen.add(item)
@@ -906,8 +910,18 @@ class TaskService:
             if model_options:
                 break
 
+        codex_default_model = self._load_codex_default_model_from_config_sync()
+        if codex_default_model and codex_default_model not in model_seen:
+            model_seen.add(codex_default_model)
+            model_options.insert(0, codex_default_model)
         if settings.codex_model and settings.codex_model not in model_seen:
+            model_seen.add(settings.codex_model)
             model_options.insert(0, settings.codex_model)
+        if not discovered_from_cli:
+            for fallback in ["gpt-5.3-codex", "gpt-5-codex", "gpt-5"]:
+                if fallback not in model_seen:
+                    model_seen.add(fallback)
+                    model_options.append(fallback)
         if not model_options:
             model_options = ["gpt-5-codex", "gpt-5"]
 
@@ -960,6 +974,31 @@ class TaskService:
                 seen.add(candidate)
                 model_names.append(candidate)
         return model_names
+
+    @staticmethod
+    def _load_codex_default_model_from_config_sync() -> str | None:
+        codex_home = os.getenv("CODEX_HOME", "").strip()
+        candidates = []
+        if codex_home:
+            candidates.append(Path(codex_home) / "config.toml")
+        candidates.append(Path.home() / ".codex" / "config.toml")
+
+        for config_path in candidates:
+            try:
+                text = config_path.read_text(encoding="utf-8")
+            except OSError:
+                continue
+            for line in text.splitlines():
+                stripped = line.strip()
+                if not stripped or stripped.startswith("#"):
+                    continue
+                match = re.match(r'^model\s*=\s*"(.*?)"$', stripped)
+                if not match:
+                    continue
+                model = match.group(1).strip()
+                if model:
+                    return model
+        return None
 
     def _normalize_workdir_or_raise(self, workdir: str | None) -> str | None:
         if workdir is None:
