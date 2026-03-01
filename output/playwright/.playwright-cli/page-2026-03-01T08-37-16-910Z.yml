@@ -1,0 +1,37 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - paragraph [ref=e6]: Pocket Codex
+          - heading "Remote Task Control" [level=1] [ref=e655]
+        - button "中文" [ref=e656] [cursor=pointer]
+      - paragraph [ref=e9]: Monitor and operate Codex jobs from your phone.
+    - generic [ref=e877]:
+      - generic [ref=e878]:
+        - heading "Sign In" [level=2] [ref=e879]
+        - generic [ref=e880]: Desktop Approval
+      - paragraph [ref=e881]: Direct login is localhost-only by default. Mobile login requires desktop approval.
+      - generic [ref=e882]:
+        - generic [ref=e883]:
+          - generic [ref=e884]: Username
+          - textbox "Username" [ref=e885]: admin
+        - generic [ref=e886]:
+          - generic [ref=e887]: Password
+          - textbox "Password" [ref=e888]: admin123
+        - generic [ref=e889]:
+          - generic [ref=e890]: Mobile device name
+          - textbox "Mobile device name" [ref=e891]:
+            - /placeholder: "Example: iPhone-15-Pro"
+            - text: cancel-test-mobile
+        - generic [ref=e895]:
+          - heading "Pending approval" [level=3] [ref=e896]
+          - paragraph [ref=e897]:
+            - text: "ID: mlr_769a96cd7291"
+            - text: "Expires: 03/01/2026, 04:40:13 PM"
+        - paragraph [ref=e898]: Waiting for desktop approval. Approve from desktop dashboard.
+        - generic [ref=e892]:
+          - button "Desktop direct sign-in" [disabled] [ref=e893]
+          - button "Mobile sign-in (needs approval)" [disabled] [ref=e894]
+          - button "Cancel waiting" [ref=e899] [cursor=pointer]
+  - alert [ref=e28]

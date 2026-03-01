@@ -1,0 +1,64 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - paragraph [ref=e6]: Pocket Codex
+          - heading "远程任务控制" [level=1] [ref=e7]
+        - button "English" [ref=e8] [cursor=pointer]
+      - paragraph [ref=e9]: 用手机监控并操作 Codex 任务。
+    - generic [ref=e1223]:
+      - link "返回控制台" [ref=e1224] [cursor=pointer]:
+        - /url: /
+      - generic [ref=e1225]:
+        - heading "任务详情" [level=2] [ref=e1226]
+        - generic [ref=e1227]:
+          - generic [ref=e1228]:
+            - img "背景信息窗口提示" [ref=e1229] [cursor=pointer]: i
+            - dialog "背景信息窗口":
+              - paragraph: 背景信息窗口
+              - paragraph: 未上报
+              - paragraph: 已用 - 标记，共 -
+          - generic [ref=e1230]: 等待输入
+      - generic [ref=e1231]:
+        - button "对话" [ref=e1232] [cursor=pointer]
+        - button "控制" [ref=e1233] [cursor=pointer]
+        - button "成本" [ref=e1234] [cursor=pointer]
+        - button "事件日志" [ref=e1235] [cursor=pointer]
+      - generic [ref=e1236]:
+        - heading "对话" [level=3] [ref=e1237]
+        - list [ref=e1238]:
+          - listitem [ref=e1239]:
+            - generic [ref=e1240]:
+              - strong [ref=e1241]: 你
+              - time [ref=e1242]: 2026/03/01 17:30:38
+            - paragraph [ref=e1244]: mobile regression interaction check
+          - listitem [ref=e1245]:
+            - generic [ref=e1246]:
+              - strong [ref=e1247]: 你
+              - time [ref=e1248]: 2026/03/01 17:33:14
+            - paragraph [ref=e1250]: 移动端发消息路径测试
+          - listitem [ref=e1251]:
+            - generic [ref=e1252]:
+              - strong [ref=e1253]: 你
+              - time [ref=e1254]: 2026/03/01 17:36:57
+            - paragraph [ref=e1256]: 键盘Tab+Enter发送测试
+      - generic [ref=e1257]:
+        - generic [ref=e1258]:
+          - generic [ref=e1259]: 追加指令
+          - textbox "追加指令" [ref=e1260]:
+            - /placeholder: 补充指令...
+        - button "发送消息" [disabled] [ref=e1262]
+      - generic [ref=e1263]:
+        - button "对话" [ref=e1264] [cursor=pointer]
+        - button "控制" [ref=e1265] [cursor=pointer]
+        - button "继续" [ref=e1266] [cursor=pointer]
+        - button "发消息" [ref=e1267] [cursor=pointer]
+  - status [ref=e1268]:
+    - generic [ref=e1269]:
+      - img [ref=e1271]
+      - generic [ref=e1273]:
+        - text: Static route
+        - button "Hide static indicator" [ref=e1274] [cursor=pointer]:
+          - img [ref=e1275]
+  - alert [ref=e131]

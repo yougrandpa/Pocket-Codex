@@ -1,0 +1,59 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - paragraph [ref=e6]: Pocket Codex
+          - heading "远程任务控制" [level=1] [ref=e7]
+        - button "English" [ref=e8] [cursor=pointer]
+      - paragraph [ref=e9]: 用手机监控并操作 Codex 任务。
+    - generic [ref=e578]:
+      - link "返回控制台" [ref=e579] [cursor=pointer]:
+        - /url: /
+      - generic [ref=e580]:
+        - heading "任务详情" [level=2] [ref=e581]
+        - generic [ref=e582]:
+          - generic [ref=e583]:
+            - img "背景信息窗口提示" [ref=e584] [cursor=pointer]: i
+            - dialog "背景信息窗口":
+              - paragraph: 背景信息窗口
+              - paragraph: 未上报
+              - paragraph: 已用 - 标记，共 -
+          - generic [ref=e585]: 执行中
+      - generic [ref=e586]:
+        - button "对话" [ref=e587] [cursor=pointer]
+        - button "控制" [ref=e588] [cursor=pointer]
+        - button "成本" [ref=e589] [cursor=pointer]
+        - button "事件日志" [ref=e590] [cursor=pointer]
+      - generic [ref=e591]:
+        - heading "对话" [level=3] [ref=e592]
+        - list [ref=e593]:
+          - listitem [ref=e594]:
+            - generic [ref=e595]:
+              - strong [ref=e596]: 你
+              - time [ref=e597]: 2026/03/01 17:30:38
+            - paragraph [ref=e599]: mobile regression interaction check
+          - listitem [ref=e600]:
+            - generic [ref=e601]:
+              - strong [ref=e602]: 助手
+              - time [ref=e603]: 2026/03/01 17:30:43
+            - paragraph [ref=e605]: 正在处理你的消息，请稍候...
+      - generic [ref=e606]:
+        - generic [ref=e607]:
+          - generic [ref=e608]: 追加指令
+          - textbox "追加指令" [ref=e609]:
+            - /placeholder: 补充指令...
+        - button "发送消息" [disabled] [ref=e611]
+      - generic [ref=e612]:
+        - button "对话" [ref=e613] [cursor=pointer]
+        - button "控制" [ref=e614] [cursor=pointer]
+        - button "取消" [ref=e615] [cursor=pointer]
+        - button "发消息" [ref=e616] [cursor=pointer]
+  - status [ref=e33]:
+    - generic [ref=e34]:
+      - img [ref=e36]
+      - generic [ref=e38]:
+        - text: Static route
+        - button "Hide static indicator" [ref=e39] [cursor=pointer]:
+          - img [ref=e40]
+  - alert [ref=e32]

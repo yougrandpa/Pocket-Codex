@@ -1,0 +1,41 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - paragraph [ref=e6]: Pocket Codex
+          - heading "Remote Task Control" [level=1] [ref=e7]
+        - button "中文" [ref=e8] [cursor=pointer]
+      - paragraph [ref=e9]: Monitor and operate Codex jobs from your phone.
+    - generic [ref=e10]:
+      - generic [ref=e11]:
+        - heading "Sign In" [level=2] [ref=e12]
+        - generic [ref=e13]: Desktop Approval
+      - paragraph [ref=e14]: "Recommended mobile flow: request approval -> approve on desktop -> mobile auto sign-in."
+      - list [ref=e15]:
+        - listitem [ref=e16]: 1) Enter credentials and tap Request mobile approval.
+        - listitem [ref=e17]: 2) Approve in desktop Mobile Login Approvals.
+        - listitem [ref=e18]: 3) Return to mobile and sign in automatically.
+      - generic [ref=e19]:
+        - generic [ref=e20]:
+          - generic [ref=e21]: Username
+          - textbox "Username" [ref=e22]
+        - generic [ref=e23]:
+          - generic [ref=e24]: Password
+          - textbox "Password" [ref=e25]
+        - generic [ref=e26]:
+          - generic [ref=e27]: Mobile device name
+          - textbox "Mobile device name" [ref=e28]:
+            - /placeholder: "Example: iPhone-15-Pro"
+            - text: Mac Browser
+        - generic [ref=e29]:
+          - button "Request mobile approval" [disabled] [ref=e30]
+          - button "I'm on desktop, direct sign-in" [disabled] [ref=e31]
+  - status [ref=e32]:
+    - generic [ref=e33]:
+      - img [ref=e35]
+      - generic [ref=e37]:
+        - text: Static route
+        - button "Hide static indicator" [ref=e38] [cursor=pointer]:
+          - img [ref=e39]
+  - alert [ref=e42]

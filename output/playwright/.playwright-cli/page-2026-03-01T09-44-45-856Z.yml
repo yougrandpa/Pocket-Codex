@@ -1,0 +1,77 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - paragraph [ref=e6]: Pocket Codex
+          - heading "远程任务控制" [level=1] [ref=e7]
+        - button "English" [ref=e8] [cursor=pointer]
+      - paragraph [ref=e9]: 用手机监控并操作 Codex 任务。
+    - generic [ref=e10]:
+      - link "返回控制台" [ref=e11] [cursor=pointer]:
+        - /url: /
+      - generic [ref=e12]:
+        - heading "任务详情" [level=2] [ref=e13]
+        - generic [ref=e14]:
+          - generic [ref=e15]:
+            - img "背景信息窗口提示" [ref=e16] [cursor=pointer]: i
+            - dialog "背景信息窗口":
+              - paragraph: 背景信息窗口
+              - paragraph: 未上报
+              - paragraph: 已用 - 标记，共 -
+          - generic [ref=e17]: 成功
+      - generic [ref=e18]:
+        - button "对话" [ref=e19] [cursor=pointer]
+        - button "控制" [ref=e20] [cursor=pointer]
+        - button "成本" [ref=e21] [cursor=pointer]
+        - button "事件日志" [ref=e22] [cursor=pointer]
+      - generic [ref=e23]:
+        - heading "对话" [level=3] [ref=e24]
+        - list [ref=e25]:
+          - listitem [ref=e26]:
+            - generic [ref=e27]:
+              - strong [ref=e28]: 你
+              - time [ref=e29]: 2026/03/01 17:30:38
+            - paragraph [ref=e31]: mobile regression interaction check
+          - listitem [ref=e32]:
+            - generic [ref=e33]:
+              - strong [ref=e34]: 你
+              - time [ref=e35]: 2026/03/01 17:33:14
+            - paragraph [ref=e37]: 移动端发消息路径测试
+          - listitem [ref=e38]:
+            - generic [ref=e39]:
+              - strong [ref=e40]: 你
+              - time [ref=e41]: 2026/03/01 17:36:57
+            - paragraph [ref=e43]: 键盘Tab+Enter发送测试
+          - listitem [ref=e44]:
+            - generic [ref=e45]:
+              - strong [ref=e46]: 助手
+              - time [ref=e47]: 2026/03/01 17:37:12
+            - generic [ref=e48]:
+              - paragraph [ref=e49]: thinking
+              - paragraph [ref=e50]: "**Clarifying ambiguous test request**"
+              - paragraph [ref=e51]: codex
+              - paragraph [ref=e52]: "Got your Tab+Enter send test. To move forward on the “mobile regression interaction check,” I need to know which mobile platform/app build or specific interaction path you want covered. If you don’t have a preference, I can default to running the current Playwright mobile viewport smoke suite against the latest `main` build and report the results—will that meet your goal?"
+              - paragraph [ref=e53]: "2026-03-01T09:37:12.644010Z WARN codex_protocol::openai_models: Model personality requested but model_messages is missing, falling back to base instructions. model=gpt-5-codex personality=pragmatic"
+              - paragraph [ref=e54]: tokens used
+              - paragraph [ref=e55]: 4,767
+              - paragraph [ref=e56]: "Got your Tab+Enter send test. To move forward on the “mobile regression interaction check,” I need to know which mobile platform/app build or specific interaction path you want covered. If you don’t have a preference, I can default to running the current Playwright mobile viewport smoke suite against the latest `main` build and report the results—will that meet your goal?"
+      - generic [ref=e57]:
+        - generic [ref=e58]:
+          - generic [ref=e59]: 追加指令
+          - textbox "追加指令" [ref=e60]:
+            - /placeholder: 补充指令...
+        - button "发送消息" [disabled] [ref=e62]
+      - generic [ref=e63]:
+        - button "对话" [ref=e64] [cursor=pointer]
+        - button "控制" [ref=e65] [cursor=pointer]
+        - button "重试" [ref=e66] [cursor=pointer]
+        - button "发消息" [ref=e67] [cursor=pointer]
+  - status [ref=e69]:
+    - generic [ref=e70]:
+      - img [ref=e72]
+      - generic [ref=e74]:
+        - text: Static route
+        - button "Hide static indicator" [ref=e75] [cursor=pointer]:
+          - img [ref=e76]
+  - alert [ref=e68]

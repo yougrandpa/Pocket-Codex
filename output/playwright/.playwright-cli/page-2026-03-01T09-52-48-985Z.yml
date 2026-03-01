@@ -1,0 +1,82 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - paragraph [ref=e6]: Pocket Codex
+          - heading "远程任务控制" [level=1] [ref=e7]
+        - button "English" [ref=e8] [cursor=pointer]
+      - paragraph [ref=e9]: 用手机监控并操作 Codex 任务。
+    - generic [ref=e10]:
+      - link "返回控制台" [ref=e11] [cursor=pointer]:
+        - /url: /
+      - generic [ref=e12]:
+        - heading "任务详情" [level=2] [ref=e13]
+        - generic [ref=e14]:
+          - generic [ref=e15]:
+            - img "背景信息窗口提示" [ref=e16] [cursor=pointer]: i
+            - dialog "背景信息窗口":
+              - paragraph: 背景信息窗口
+              - paragraph: 未上报
+              - paragraph: 已用 - 标记，共 -
+          - generic [ref=e17]: 已取消
+      - generic [ref=e18]:
+        - button "对话" [ref=e19] [cursor=pointer]
+        - button "控制" [ref=e20] [cursor=pointer]
+        - button "成本" [ref=e21] [cursor=pointer]
+        - button "事件日志" [ref=e22] [cursor=pointer]
+      - paragraph [ref=e109]: task canceled
+      - button "重试" [ref=e110] [cursor=pointer]
+      - generic [ref=e69]:
+        - generic [ref=e70]:
+          - term [ref=e71]: 任务 ID
+          - definition [ref=e72]: task_7ee3200e1166
+        - generic [ref=e73]:
+          - term [ref=e74]: 优先级
+          - definition [ref=e75]: "5"
+        - generic [ref=e76]:
+          - term [ref=e77]: 超时
+          - definition [ref=e78]: 180s
+        - generic [ref=e79]:
+          - term [ref=e80]: 工作目录
+          - definition [ref=e81]: "-"
+        - generic [ref=e82]:
+          - term [ref=e83]: 模型
+          - definition [ref=e84]: gpt-5-codex
+        - generic [ref=e85]:
+          - term [ref=e86]: 推理强度
+          - definition [ref=e87]: medium
+        - generic [ref=e88]:
+          - term [ref=e89]: 并行多代理
+          - definition [ref=e90]: 关闭
+        - generic [ref=e91]:
+          - term [ref=e92]: 当前运行
+          - definition [ref=e93]: run_195ca54afd14 (#3)
+        - generic [ref=e94]:
+          - term [ref=e95]: 创建时间
+          - definition [ref=e96]: 2026/03/01 17:30:38
+        - generic [ref=e97]:
+          - term [ref=e98]: 更新时间
+          - definition [ref=e99]: 2026/03/01 17:52:45
+        - generic [ref=e100]:
+          - term [ref=e101]: 开始时间
+          - definition [ref=e102]: 2026/03/01 17:45:05
+        - generic [ref=e103]:
+          - term [ref=e104]: 完成时间
+          - definition [ref=e105]: 2026/03/01 17:52:45
+        - generic [ref=e106]:
+          - term [ref=e107]: 最后心跳
+          - definition [ref=e108]: 2026/03/01 17:52:45
+      - generic [ref=e50]:
+        - button "对话" [ref=e51] [cursor=pointer]
+        - button "控制" [ref=e52] [cursor=pointer]
+        - button "重试" [ref=e111] [cursor=pointer]
+        - button "发消息" [ref=e54] [cursor=pointer]
+  - status [ref=e56]:
+    - generic [ref=e57]:
+      - img [ref=e59]
+      - generic [ref=e61]:
+        - text: Static route
+        - button "Hide static indicator" [ref=e62] [cursor=pointer]:
+          - img [ref=e63]
+  - alert [ref=e55]

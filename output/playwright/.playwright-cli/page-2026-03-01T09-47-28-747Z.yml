@@ -1,0 +1,69 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - paragraph [ref=e6]: Pocket Codex
+          - heading "远程任务控制" [level=1] [ref=e7]
+        - button "English" [ref=e8] [cursor=pointer]
+      - paragraph [ref=e9]: 用手机监控并操作 Codex 任务。
+    - generic [ref=e583]:
+      - link "返回控制台" [ref=e584] [cursor=pointer]:
+        - /url: /
+      - generic [ref=e585]:
+        - heading "任务详情" [level=2] [ref=e586]
+        - generic [ref=e587]:
+          - generic [ref=e588]:
+            - img "背景信息窗口提示" [ref=e589] [cursor=pointer]: i
+            - dialog "背景信息窗口":
+              - paragraph: 背景信息窗口
+              - paragraph: 未上报
+              - paragraph: 已用 - 标记，共 -
+          - generic [ref=e590]: 执行中
+      - generic [ref=e591]:
+        - button "对话" [ref=e592] [cursor=pointer]
+        - button "控制" [ref=e593] [cursor=pointer]
+        - button "成本" [ref=e594] [cursor=pointer]
+        - button "事件日志" [ref=e595] [cursor=pointer]
+      - generic [ref=e596]:
+        - heading "对话" [level=3] [ref=e597]
+        - list [ref=e598]:
+          - listitem [ref=e599]:
+            - generic [ref=e600]:
+              - strong [ref=e601]: 你
+              - time [ref=e602]: 2026/03/01 17:30:38
+            - paragraph [ref=e604]: mobile regression interaction check
+          - listitem [ref=e605]:
+            - generic [ref=e606]:
+              - strong [ref=e607]: 你
+              - time [ref=e608]: 2026/03/01 17:33:14
+            - paragraph [ref=e610]: 移动端发消息路径测试
+          - listitem [ref=e611]:
+            - generic [ref=e612]:
+              - strong [ref=e613]: 你
+              - time [ref=e614]: 2026/03/01 17:36:57
+            - paragraph [ref=e616]: 键盘Tab+Enter发送测试
+          - listitem [ref=e617]:
+            - generic [ref=e618]:
+              - strong [ref=e619]: 助手
+              - time [ref=e620]: 2026/03/01 17:47:17
+            - paragraph [ref=e622]: 正在处理你的消息，请稍候...
+      - generic [ref=e623]:
+        - generic [ref=e624]:
+          - generic [ref=e625]: 追加指令
+          - textbox "追加指令" [ref=e626]:
+            - /placeholder: 补充指令...
+        - button "发送消息" [disabled] [ref=e628]
+      - generic [ref=e629]:
+        - button "对话" [ref=e630] [cursor=pointer]
+        - button "控制" [ref=e631] [cursor=pointer]
+        - button "取消" [ref=e632] [cursor=pointer]
+        - button "发消息" [ref=e633] [cursor=pointer]
+  - status [ref=e121]:
+    - generic [ref=e122]:
+      - img [ref=e124]
+      - generic [ref=e126]:
+        - text: Static route
+        - button "Hide static indicator" [ref=e127] [cursor=pointer]:
+          - img [ref=e128]
+  - alert [ref=e131]

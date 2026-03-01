@@ -1,0 +1,136 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - paragraph [ref=e6]: Pocket Codex
+          - heading "远程任务控制" [level=1] [ref=e7]
+        - button "English" [ref=e8] [cursor=pointer]
+      - paragraph [ref=e9]: 用手机监控并操作 Codex 任务。
+    - generic [ref=e11]:
+      - generic [ref=e12]:
+        - generic [ref=e13]:
+          - generic [ref=e14]:
+            - heading "创建任务" [level=2] [ref=e15]
+            - generic [ref=e16]: 移动优先
+          - generic [ref=e17]:
+            - generic [ref=e18]:
+              - heading "模板库" [level=3] [ref=e19]
+              - generic [ref=e20]:
+                - generic [ref=e21]:
+                  - generic [ref=e22]:
+                    - generic [ref=e23]: 已保存模板
+                    - combobox "已保存模板" [ref=e24]:
+                      - option "暂无模板" [selected]
+                  - generic [ref=e25]:
+                    - generic [ref=e26]: 新模板名称
+                    - textbox "新模板名称" [ref=e27]:
+                      - /placeholder: 例如：回归检查模板
+                - button "保存当前为模板" [ref=e29] [cursor=pointer]
+            - generic [ref=e30]:
+              - generic [ref=e31]: 任务指令
+              - textbox "任务指令" [ref=e32]:
+                - /placeholder: 请输入可执行的任务指令...
+            - generic [ref=e33]:
+              - generic [ref=e34]:
+                - generic [ref=e35]: 优先级
+                - spinbutton "优先级" [ref=e36]: "5"
+              - generic [ref=e37]:
+                - generic [ref=e38]: 超时(秒)
+                - 'spinbutton "超时(秒) 最小可用超时: 180s" [ref=e39]': "180"
+                - generic [ref=e40]: "最小可用超时: 180s"
+            - generic [ref=e41]:
+              - generic [ref=e42]:
+                - generic [ref=e43]: 模型(可选)
+                - combobox "模型(可选)" [disabled] [ref=e44]:
+                  - option "未获取到模型列表" [selected]
+              - generic [ref=e45]:
+                - generic [ref=e46]: 推理强度
+                - combobox "推理强度" [ref=e47]:
+                  - option "低"
+                  - option "中" [selected]
+                  - option "高"
+            - generic [ref=e48]:
+              - generic [ref=e49]: 多代理并行执行
+              - checkbox "多代理并行执行" [ref=e50]
+            - paragraph [ref=e51]: 模型与推理强度暂未从 CLI 读取到，先使用默认值。
+            - paragraph [ref=e52]: 策略提示：低推理更快更省，高推理更稳；并行多代理通常更快但成本更高。
+            - generic [ref=e53]:
+              - generic [ref=e54]:
+                - generic [ref=e55]: 历史目录快速选择
+                - combobox "历史目录快速选择" [disabled] [ref=e56]:
+                  - option "暂无历史目录" [selected]
+              - generic [ref=e57]:
+                - generic [ref=e58]: 工作目录(可选)
+                - combobox "工作目录(可选)" [ref=e59]
+            - paragraph [ref=e60]: 先创建一次任务后即可在这里快速复用工作目录。
+            - button "创建任务" [disabled] [ref=e62]
+        - generic [ref=e63]:
+          - generic [ref=e64]:
+            - heading "系统状态（高级）" [level=2] [ref=e65]
+            - generic [ref=e66]:
+              - button "展开" [ref=e67] [cursor=pointer]
+              - button "刷新" [ref=e68] [cursor=pointer]
+          - generic [ref=e69]:
+            - generic [ref=e70]:
+              - generic [ref=e72]: 当前模式
+              - generic [ref=e73]: Codex（真实执行）
+            - paragraph [ref=e74]: "队列后端: local · 更新时间: 2026/03/01 17:35:48"
+        - generic [ref=e75]:
+          - generic [ref=e76]:
+            - heading "手机登录授权" [level=2] [ref=e77]
+            - generic [ref=e78]: "0"
+          - paragraph [ref=e79]: 仅在你确认设备可信时授权，超时请求会自动失效。
+          - paragraph [ref=e80]: 加载中...
+        - generic [ref=e81]:
+          - generic [ref=e82]:
+            - heading "通知" [level=2] [ref=e83]
+            - generic [ref=e84]: "0"
+          - generic [ref=e85]:
+            - paragraph [ref=e86]: 暂无通知。
+            - link "创建任务后在这里查看状态更新" [ref=e87] [cursor=pointer]:
+              - /url: "#create-task-panel"
+        - generic [ref=e88]:
+          - generic [ref=e89]:
+            - heading "会话" [level=2] [ref=e90]
+            - generic [ref=e91]: 已激活
+          - paragraph [ref=e92]: 当前使用单用户 JWT 鉴权登录。
+          - button "退出登录" [ref=e93] [cursor=pointer]
+      - generic [ref=e95]:
+        - generic [ref=e96]:
+          - generic [ref=e97]:
+            - heading "任务队列" [level=2] [ref=e98]
+            - generic [ref=e99]: "0"
+          - paragraph [ref=e100]: 任务加载中...
+          - generic [ref=e101]:
+            - list
+        - generic [ref=e102]:
+          - generic [ref=e103]:
+            - heading "审计日志" [level=2] [ref=e104]
+            - generic [ref=e105]: "0"
+          - generic [ref=e106]:
+            - generic [ref=e107]:
+              - generic [ref=e108]:
+                - generic [ref=e109]: 操作者
+                - textbox "操作者" [ref=e110]:
+                  - /placeholder: 按操作者检索
+              - generic [ref=e111]:
+                - generic [ref=e112]: 任务 ID
+                - textbox "任务 ID" [ref=e113]:
+                  - /placeholder: 按任务 ID 检索
+              - generic [ref=e114]:
+                - generic [ref=e115]: 动作
+                - textbox "动作" [ref=e116]:
+                  - /placeholder: 按动作检索
+            - generic [ref=e117]:
+              - button "检索" [disabled] [ref=e118]
+              - button "清空筛选" [disabled] [ref=e119]
+          - paragraph [ref=e120]: 审计日志加载中...
+  - status [ref=e121]:
+    - generic [ref=e122]:
+      - img [ref=e124]
+      - generic [ref=e126]:
+        - text: Static route
+        - button "Hide static indicator" [ref=e127] [cursor=pointer]:
+          - img [ref=e128]
+  - alert [ref=e131]

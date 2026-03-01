@@ -1,0 +1,165 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - paragraph [ref=e6]: Pocket Codex
+          - heading "Remote Task Control" [level=1] [ref=e2051]
+        - button "中文" [ref=e2052] [cursor=pointer]
+      - paragraph [ref=e9]: Monitor and operate Codex jobs from your phone.
+    - generic [ref=e2340]:
+      - link "Back to dashboard" [ref=e2341] [cursor=pointer]:
+        - /url: /
+      - generic [ref=e2342]:
+        - heading "Task Detail" [level=2] [ref=e2343]
+        - generic [ref=e2344]:
+          - generic [ref=e2345]:
+            - img "Context window hint" [ref=e2346] [cursor=pointer]: i
+            - dialog "Context Window":
+              - paragraph: Context Window
+              - paragraph: not reported
+              - paragraph: Used - tokens，of -
+          - generic [ref=e2347]: Canceled
+      - generic [ref=e2348]:
+        - heading "Conversation" [level=3] [ref=e2349]
+        - list [ref=e2350]:
+          - listitem [ref=e2351]:
+            - generic [ref=e2352]:
+              - strong [ref=e2353]: You
+              - time [ref=e2354]: 03/01/2026, 02:52:34 PM
+            - paragraph [ref=e2356]: regression pagination task 0
+          - listitem [ref=e2357]:
+            - generic [ref=e2358]:
+              - strong [ref=e2359]: You
+              - time [ref=e2360]: 03/01/2026, 02:52:34 PM
+            - paragraph [ref=e2362]: regression follow-up
+      - button "retry" [ref=e2364] [cursor=pointer]
+      - generic [ref=e2365]:
+        - generic [ref=e2366]:
+          - generic [ref=e2367]: Append instruction
+          - textbox "Append instruction" [ref=e2368]:
+            - /placeholder: Add follow-up instruction...
+        - button "Send Message" [disabled] [ref=e2370]
+      - generic [ref=e2371]:
+        - generic [ref=e2372]:
+          - term [ref=e2373]: Task ID
+          - definition [ref=e2374]: task_b43702e9e461
+        - generic [ref=e2375]:
+          - term [ref=e2376]: Priority
+          - definition [ref=e2377]: "5"
+        - generic [ref=e2378]:
+          - term [ref=e2379]: Timeout
+          - definition [ref=e2380]: 20s
+        - generic [ref=e2381]:
+          - term [ref=e2382]: Workdir
+          - definition [ref=e2383]: "-"
+        - generic [ref=e2384]:
+          - term [ref=e2385]: Model
+          - definition [ref=e2386]: "-"
+        - generic [ref=e2387]:
+          - term [ref=e2388]: Reasoning Effort
+          - definition [ref=e2389]: "-"
+        - generic [ref=e2390]:
+          - term [ref=e2391]: Parallel Multi-agent
+          - definition [ref=e2392]: Disabled
+        - generic [ref=e2393]:
+          - term [ref=e2394]: Total Tokens
+          - definition [ref=e2395]: "0"
+        - generic [ref=e2396]:
+          - term [ref=e2397]: Prompt Tokens
+          - definition [ref=e2398]: "0"
+        - generic [ref=e2399]:
+          - term [ref=e2400]: Completion Tokens
+          - definition [ref=e2401]: "0"
+        - generic [ref=e2402]:
+          - term [ref=e2403]: Cache Read Tokens
+          - definition [ref=e2404]: "0"
+        - generic [ref=e2405]:
+          - term [ref=e2406]: Input Cost
+          - definition [ref=e2407]: $0.000000
+        - generic [ref=e2408]:
+          - term [ref=e2409]: Output Cost
+          - definition [ref=e2410]: $0.000000
+        - generic [ref=e2411]:
+          - term [ref=e2412]: Cache Read Cost
+          - definition [ref=e2413]: $0.000000
+        - generic [ref=e2414]:
+          - term [ref=e2415]: Multiplier
+          - definition [ref=e2416]: 1.00x
+        - generic [ref=e2417]:
+          - term [ref=e2418]: Original Cost
+          - definition [ref=e2419]: $0.000000
+        - generic [ref=e2420]:
+          - term [ref=e2421]: Billed Cost
+          - definition [ref=e2422]: $0.000000
+        - generic [ref=e2423]:
+          - term [ref=e2424]: Cost (USD)
+          - definition [ref=e2425]: $0.000000
+        - generic [ref=e2426]:
+          - term [ref=e2427]: Context Window
+          - definition [ref=e2428]: "- / -"
+        - generic [ref=e2429]:
+          - term [ref=e2430]: Created At
+          - definition [ref=e2431]: 03/01/2026, 02:52:34 PM
+        - generic [ref=e2432]:
+          - term [ref=e2433]: Updated At
+          - definition [ref=e2434]: 03/01/2026, 03:58:51 PM
+        - generic [ref=e2435]:
+          - term [ref=e2436]: Started At
+          - definition [ref=e2437]: "-"
+        - generic [ref=e2438]:
+          - term [ref=e2439]: Finished At
+          - definition [ref=e2440]: 03/01/2026, 03:58:51 PM
+        - generic [ref=e2441]:
+          - term [ref=e2442]: Last Heartbeat
+          - definition [ref=e2443]: 03/01/2026, 03:58:51 PM
+        - generic [ref=e2444]:
+          - term [ref=e2445]: Current Run
+          - definition [ref=e2446]: run_7090d338e09e (#1)
+      - generic [ref=e2447]:
+        - heading "Lifecycle Events" [level=3] [ref=e2448]
+        - generic [ref=e2449]:
+          - paragraph [ref=e2450]: Page 1 / 1 · Total 4 items
+          - generic [ref=e2451]:
+            - button "Previous" [disabled] [ref=e2452]
+            - button "Next" [disabled] [ref=e2453]
+        - list [ref=e2454]:
+          - listitem [ref=e2455]:
+            - generic [ref=e2456]:
+              - generic [ref=e2457]: task.status.changed
+              - time [ref=e2458]: 03/01/2026, 03:58:51 PM
+            - paragraph [ref=e2459]: "Run: run_7090d338e09e"
+            - code [ref=e2460]: "{\"from\":\"QUEUED\",\"to\":\"CANCELED\",\"action\":\"cancel\",\"run_id\":\"run_7090d338e09e\",\"run_sequence\":1}"
+          - listitem [ref=e2461]:
+            - generic [ref=e2462]:
+              - generic [ref=e2463]: task.message.appended
+              - time [ref=e2464]: 03/01/2026, 02:52:34 PM
+            - paragraph [ref=e2465]: "Run: run_7090d338e09e"
+            - code [ref=e2466]: "{\"message_id\":\"msg_3b4a6f7ced80\",\"message\":\"regression follow-up\",\"run_id\":\"run_7090d338e09e\",\"run_sequence\":1}"
+          - listitem [ref=e2467]:
+            - generic [ref=e2468]:
+              - generic [ref=e2469]: task.status.changed
+              - time [ref=e2470]: 03/01/2026, 02:52:34 PM
+            - paragraph [ref=e2471]: "Run: run_7090d338e09e"
+            - code [ref=e2472]: "{\"from\":null,\"to\":\"QUEUED\",\"reason\":\"task_created\",\"run_id\":\"run_7090d338e09e\",\"run_sequence\":1}"
+          - listitem [ref=e2473]:
+            - generic [ref=e2474]:
+              - generic [ref=e2475]: task.run.created
+              - time [ref=e2476]: 03/01/2026, 02:52:34 PM
+            - paragraph [ref=e2477]: "Run: run_7090d338e09e"
+            - code [ref=e2478]: "{\"run_id\":\"run_7090d338e09e\",\"run_sequence\":1,\"reason\":\"task_created\"}"
+      - generic [ref=e2479]:
+        - heading "Execution Logs" [level=3] [ref=e2480]
+        - generic [ref=e2481]:
+          - paragraph [ref=e2482]: Page 1 / 1 · Total 1 items
+          - generic [ref=e2483]:
+            - button "Previous" [disabled] [ref=e2484]
+            - button "Next" [disabled] [ref=e2485]
+        - list [ref=e2486]:
+          - listitem [ref=e2487]:
+            - generic [ref=e2488]:
+              - generic [ref=e2489]: system · run_7090
+              - time [ref=e2490]: 03/01/2026, 03:58:51 PM
+            - paragraph [ref=e2491]: "Level: info"
+            - code [ref=e2492]: task canceled by user
+  - alert [ref=e28]

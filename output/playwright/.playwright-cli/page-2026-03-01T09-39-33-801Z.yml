@@ -1,0 +1,73 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - paragraph [ref=e6]: Pocket Codex
+          - heading "远程任务控制" [level=1] [ref=e7]
+        - button "English" [ref=e8] [cursor=pointer]
+      - paragraph [ref=e9]: 用手机监控并操作 Codex 任务。
+    - generic [ref=e2132]:
+      - link "返回控制台" [ref=e2133] [cursor=pointer]:
+        - /url: /?taskPage=2
+      - generic [ref=e2134]:
+        - heading "任务详情" [level=2] [ref=e2135]
+        - generic [ref=e2136]:
+          - generic [ref=e2137]:
+            - img "背景信息窗口提示" [ref=e2138] [cursor=pointer]: i
+            - dialog "背景信息窗口":
+              - paragraph: 背景信息窗口
+              - paragraph: 未上报
+              - paragraph: 已用 - 标记，共 -
+          - generic [ref=e2139]: 成功
+      - generic [ref=e2140]:
+        - button "对话" [ref=e2141] [cursor=pointer]
+        - button "控制" [ref=e2142] [cursor=pointer]
+        - button "成本" [ref=e2143] [cursor=pointer]
+        - button "事件日志" [ref=e2144] [cursor=pointer]
+      - generic [ref=e2145]:
+        - heading "对话" [level=3] [ref=e2146]
+        - list [ref=e2147]:
+          - listitem [ref=e2148]:
+            - generic [ref=e2149]:
+              - strong [ref=e2150]: 你
+              - time [ref=e2151]: 2026/03/01 16:26:46
+            - paragraph [ref=e2153]: 请总结README并输出3条改进建议
+          - listitem [ref=e2154]:
+            - generic [ref=e2155]:
+              - strong [ref=e2156]: 你
+              - time [ref=e2157]: 2026/03/01 16:27:08
+            - paragraph [ref=e2159]: 请再补充一条与移动端可用性相关的建议
+          - listitem [ref=e2160]:
+            - generic [ref=e2161]:
+              - strong [ref=e2162]: 助手
+              - time [ref=e2163]: 2026/03/01 16:27:26
+            - generic [ref=e2164]:
+              - paragraph [ref=e2165]: or persistence, retries, worker concurrency, workdir whitelists, security policies, CORS, SSE replay, Redis queues, and executor modes.
+              - list [ref=e2166]:
+                - listitem [ref=e2167]: Offers a smoke-test snippet that logs in, captures an access token, and creates a task, plus reminders about key defaults (SQLite, local queue, simulator executor, required APP_USERNAME/APP_PASSWORD).
+              - paragraph [ref=e2168]: "**Improvement Ideas**"
+              - list [ref=e2169]:
+                - listitem [ref=e2170]: Add a “System Overview” section or diagram summarizing the auth flow, task queue, worker lifecycle, and SSE stream to help new contributors grasp relationships before diving into endpoints.
+                - listitem [ref=e2171]: Include a configuration reference table that lists each environment variable, default value, and effect; this turns the long comment block into scannable documentation and reduces misconfiguration risk.
+                - listitem [ref=e2172]: Expand the smoke-test area into a step-by-step workflow (login, create task, monitor SSE, send control commands) with example responses or screenshots so users can confirm behavior quickly.
+                - listitem [ref=e2173]: "Mobile usability: document how to exercise the mobile approval flow from an actual phone (network requirements, private-network CORS toggle, expected UX sequence) and call out any adaptive behaviors/API constraints that mobile clients should honor."
+      - generic [ref=e2174]:
+        - generic [ref=e2175]:
+          - generic [ref=e2176]: 追加指令
+          - textbox "追加指令" [ref=e2177]:
+            - /placeholder: 补充指令...
+        - button "发送消息" [disabled] [ref=e2179]
+      - generic [ref=e2180]:
+        - button "对话" [ref=e2181] [cursor=pointer]
+        - button "控制" [ref=e2182] [cursor=pointer]
+        - button "重试" [ref=e2183] [cursor=pointer]
+        - button "发消息" [ref=e2184] [cursor=pointer]
+  - status [ref=e1583]:
+    - generic [ref=e1584]:
+      - img [ref=e1586]
+      - generic [ref=e1588]:
+        - text: Static route
+        - button "Hide static indicator" [ref=e1589] [cursor=pointer]:
+          - img [ref=e1590]
+  - alert [ref=e131]

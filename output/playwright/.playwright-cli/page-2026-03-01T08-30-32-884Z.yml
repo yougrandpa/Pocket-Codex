@@ -1,0 +1,750 @@
+- generic [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - paragraph [ref=e6]: Pocket Codex
+          - heading "Remote Task Control" [level=1] [ref=e2051]
+        - button "中文" [active] [ref=e2052] [cursor=pointer]
+      - paragraph [ref=e9]: Monitor and operate Codex jobs from your phone.
+    - generic [ref=e1186]:
+      - generic [ref=e1187]:
+        - generic [ref=e1188]:
+          - heading "Executor Status" [level=2] [ref=e2053]
+          - button "Refresh" [ref=e2054] [cursor=pointer]
+        - generic [ref=e1191]:
+          - generic [ref=e1192]:
+            - generic [ref=e1194]: Current Mode
+            - generic [ref=e1195]: Codex（真实执行）
+          - paragraph [ref=e1196]: "Execution Backend: local · Updated: 03/01/2026, 04:30:27 PM"
+          - paragraph [ref=e1197]: "Worker Concurrency: 2 · SSE Replay Limit: 500"
+          - paragraph [ref=e1198]: "Allowed Workdirs: /Users/slg/workspace/Pocket-Codex"
+          - paragraph [ref=e1199]:
+            - text: "CLI Path:"
+            - code [ref=e1200]: /Applications/Codex.app/Contents/Resources/codex
+          - paragraph [ref=e1201]: "Direct Login Policy: localhost-only direct sign-in · Mobile approval TTL: 180s"
+          - paragraph [ref=e1202]: "Codex Idle Timeout: 180s"
+          - paragraph [ref=e1203]: "Codex Hard Timeout: 1800s"
+      - generic [ref=e1204]:
+        - generic [ref=e1205]:
+          - generic [ref=e1206]:
+            - generic [ref=e1207]:
+              - heading "Create Task" [level=2] [ref=e2055]
+              - generic [ref=e1209]: Mobile First
+            - generic [ref=e1210]:
+              - generic [ref=e1211]:
+                - heading "Template Library" [level=3] [ref=e2056]
+                - generic [ref=e1213]:
+                  - generic [ref=e1214]:
+                    - generic [ref=e1215]:
+                      - generic [ref=e1216]: Saved templates
+                      - combobox "Saved templates" [ref=e2057]:
+                        - option "No templates yet" [selected]
+                    - generic [ref=e1218]:
+                      - generic [ref=e1219]: New template name
+                      - textbox "New template name" [ref=e2058]:
+                        - /placeholder: "Example: Regression template"
+                  - button "Save current as template" [ref=e2059] [cursor=pointer]
+              - generic [ref=e1223]:
+                - generic [ref=e1224]: Prompt
+                - textbox "Prompt" [ref=e2060]:
+                  - /placeholder: Ask Codex to do something actionable...
+                  - text: echo hello from template
+              - generic [ref=e1226]:
+                - generic [ref=e1227]:
+                  - generic [ref=e1228]: Priority
+                  - spinbutton "Priority" [ref=e2061]: "5"
+                - generic [ref=e1230]:
+                  - generic [ref=e1231]: Timeout (sec)
+                  - spinbutton "Timeout (sec)" [ref=e2062]: "180"
+              - generic [ref=e1233]:
+                - generic [ref=e1234]:
+                  - generic [ref=e1235]: Model (optional)
+                  - combobox "Model (optional)" [ref=e2063]:
+                    - option "gpt-5-codex" [selected]
+                    - option "gpt-5"
+                - generic [ref=e1237]:
+                  - generic [ref=e1238]: Reasoning Effort
+                  - combobox "Reasoning Effort" [ref=e2064]:
+                    - option "Medium" [selected]
+              - generic [ref=e1240]:
+                - generic [ref=e1241]: Parallel multi-agent execution
+                - checkbox "Parallel multi-agent execution" [ref=e2065]
+              - paragraph [ref=e1243]: "Options source: codex"
+              - generic [ref=e1244]:
+                - generic [ref=e1245]:
+                  - generic [ref=e1246]: Quick pick from history
+                  - combobox "Quick pick from history" [ref=e2066]:
+                    - option "Select a previous workdir" [selected]
+                    - option "/Users/slg/workspace/Pocket-Codex"
+                - generic [ref=e1248]:
+                  - generic [ref=e1249]: Workdir (optional)
+                  - combobox "Workdir (optional)" [ref=e2067]
+              - paragraph [ref=e1736]: 模板已删除。
+              - button "Create Task" [ref=e2068] [cursor=pointer]
+          - generic [ref=e1253]:
+            - generic [ref=e1254]:
+              - heading "Mobile Login Approvals" [level=2] [ref=e2069]
+              - generic [ref=e1256]: "1"
+            - paragraph [ref=e1257]: Approve only trusted devices. Expired requests are automatically rejected.
+            - list [ref=e2042]:
+              - listitem [ref=e2043]:
+                - generic [ref=e2044]:
+                  - strong [ref=e2045]: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36
+                  - time [ref=e2046]: 03/01/2026, 04:30:16 PM
+                - paragraph [ref=e2047]: "IP: 127.0.0.1 · ID: mlr_f6d872 · Expires: 03/01/2026, 04:33:16 PM"
+                - generic [ref=e2048]:
+                  - button "Reject" [ref=e2070] [cursor=pointer]
+                  - button "Approve" [ref=e2071] [cursor=pointer]
+          - generic [ref=e1259]:
+            - generic [ref=e1260]:
+              - heading "Notifications" [level=2] [ref=e2072]
+              - generic [ref=e1262]: "29"
+            - generic [ref=e2073]:
+              - paragraph [ref=e2074]: Page 1 / 2 · Total 29 notifications
+              - generic [ref=e2075]:
+                - button "Previous" [disabled] [ref=e2076]
+                - button "Next" [ref=e2077] [cursor=pointer]
+            - list [ref=e2078]:
+              - listitem [ref=e2079]:
+                - generic [ref=e2080]:
+                  - generic [ref=e2081]: Running
+                  - time [ref=e2082]: 04:30:28 PM
+                - paragraph [ref=e2083]: "mcp startup: no servers"
+              - listitem [ref=e2084]:
+                - generic [ref=e2085]:
+                  - generic [ref=e2086]: Running
+                  - time [ref=e2087]: 04:30:28 PM
+                - paragraph [ref=e2088]: "- 继续并总结当前测试结果"
+              - listitem [ref=e2089]:
+                - generic [ref=e2090]:
+                  - generic [ref=e2091]: Running
+                  - time [ref=e2092]: 04:30:28 PM
+                - paragraph [ref=e2093]: "Recent follow-up history for context:"
+              - listitem [ref=e2094]:
+                - generic [ref=e2095]:
+                  - generic [ref=e2096]: Running
+                  - time [ref=e2097]: 04:30:28 PM
+                - paragraph [ref=e2098]: 继续并总结当前测试结果
+              - listitem [ref=e2099]:
+                - generic [ref=e2100]:
+                  - generic [ref=e2101]: Running
+                  - time [ref=e2102]: 04:30:28 PM
+                - paragraph [ref=e2103]: "Latest follow-up message (highest priority; override conflicting earlier instructions):"
+              - listitem [ref=e2104]:
+                - generic [ref=e2105]:
+                  - generic [ref=e2106]: Running
+                  - time [ref=e2107]: 04:30:28 PM
+                - paragraph [ref=e2108]: playwright smoke test task
+              - listitem [ref=e2109]:
+                - generic [ref=e2110]:
+                  - generic [ref=e2111]: Running
+                  - time [ref=e2112]: 04:30:28 PM
+                - paragraph [ref=e2113]: "Original task prompt:"
+              - listitem [ref=e2114]:
+                - generic [ref=e2115]:
+                  - generic [ref=e2116]: Running
+                  - time [ref=e2117]: 04:30:28 PM
+                - paragraph [ref=e2118]: "Reasoning effort: medium"
+              - listitem [ref=e2119]:
+                - generic [ref=e2120]:
+                  - generic [ref=e2121]: Running
+                  - time [ref=e2122]: 04:30:28 PM
+                - paragraph [ref=e2123]: "Preferred model: gpt-5-codex"
+              - listitem [ref=e2124]:
+                - generic [ref=e2125]:
+                  - generic [ref=e2126]: Running
+                  - time [ref=e2127]: 04:30:28 PM
+                - paragraph [ref=e2128]: user
+              - listitem [ref=e2129]:
+                - generic [ref=e2130]:
+                  - generic [ref=e2131]: Running
+                  - time [ref=e2132]: 04:30:28 PM
+                - paragraph [ref=e2133]: "--------"
+              - listitem [ref=e2134]:
+                - generic [ref=e2135]:
+                  - generic [ref=e2136]: Running
+                  - time [ref=e2137]: 04:30:28 PM
+                - paragraph [ref=e2138]: "session id: 019ca885-375e-7570-b141-49641a8492d8"
+              - listitem [ref=e2139]:
+                - generic [ref=e2140]:
+                  - generic [ref=e2141]: Running
+                  - time [ref=e2142]: 04:30:28 PM
+                - paragraph [ref=e2143]: "reasoning summaries: none"
+              - listitem [ref=e2144]:
+                - generic [ref=e2145]:
+                  - generic [ref=e2146]: Running
+                  - time [ref=e2147]: 04:30:28 PM
+                - paragraph [ref=e2148]: "reasoning effort: medium"
+              - listitem [ref=e2149]:
+                - generic [ref=e2150]:
+                  - generic [ref=e2151]: Running
+                  - time [ref=e2152]: 04:30:28 PM
+                - paragraph [ref=e2153]: "sandbox: workspace-write [workdir, /tmp, $TMPDIR]"
+          - generic [ref=e1266]:
+            - generic [ref=e1267]:
+              - heading "Session" [level=2] [ref=e2154]
+              - generic [ref=e1269]: Active
+            - paragraph [ref=e1270]: You are signed in with single-user JWT auth.
+            - button "Sign Out" [ref=e2155] [cursor=pointer]
+        - generic [ref=e1273]:
+          - generic [ref=e1274]:
+            - generic [ref=e1275]:
+              - heading "Task Queue" [level=2] [ref=e2156]
+              - generic [ref=e1277]: "62"
+            - generic [ref=e1737]:
+              - paragraph [ref=e1738]: Page 2 / 4 · Total 62 tasks
+              - generic [ref=e1739]:
+                - button "Previous" [ref=e2157] [cursor=pointer]
+                - button "Next" [ref=e2158] [cursor=pointer]
+            - list [ref=e1284]:
+              - listitem [ref=e1742]:
+                - generic [ref=e1743]:
+                  - generic [ref=e1744]: Canceled
+                  - time [ref=e1745]: 03/01/2026, 03:58:51 PM
+                - paragraph [ref=e1746]: regression pagination task 0
+                - generic [ref=e1747]:
+                  - paragraph [ref=e1748]: "Tokens: - · Cost: $0.00"
+                  - generic [ref=e1749]:
+                    - img "Context window hint" [ref=e2159] [cursor=pointer]: i
+                    - dialog "Context Window":
+                      - paragraph: Context Window
+                      - paragraph: not reported
+                      - paragraph: Used - tokens，of -
+                - generic [ref=e1751]:
+                  - generic [ref=e1752]: "#task_b43"
+                  - link "View detail" [ref=e2160] [cursor=pointer]:
+                    - /url: /tasks/task_b43702e9e461
+                - generic [ref=e1754]:
+                  - button "Retry" [ref=e2161] [cursor=pointer]
+                  - button "Copy ID" [ref=e2162] [cursor=pointer]
+              - listitem [ref=e1757]:
+                - generic [ref=e1758]:
+                  - generic [ref=e1759]: Succeeded
+                  - time [ref=e1760]: 03/01/2026, 02:52:33 PM
+                - paragraph [ref=e1761]: local verify
+                - generic [ref=e1762]:
+                  - paragraph [ref=e1763]: "Tokens: - · Cost: $0.00"
+                  - generic [ref=e1764]:
+                    - img "Context window hint" [ref=e2163] [cursor=pointer]: i
+                    - dialog "Context Window":
+                      - paragraph: Context Window
+                      - paragraph: not reported
+                      - paragraph: Used - tokens，of -
+                - generic [ref=e1766]:
+                  - generic [ref=e1767]: "#task_9b7"
+                  - link "View detail" [ref=e2164] [cursor=pointer]:
+                    - /url: /tasks/task_9b78c33d802a
+                - generic [ref=e1769]:
+                  - button "Retry" [ref=e2165] [cursor=pointer]
+                  - button "Copy ID" [ref=e2166] [cursor=pointer]
+              - listitem [ref=e1772]:
+                - generic [ref=e1773]:
+                  - generic [ref=e1774]: Queued
+                  - time [ref=e1775]: 03/01/2026, 02:49:56 PM
+                - paragraph [ref=e1776]: regression pagination task 0
+                - generic [ref=e1777]:
+                  - paragraph [ref=e1778]: "Tokens: - · Cost: $0.00"
+                  - generic [ref=e1779]:
+                    - img "Context window hint" [ref=e2167] [cursor=pointer]: i
+                    - dialog "Context Window":
+                      - paragraph: Context Window
+                      - paragraph: not reported
+                      - paragraph: Used - tokens，of -
+                - generic [ref=e1781]:
+                  - generic [ref=e1782]: "#task_c63"
+                  - link "View detail" [ref=e2168] [cursor=pointer]:
+                    - /url: /tasks/task_c6346e332084
+                - generic [ref=e1784]:
+                  - button "Cancel" [ref=e2169] [cursor=pointer]
+                  - button "Copy ID" [ref=e2170] [cursor=pointer]
+              - listitem [ref=e1787]:
+                - generic [ref=e1788]:
+                  - generic [ref=e1789]: Queued
+                  - time [ref=e1790]: 03/01/2026, 02:49:56 PM
+                - paragraph [ref=e1791]: regression pagination task 2
+                - generic [ref=e1792]:
+                  - paragraph [ref=e1793]: "Tokens: - · Cost: $0.00"
+                  - generic [ref=e1794]:
+                    - img "Context window hint" [ref=e2171] [cursor=pointer]: i
+                    - dialog "Context Window":
+                      - paragraph: Context Window
+                      - paragraph: not reported
+                      - paragraph: Used - tokens，of -
+                - generic [ref=e1796]:
+                  - generic [ref=e1797]: "#task_f19"
+                  - link "View detail" [ref=e2172] [cursor=pointer]:
+                    - /url: /tasks/task_f1970c5b0f01
+                - generic [ref=e1799]:
+                  - button "Cancel" [ref=e2173] [cursor=pointer]
+                  - button "Copy ID" [ref=e2174] [cursor=pointer]
+              - listitem [ref=e1802]:
+                - generic [ref=e1803]:
+                  - generic [ref=e1804]: Queued
+                  - time [ref=e1805]: 03/01/2026, 02:49:56 PM
+                - paragraph [ref=e1806]: regression pagination task 1
+                - generic [ref=e1807]:
+                  - paragraph [ref=e1808]: "Tokens: - · Cost: $0.00"
+                  - generic [ref=e1809]:
+                    - img "Context window hint" [ref=e2175] [cursor=pointer]: i
+                    - dialog "Context Window":
+                      - paragraph: Context Window
+                      - paragraph: not reported
+                      - paragraph: Used - tokens，of -
+                - generic [ref=e1811]:
+                  - generic [ref=e1812]: "#task_2f8"
+                  - link "View detail" [ref=e2176] [cursor=pointer]:
+                    - /url: /tasks/task_2f84b53396f5
+                - generic [ref=e1814]:
+                  - button "Cancel" [ref=e2177] [cursor=pointer]
+                  - button "Copy ID" [ref=e2178] [cursor=pointer]
+              - listitem [ref=e1817]:
+                - generic [ref=e1818]:
+                  - generic [ref=e1819]: Succeeded
+                  - time [ref=e1820]: 03/01/2026, 02:49:55 PM
+                - paragraph [ref=e1821]: local verify
+                - generic [ref=e1822]:
+                  - paragraph [ref=e1823]: "Tokens: - · Cost: $0.00"
+                  - generic [ref=e1824]:
+                    - img "Context window hint" [ref=e2179] [cursor=pointer]: i
+                    - dialog "Context Window":
+                      - paragraph: Context Window
+                      - paragraph: not reported
+                      - paragraph: Used - tokens，of -
+                - generic [ref=e1826]:
+                  - generic [ref=e1827]: "#task_870"
+                  - link "View detail" [ref=e2180] [cursor=pointer]:
+                    - /url: /tasks/task_870732f9e1a5
+                - generic [ref=e1829]:
+                  - button "Retry" [ref=e2181] [cursor=pointer]
+                  - button "Copy ID" [ref=e2182] [cursor=pointer]
+              - listitem [ref=e1832]:
+                - generic [ref=e1833]:
+                  - generic [ref=e1834]: Queued
+                  - time [ref=e1835]: 03/01/2026, 02:49:36 PM
+                - paragraph [ref=e1836]: regression pagination task 0
+                - generic [ref=e1837]:
+                  - paragraph [ref=e1838]: "Tokens: - · Cost: $0.00"
+                  - generic [ref=e1839]:
+                    - img "Context window hint" [ref=e2183] [cursor=pointer]: i
+                    - dialog "Context Window":
+                      - paragraph: Context Window
+                      - paragraph: not reported
+                      - paragraph: Used - tokens，of -
+                - generic [ref=e1841]:
+                  - generic [ref=e1842]: "#task_326"
+                  - link "View detail" [ref=e2184] [cursor=pointer]:
+                    - /url: /tasks/task_326b54215387
+                - generic [ref=e1844]:
+                  - button "Cancel" [ref=e2185] [cursor=pointer]
+                  - button "Copy ID" [ref=e2186] [cursor=pointer]
+              - listitem [ref=e1847]:
+                - generic [ref=e1848]:
+                  - generic [ref=e1849]: Queued
+                  - time [ref=e1850]: 03/01/2026, 02:49:36 PM
+                - paragraph [ref=e1851]: regression pagination task 2
+                - generic [ref=e1852]:
+                  - paragraph [ref=e1853]: "Tokens: - · Cost: $0.00"
+                  - generic [ref=e1854]:
+                    - img "Context window hint" [ref=e2187] [cursor=pointer]: i
+                    - dialog "Context Window":
+                      - paragraph: Context Window
+                      - paragraph: not reported
+                      - paragraph: Used - tokens，of -
+                - generic [ref=e1856]:
+                  - generic [ref=e1857]: "#task_91a"
+                  - link "View detail" [ref=e2188] [cursor=pointer]:
+                    - /url: /tasks/task_91aec6258a29
+                - generic [ref=e1859]:
+                  - button "Cancel" [ref=e2189] [cursor=pointer]
+                  - button "Copy ID" [ref=e2190] [cursor=pointer]
+              - listitem [ref=e1862]:
+                - generic [ref=e1863]:
+                  - generic [ref=e1864]: Queued
+                  - time [ref=e1865]: 03/01/2026, 02:49:36 PM
+                - paragraph [ref=e1866]: regression pagination task 1
+                - generic [ref=e1867]:
+                  - paragraph [ref=e1868]: "Tokens: - · Cost: $0.00"
+                  - generic [ref=e1869]:
+                    - img "Context window hint" [ref=e2191] [cursor=pointer]: i
+                    - dialog "Context Window":
+                      - paragraph: Context Window
+                      - paragraph: not reported
+                      - paragraph: Used - tokens，of -
+                - generic [ref=e1871]:
+                  - generic [ref=e1872]: "#task_903"
+                  - link "View detail" [ref=e2192] [cursor=pointer]:
+                    - /url: /tasks/task_903085c08026
+                - generic [ref=e1874]:
+                  - button "Cancel" [ref=e2193] [cursor=pointer]
+                  - button "Copy ID" [ref=e2194] [cursor=pointer]
+              - listitem [ref=e1877]:
+                - generic [ref=e1878]:
+                  - generic [ref=e1879]: Succeeded
+                  - time [ref=e1880]: 03/01/2026, 02:49:36 PM
+                - paragraph [ref=e1881]: local verify
+                - generic [ref=e1882]:
+                  - paragraph [ref=e1883]: "Tokens: - · Cost: $0.00"
+                  - generic [ref=e1884]:
+                    - img "Context window hint" [ref=e2195] [cursor=pointer]: i
+                    - dialog "Context Window":
+                      - paragraph: Context Window
+                      - paragraph: not reported
+                      - paragraph: Used - tokens，of -
+                - generic [ref=e1886]:
+                  - generic [ref=e1887]: "#task_18f"
+                  - link "View detail" [ref=e2196] [cursor=pointer]:
+                    - /url: /tasks/task_18fa877941a6
+                - generic [ref=e1889]:
+                  - button "Retry" [ref=e2197] [cursor=pointer]
+                  - button "Copy ID" [ref=e2198] [cursor=pointer]
+              - listitem [ref=e1892]:
+                - generic [ref=e1893]:
+                  - generic [ref=e1894]: Succeeded
+                  - time [ref=e1895]: 03/01/2026, 02:34:29 PM
+                - paragraph [ref=e1896]: 体验本网站 有没有什么不合理的地方 有没有可以新增的功能
+                - generic [ref=e1897]:
+                  - paragraph [ref=e1898]: "Tokens: - · Cost: $0.00"
+                  - generic [ref=e1899]:
+                    - img "Context window hint" [ref=e2199] [cursor=pointer]: i
+                    - dialog "Context Window":
+                      - paragraph: Context Window
+                      - paragraph: not reported
+                      - paragraph: Used - tokens，of -
+                - generic [ref=e1901]:
+                  - generic [ref=e1902]: "#task_349"
+                  - link "View detail" [ref=e2200] [cursor=pointer]:
+                    - /url: /tasks/task_3494d9539b96
+                - generic [ref=e1904]:
+                  - button "Retry" [ref=e2201] [cursor=pointer]
+                  - button "Copy ID" [ref=e2202] [cursor=pointer]
+              - listitem [ref=e1907]:
+                - generic [ref=e1908]:
+                  - generic [ref=e1909]: Succeeded
+                  - time [ref=e1910]: 03/01/2026, 02:23:57 PM
+                - paragraph [ref=e1911]: local verify
+                - generic [ref=e1912]:
+                  - paragraph [ref=e1913]: "Tokens: - · Cost: $0.00"
+                  - generic [ref=e1914]:
+                    - img "Context window hint" [ref=e2203] [cursor=pointer]: i
+                    - dialog "Context Window":
+                      - paragraph: Context Window
+                      - paragraph: not reported
+                      - paragraph: Used - tokens，of -
+                - generic [ref=e1916]:
+                  - generic [ref=e1917]: "#task_1a0"
+                  - link "View detail" [ref=e2204] [cursor=pointer]:
+                    - /url: /tasks/task_1a04d3ea4b1c
+                - generic [ref=e1919]:
+                  - button "Retry" [ref=e2205] [cursor=pointer]
+                  - button "Copy ID" [ref=e2206] [cursor=pointer]
+              - listitem [ref=e1922]:
+                - generic [ref=e1923]:
+                  - generic [ref=e1924]: Succeeded
+                  - time [ref=e1925]: 03/01/2026, 02:23:03 PM
+                - paragraph [ref=e1926]: local verify
+                - generic [ref=e1927]:
+                  - paragraph [ref=e1928]: "Tokens: - · Cost: $0.00"
+                  - generic [ref=e1929]:
+                    - img "Context window hint" [ref=e2207] [cursor=pointer]: i
+                    - dialog "Context Window":
+                      - paragraph: Context Window
+                      - paragraph: not reported
+                      - paragraph: Used - tokens，of -
+                - generic [ref=e1931]:
+                  - generic [ref=e1932]: "#task_195"
+                  - link "View detail" [ref=e2208] [cursor=pointer]:
+                    - /url: /tasks/task_19527acf810f
+                - generic [ref=e1934]:
+                  - button "Retry" [ref=e2209] [cursor=pointer]
+                  - button "Copy ID" [ref=e2210] [cursor=pointer]
+              - listitem [ref=e1937]:
+                - generic [ref=e1938]:
+                  - generic [ref=e1939]: Succeeded
+                  - time [ref=e1940]: 03/01/2026, 02:02:20 PM
+                - paragraph [ref=e1941]: 使用当前网站 提出用户体验优化
+                - generic [ref=e1942]:
+                  - paragraph [ref=e1943]: "Tokens: - · Cost: $0.00"
+                  - generic [ref=e1944]:
+                    - img "Context window hint" [ref=e2211] [cursor=pointer]: i
+                    - dialog "Context Window":
+                      - paragraph: Context Window
+                      - paragraph: not reported
+                      - paragraph: Used - tokens，of -
+                - generic [ref=e1946]:
+                  - generic [ref=e1947]: "#task_fba"
+                  - link "View detail" [ref=e2212] [cursor=pointer]:
+                    - /url: /tasks/task_fba4cbcd2ad0
+                - generic [ref=e1949]:
+                  - button "Retry" [ref=e2213] [cursor=pointer]
+                  - button "Copy ID" [ref=e2214] [cursor=pointer]
+              - listitem [ref=e1952]:
+                - generic [ref=e1953]:
+                  - generic [ref=e1954]: Succeeded
+                  - time [ref=e1955]: 03/01/2026, 01:09:13 PM
+                - paragraph [ref=e1956]: 站点审计创建任务 2026-03-01 13:09 请回复 AUDIT_CREATE_OK
+                - generic [ref=e1957]:
+                  - paragraph [ref=e1958]: "Tokens: - · Cost: $0.00"
+                  - generic [ref=e1959]:
+                    - img "Context window hint" [ref=e2215] [cursor=pointer]: i
+                    - dialog "Context Window":
+                      - paragraph: Context Window
+                      - paragraph: not reported
+                      - paragraph: Used - tokens，of -
+                - generic [ref=e1961]:
+                  - generic [ref=e1962]: "#task_5e0"
+                  - link "View detail" [ref=e2216] [cursor=pointer]:
+                    - /url: /tasks/task_5e0c453c2562
+                - generic [ref=e1964]:
+                  - button "Retry" [ref=e2217] [cursor=pointer]
+                  - button "Copy ID" [ref=e2218] [cursor=pointer]
+              - listitem [ref=e1967]:
+                - generic [ref=e1968]:
+                  - generic [ref=e1969]: Succeeded
+                  - time [ref=e1970]: 03/01/2026, 01:02:22 PM
+                - paragraph [ref=e1971]: 站点审查测试任务：请回复一句 SITE_AUDIT_OK
+                - generic [ref=e1972]:
+                  - paragraph [ref=e1973]: "Tokens: - · Cost: $0.00"
+                  - generic [ref=e1974]:
+                    - img "Context window hint" [ref=e2219] [cursor=pointer]: i
+                    - dialog "Context Window":
+                      - paragraph: Context Window
+                      - paragraph: not reported
+                      - paragraph: Used - tokens，of -
+                - generic [ref=e1976]:
+                  - generic [ref=e1977]: "#task_36e"
+                  - link "View detail" [ref=e2220] [cursor=pointer]:
+                    - /url: /tasks/task_36ec6a4587e1
+                - generic [ref=e1979]:
+                  - button "Retry" [ref=e2221] [cursor=pointer]
+                  - button "Copy ID" [ref=e2222] [cursor=pointer]
+              - listitem [ref=e1982]:
+                - generic [ref=e1983]:
+                  - generic [ref=e1984]: Succeeded
+                  - time [ref=e1985]: 03/01/2026, 11:33:46 AM
+                - paragraph [ref=e1986]: local verify
+                - generic [ref=e1987]:
+                  - paragraph [ref=e1988]: "Tokens: - · Cost: $0.00"
+                  - generic [ref=e1989]:
+                    - img "Context window hint" [ref=e2223] [cursor=pointer]: i
+                    - dialog "Context Window":
+                      - paragraph: Context Window
+                      - paragraph: not reported
+                      - paragraph: Used - tokens，of -
+                - generic [ref=e1991]:
+                  - generic [ref=e1992]: "#task_2a1"
+                  - link "View detail" [ref=e2224] [cursor=pointer]:
+                    - /url: /tasks/task_2a131faa38c5
+                - generic [ref=e1994]:
+                  - button "Retry" [ref=e2225] [cursor=pointer]
+                  - button "Copy ID" [ref=e2226] [cursor=pointer]
+              - listitem [ref=e1997]:
+                - generic [ref=e1998]:
+                  - generic [ref=e1999]: Succeeded
+                  - time [ref=e2000]: 03/01/2026, 11:33:23 AM
+                - paragraph [ref=e2001]: first prompt
+                - generic [ref=e2002]:
+                  - paragraph [ref=e2003]: "Tokens: - · Cost: $0.00"
+                  - generic [ref=e2004]:
+                    - img "Context window hint" [ref=e2227] [cursor=pointer]: i
+                    - dialog "Context Window":
+                      - paragraph: Context Window
+                      - paragraph: not reported
+                      - paragraph: Used - tokens，of -
+                - generic [ref=e2006]:
+                  - generic [ref=e2007]: "#task_683"
+                  - link "View detail" [ref=e2228] [cursor=pointer]:
+                    - /url: /tasks/task_68300718ce65
+                - generic [ref=e2009]:
+                  - button "Retry" [ref=e2229] [cursor=pointer]
+                  - button "Copy ID" [ref=e2230] [cursor=pointer]
+              - listitem [ref=e2012]:
+                - generic [ref=e2013]:
+                  - generic [ref=e2014]: Succeeded
+                  - time [ref=e2015]: 03/01/2026, 11:32:39 AM
+                - paragraph [ref=e2016]: first prompt
+                - generic [ref=e2017]:
+                  - paragraph [ref=e2018]: "Tokens: - · Cost: $0.00"
+                  - generic [ref=e2019]:
+                    - img "Context window hint" [ref=e2231] [cursor=pointer]: i
+                    - dialog "Context Window":
+                      - paragraph: Context Window
+                      - paragraph: not reported
+                      - paragraph: Used - tokens，of -
+                - generic [ref=e2021]:
+                  - generic [ref=e2022]: "#task_a9d"
+                  - link "View detail" [ref=e2232] [cursor=pointer]:
+                    - /url: /tasks/task_a9dba4395f54
+                - generic [ref=e2024]:
+                  - button "Retry" [ref=e2233] [cursor=pointer]
+                  - button "Copy ID" [ref=e2234] [cursor=pointer]
+              - listitem [ref=e2027]:
+                - generic [ref=e2028]:
+                  - generic [ref=e2029]: Queued
+                  - time [ref=e2030]: 03/01/2026, 11:21:35 AM
+                - paragraph [ref=e2031]: echo hi
+                - generic [ref=e2032]:
+                  - paragraph [ref=e2033]: "Tokens: - · Cost: $0.00"
+                  - generic [ref=e2034]:
+                    - img "Context window hint" [ref=e2235] [cursor=pointer]: i
+                    - dialog "Context Window":
+                      - paragraph: Context Window
+                      - paragraph: not reported
+                      - paragraph: Used - tokens，of -
+                - generic [ref=e2036]:
+                  - generic [ref=e2037]: "#task_0f9"
+                  - link "View detail" [ref=e2236] [cursor=pointer]:
+                    - /url: /tasks/task_0f9bdde9ffaf
+                - generic [ref=e2039]:
+                  - button "Cancel" [ref=e2237] [cursor=pointer]
+                  - button "Copy ID" [ref=e2238] [cursor=pointer]
+          - generic [ref=e1585]:
+            - generic [ref=e1586]:
+              - heading "Audit Logs" [level=2] [ref=e2239]
+              - generic [ref=e1588]: "238"
+            - generic [ref=e1589]:
+              - generic [ref=e1590]:
+                - generic [ref=e1591]:
+                  - generic [ref=e1592]: Actor
+                  - textbox "Actor" [ref=e2240]:
+                    - /placeholder: Filter by actor
+                - generic [ref=e1594]:
+                  - generic [ref=e1595]: Task ID
+                  - textbox "Task ID" [ref=e2241]:
+                    - /placeholder: Filter by task id
+                - generic [ref=e1597]:
+                  - generic [ref=e1598]: Action
+                  - textbox "Action" [ref=e2242]:
+                    - /placeholder: Filter by action
+              - generic [ref=e1600]:
+                - button "Search" [ref=e2243] [cursor=pointer]
+                - button "Clear" [ref=e2244] [cursor=pointer]
+                - button "Export CSV" [ref=e2245] [cursor=pointer]
+                - button "Export JSON" [ref=e2246] [cursor=pointer]
+            - generic [ref=e1605]:
+              - paragraph [ref=e1606]: Page 1 / 12 · Total 238 logs
+              - generic [ref=e1607]:
+                - button "Previous" [disabled] [ref=e2247]
+                - button "Next" [ref=e2248] [cursor=pointer]
+            - list [ref=e1611]:
+              - listitem [ref=e1612]:
+                - generic [ref=e1613]:
+                  - strong [ref=e1614]: task.control.resume
+                  - time [ref=e1615]: 03/01/2026, 04:28:31 PM
+                - paragraph [ref=e1616]: "Actor: admin | Task: task_b42232e4f18"
+                - code [ref=e1617]: "{\"accepted\":true,\"message\":\"task resumed\"}"
+              - listitem [ref=e1618]:
+                - generic [ref=e1619]:
+                  - strong [ref=e1620]: task.message.append
+                  - time [ref=e1621]: 03/01/2026, 04:27:39 PM
+                - paragraph [ref=e1622]: "Actor: admin | Task: task_b42232e4f18"
+                - code [ref=e1623]: "{\"message_id\":\"msg_cd3b528e462a\"}"
+              - listitem [ref=e1624]:
+                - generic [ref=e1625]:
+                  - strong [ref=e1626]: task.control.pause
+                  - time [ref=e1627]: 03/01/2026, 04:27:23 PM
+                - paragraph [ref=e1628]: "Actor: admin | Task: task_b42232e4f18"
+                - code [ref=e1629]: "{\"accepted\":true,\"message\":\"task paused\"}"
+              - listitem [ref=e1630]:
+                - generic [ref=e1631]:
+                  - strong [ref=e1632]: task.message.append
+                  - time [ref=e1633]: 03/01/2026, 04:27:08 PM
+                - paragraph [ref=e1634]: "Actor: admin | Task: task_5227d38d6cd"
+                - code [ref=e1635]: "{\"message_id\":\"msg_ff8e70315e2c\"}"
+              - listitem [ref=e1636]:
+                - generic [ref=e1637]:
+                  - strong [ref=e1638]: ui.event.task.detail.opened
+                  - time [ref=e1639]: 03/01/2026, 04:27:03 PM
+                - paragraph [ref=e1640]: "Actor: admin | Task: task_b42232e4f18"
+                - code [ref=e1641]: "{\"source\":\"create\",\"list_click_count\":0}"
+              - listitem [ref=e1642]:
+                - generic [ref=e1643]:
+                  - strong [ref=e1644]: task.create
+                  - time [ref=e1645]: 03/01/2026, 04:27:03 PM
+                - paragraph [ref=e1646]: "Actor: admin | Task: task_b42232e4f18"
+                - code [ref=e1647]: "{\"priority\":5,\"workdir\":null,\"timeout_seconds\":180,\"model\":\"gpt-5-codex\",\"reasoning_effort\":\"medium\",\"enable_parallel_agents\":false}"
+              - listitem [ref=e1648]:
+                - generic [ref=e1649]:
+                  - strong [ref=e1650]: ui.event.task.detail.opened
+                  - time [ref=e1651]: 03/01/2026, 04:26:46 PM
+                - paragraph [ref=e1652]: "Actor: admin | Task: task_5227d38d6cd"
+                - code [ref=e1653]: "{\"source\":\"create\",\"list_click_count\":0}"
+              - listitem [ref=e1654]:
+                - generic [ref=e1655]:
+                  - strong [ref=e1656]: task.create
+                  - time [ref=e1657]: 03/01/2026, 04:26:46 PM
+                - paragraph [ref=e1658]: "Actor: admin | Task: task_5227d38d6cd"
+                - code [ref=e1659]: "{\"priority\":5,\"workdir\":null,\"timeout_seconds\":180,\"model\":\"gpt-5-codex\",\"reasoning_effort\":\"medium\",\"enable_parallel_agents\":false}"
+              - listitem [ref=e1660]:
+                - generic [ref=e1661]:
+                  - strong [ref=e1662]: auth.login.succeeded
+                  - time [ref=e1663]: 03/01/2026, 04:26:25 PM
+                - paragraph [ref=e1664]: "Actor: admin"
+                - code [ref=e1665]: "{\"request_ip\":\"127.0.0.1\"}"
+              - listitem [ref=e1666]:
+                - generic [ref=e1667]:
+                  - strong [ref=e1668]: auth.login.succeeded
+                  - time [ref=e1669]: 03/01/2026, 04:26:07 PM
+                - paragraph [ref=e1670]: "Actor: admin"
+                - code [ref=e1671]: "{\"request_ip\":\"127.0.0.1\"}"
+              - listitem [ref=e1672]:
+                - generic [ref=e1673]:
+                  - strong [ref=e1674]: auth.mobile.request.completed
+                  - time [ref=e1675]: 03/01/2026, 04:18:30 PM
+                - paragraph [ref=e1676]: "Actor: admin"
+                - code [ref=e1677]: "{\"request_id\":\"mlr_01a1546c900e\",\"request_ip\":\"172.20.10.1\"}"
+              - listitem [ref=e1678]:
+                - generic [ref=e1679]:
+                  - strong [ref=e1680]: auth.mobile.request.approved
+                  - time [ref=e1681]: 03/01/2026, 04:18:30 PM
+                - paragraph [ref=e1682]: "Actor: admin"
+                - code [ref=e1683]: "{\"request_id\":\"mlr_01a1546c900e\",\"device_name\":\"iphone-regression\",\"request_ip\":\"172.20.10.1\"}"
+              - listitem [ref=e1684]:
+                - generic [ref=e1685]:
+                  - strong [ref=e1686]: auth.mobile.request.created
+                  - time [ref=e1687]: 03/01/2026, 04:18:30 PM
+                - paragraph [ref=e1688]: "Actor: admin"
+                - code [ref=e1689]: "{\"request_id\":\"mlr_01a1546c900e\",\"request_ip\":\"172.20.10.1\",\"device_name\":\"iphone-regression\"}"
+              - listitem [ref=e1690]:
+                - generic [ref=e1691]:
+                  - strong [ref=e1692]: auth.login.blocked.non_loopback
+                  - time [ref=e1693]: 03/01/2026, 04:18:30 PM
+                - paragraph [ref=e1694]: "Actor: admin"
+                - code [ref=e1695]: "{\"request_ip\":\"172.20.10.1\"}"
+              - listitem [ref=e1696]:
+                - generic [ref=e1697]:
+                  - strong [ref=e1698]: auth.login.succeeded
+                  - time [ref=e1699]: 03/01/2026, 04:18:30 PM
+                - paragraph [ref=e1700]: "Actor: admin"
+                - code [ref=e1701]: "{\"request_ip\":\"127.0.0.1\"}"
+              - listitem [ref=e1702]:
+                - generic [ref=e1703]:
+                  - strong [ref=e1704]: task.message.append
+                  - time [ref=e1705]: 03/01/2026, 04:18:30 PM
+                - paragraph [ref=e1706]: "Actor: admin | Task: task_07eb52d11b1"
+                - code [ref=e1707]: "{\"message_id\":\"msg_70f33f632727\"}"
+              - listitem [ref=e1708]:
+                - generic [ref=e1709]:
+                  - strong [ref=e1710]: task.create
+                  - time [ref=e1711]: 03/01/2026, 04:18:30 PM
+                - paragraph [ref=e1712]: "Actor: admin | Task: task_7090c1df47a"
+                - code [ref=e1713]: "{\"priority\":5,\"workdir\":null,\"timeout_seconds\":20,\"model\":\"gpt-5-codex\",\"reasoning_effort\":\"medium\",\"enable_parallel_agents\":true}"
+              - listitem [ref=e1714]:
+                - generic [ref=e1715]:
+                  - strong [ref=e1716]: task.create
+                  - time [ref=e1717]: 03/01/2026, 04:18:30 PM
+                - paragraph [ref=e1718]: "Actor: admin | Task: task_be6db8ac2bf"
+                - code [ref=e1719]: "{\"priority\":5,\"workdir\":null,\"timeout_seconds\":20,\"model\":\"gpt-5-codex\",\"reasoning_effort\":\"medium\",\"enable_parallel_agents\":false}"
+              - listitem [ref=e1720]:
+                - generic [ref=e1721]:
+                  - strong [ref=e1722]: task.create
+                  - time [ref=e1723]: 03/01/2026, 04:18:30 PM
+                - paragraph [ref=e1724]: "Actor: admin | Task: task_07eb52d11b1"
+                - code [ref=e1725]: "{\"priority\":5,\"workdir\":null,\"timeout_seconds\":20,\"model\":\"gpt-5-codex\",\"reasoning_effort\":\"medium\",\"enable_parallel_agents\":true}"
+              - listitem [ref=e1726]:
+                - generic [ref=e1727]:
+                  - strong [ref=e1728]: auth.login.succeeded
+                  - time [ref=e1729]: 03/01/2026, 04:18:30 PM
+                - paragraph [ref=e1730]: "Actor: admin"
+                - code [ref=e1731]: "{\"request_ip\":\"127.0.0.1\"}"
+  - alert [ref=e28]

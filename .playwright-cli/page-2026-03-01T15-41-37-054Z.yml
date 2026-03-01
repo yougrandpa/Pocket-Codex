@@ -1,0 +1,77 @@
+- generic [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - paragraph [ref=e6]: Pocket Codex
+          - heading "远程任务控制" [level=1] [ref=e7]
+        - button "English" [ref=e8] [cursor=pointer]
+      - paragraph [ref=e9]: 用手机监控并操作 Codex 任务。
+    - generic [ref=e709]:
+      - link "返回控制台" [ref=e710] [cursor=pointer]:
+        - /url: /
+      - generic [ref=e711]:
+        - heading "任务详情" [level=2] [ref=e712]
+        - generic [ref=e713]:
+          - generic [ref=e714]:
+            - button "背景信息窗口提示" [ref=e715] [cursor=pointer]: 上下文
+            - dialog "背景信息窗口":
+              - paragraph: 背景信息窗口
+              - paragraph: 未上报
+              - paragraph: 已用 - 标记，共 -
+          - generic [ref=e716]: 排队中
+      - generic [ref=e717]:
+        - button "对话" [ref=e718] [cursor=pointer]
+        - button "控制" [active] [ref=e719] [cursor=pointer]
+        - button "成本" [ref=e720] [cursor=pointer]
+        - button "事件日志" [ref=e721] [cursor=pointer]
+      - status [ref=e737]: 消息已发送。
+      - paragraph [ref=e739]: 当前状态没有可用控制动作。
+      - generic [ref=e740]:
+        - generic [ref=e741]:
+          - term [ref=e742]: 任务 ID
+          - definition [ref=e743]: task_c1cf4f1d9cee
+        - generic [ref=e744]:
+          - term [ref=e745]: 优先级
+          - definition [ref=e746]: "5"
+        - generic [ref=e747]:
+          - term [ref=e748]: 超时
+          - definition [ref=e749]: 180s
+        - generic [ref=e750]:
+          - term [ref=e751]: 工作目录
+          - definition [ref=e752]: "-"
+        - generic [ref=e753]:
+          - term [ref=e754]: 模型
+          - definition [ref=e755]: gpt-5.3-codex
+        - generic [ref=e756]:
+          - term [ref=e757]: 推理强度
+          - definition [ref=e758]: medium
+        - generic [ref=e759]:
+          - term [ref=e760]: 并行多代理
+          - definition [ref=e761]: 关闭
+        - generic [ref=e762]:
+          - term [ref=e763]: 当前运行
+          - definition [ref=e764]: run_d2e1b5739d2c (#1)
+        - generic [ref=e765]:
+          - term [ref=e766]: 创建时间
+          - definition [ref=e767]: 2026/03/01 23:40:38
+        - generic [ref=e768]:
+          - term [ref=e769]: 更新时间
+          - definition [ref=e770]: 2026/03/01 23:40:38
+        - generic [ref=e771]:
+          - term [ref=e772]: 开始时间
+          - definition [ref=e773]: "-"
+        - generic [ref=e774]:
+          - term [ref=e775]: 完成时间
+          - definition [ref=e776]: "-"
+        - generic [ref=e777]:
+          - term [ref=e778]: 最后心跳
+          - definition [ref=e779]: 2026/03/01 23:40:38
+  - status [ref=e699]:
+    - generic [ref=e700]:
+      - img [ref=e702]
+      - generic [ref=e704]:
+        - text: Static route
+        - button "Hide static indicator" [ref=e705] [cursor=pointer]:
+          - img [ref=e706]
+  - alert [ref=e42]

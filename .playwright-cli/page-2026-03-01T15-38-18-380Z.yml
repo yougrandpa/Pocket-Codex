@@ -1,0 +1,82 @@
+- generic [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - paragraph [ref=e6]: Pocket Codex
+          - heading "远程任务控制" [level=1] [ref=e7]
+        - button "English" [ref=e8] [cursor=pointer]
+      - paragraph [ref=e9]: 用手机监控并操作 Codex 任务。
+    - generic [ref=e1221]:
+      - link "返回控制台" [ref=e1222] [cursor=pointer]:
+        - /url: /
+      - generic [ref=e1223]:
+        - heading "任务详情" [level=2] [ref=e1224]
+        - generic [ref=e1225]:
+          - generic [ref=e1226]:
+            - button "背景信息窗口提示" [ref=e1227] [cursor=pointer]: 上下文
+            - dialog "背景信息窗口":
+              - paragraph: 背景信息窗口
+              - paragraph: 未上报
+              - paragraph: 已用 - 标记，共 -
+          - generic [ref=e1228]: 成功
+      - generic [ref=e1229]:
+        - button "对话" [ref=e1230] [cursor=pointer]
+        - button "控制" [active] [ref=e1231] [cursor=pointer]
+        - button "成本" [ref=e1232] [cursor=pointer]
+        - button "事件日志" [ref=e1233] [cursor=pointer]
+      - status [ref=e1270]: 消息已发送。
+      - button "重试" [ref=e1272] [cursor=pointer]
+      - generic [ref=e1273]:
+        - generic [ref=e1274]:
+          - term [ref=e1275]: 任务 ID
+          - definition [ref=e1276]: task_44ce547be0f1
+        - generic [ref=e1277]:
+          - term [ref=e1278]: 优先级
+          - definition [ref=e1279]: "2"
+        - generic [ref=e1280]:
+          - term [ref=e1281]: 超时
+          - definition [ref=e1282]: 10s
+        - generic [ref=e1283]:
+          - term [ref=e1284]: 工作目录
+          - definition [ref=e1285]: "-"
+        - generic [ref=e1286]:
+          - term [ref=e1287]: 模型
+          - definition [ref=e1288]: "-"
+        - generic [ref=e1289]:
+          - term [ref=e1290]: 推理强度
+          - definition [ref=e1291]: "-"
+        - generic [ref=e1292]:
+          - term [ref=e1293]: 并行多代理
+          - definition [ref=e1294]: 关闭
+        - generic [ref=e1295]:
+          - term [ref=e1296]: 当前运行
+          - definition [ref=e1297]: run_4e28f46c2bf7 (#1)
+        - generic [ref=e1298]:
+          - term [ref=e1299]: 创建时间
+          - definition [ref=e1300]: 2026/03/01 23:14:24
+        - generic [ref=e1301]:
+          - term [ref=e1302]: 更新时间
+          - definition [ref=e1303]: 2026/03/01 23:14:27
+        - generic [ref=e1304]:
+          - term [ref=e1305]: 开始时间
+          - definition [ref=e1306]: 2026/03/01 23:14:25
+        - generic [ref=e1307]:
+          - term [ref=e1308]: 完成时间
+          - definition [ref=e1309]: 2026/03/01 23:14:27
+        - generic [ref=e1310]:
+          - term [ref=e1311]: 最后心跳
+          - definition [ref=e1312]: 2026/03/01 23:14:27
+      - generic [ref=e1255]:
+        - button "对话" [ref=e1256] [cursor=pointer]
+        - button "控制" [ref=e1257] [cursor=pointer]
+        - button "重试" [ref=e1258] [cursor=pointer]
+        - button "发消息" [ref=e1259] [cursor=pointer]
+  - status [ref=e1260]:
+    - generic [ref=e1261]:
+      - img [ref=e1263]
+      - generic [ref=e1265]:
+        - text: Static route
+        - button "Hide static indicator" [ref=e1266] [cursor=pointer]:
+          - img [ref=e1267]
+  - alert [ref=e32]

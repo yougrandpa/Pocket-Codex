@@ -1,0 +1,165 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - paragraph [ref=e6]: Pocket Codex
+          - heading "远程任务控制" [level=1] [ref=e7]
+        - button "English" [ref=e8] [cursor=pointer]
+      - paragraph [ref=e9]: 用手机监控并操作 Codex 任务。
+    - generic [ref=e2952]:
+      - link "返回控制台" [ref=e2953] [cursor=pointer]:
+        - /url: /
+      - generic [ref=e2954]:
+        - heading "任务详情" [level=2] [ref=e2955]
+        - generic [ref=e2956]:
+          - generic [ref=e2957]:
+            - img "背景信息窗口提示" [ref=e2958] [cursor=pointer]: i
+            - dialog "背景信息窗口":
+              - paragraph: 背景信息窗口
+              - paragraph: 未上报
+              - paragraph: 已用 - 标记，共 -
+          - generic [ref=e2959]: 已取消
+      - generic [ref=e2960]:
+        - heading "对话" [level=3] [ref=e2961]
+        - list [ref=e2962]:
+          - listitem [ref=e2963]:
+            - generic [ref=e2964]:
+              - strong [ref=e2965]: 你
+              - time [ref=e2966]: 2026/03/01 14:52:34
+            - paragraph [ref=e2968]: regression pagination task 0
+          - listitem [ref=e2969]:
+            - generic [ref=e2970]:
+              - strong [ref=e2971]: 你
+              - time [ref=e2972]: 2026/03/01 14:52:34
+            - paragraph [ref=e2974]: regression follow-up
+      - button "重试" [ref=e2976] [cursor=pointer]
+      - generic [ref=e2977]:
+        - generic [ref=e2978]:
+          - generic [ref=e2979]: 追加指令
+          - textbox "追加指令" [ref=e2980]:
+            - /placeholder: 补充指令...
+        - button "发送消息" [disabled] [ref=e2982]
+      - generic [ref=e2983]:
+        - generic [ref=e2984]:
+          - term [ref=e2985]: 任务 ID
+          - definition [ref=e2986]: task_b43702e9e461
+        - generic [ref=e2987]:
+          - term [ref=e2988]: 优先级
+          - definition [ref=e2989]: "5"
+        - generic [ref=e2990]:
+          - term [ref=e2991]: 超时
+          - definition [ref=e2992]: 20s
+        - generic [ref=e2993]:
+          - term [ref=e2994]: 工作目录
+          - definition [ref=e2995]: "-"
+        - generic [ref=e2996]:
+          - term [ref=e2997]: 模型
+          - definition [ref=e2998]: "-"
+        - generic [ref=e2999]:
+          - term [ref=e3000]: 推理强度
+          - definition [ref=e3001]: "-"
+        - generic [ref=e3002]:
+          - term [ref=e3003]: 并行多代理
+          - definition [ref=e3004]: 关闭
+        - generic [ref=e3005]:
+          - term [ref=e3006]: 总 Tokens
+          - definition [ref=e3007]: "0"
+        - generic [ref=e3008]:
+          - term [ref=e3009]: 输入 Tokens
+          - definition [ref=e3010]: "0"
+        - generic [ref=e3011]:
+          - term [ref=e3012]: 输出 Tokens
+          - definition [ref=e3013]: "0"
+        - generic [ref=e3014]:
+          - term [ref=e3015]: 缓存读取 Tokens
+          - definition [ref=e3016]: "0"
+        - generic [ref=e3017]:
+          - term [ref=e3018]: 输入成本
+          - definition [ref=e3019]: $0.000000
+        - generic [ref=e3020]:
+          - term [ref=e3021]: 输出成本
+          - definition [ref=e3022]: $0.000000
+        - generic [ref=e3023]:
+          - term [ref=e3024]: 缓存读取成本
+          - definition [ref=e3025]: $0.000000
+        - generic [ref=e3026]:
+          - term [ref=e3027]: 倍率
+          - definition [ref=e3028]: 1.00x
+        - generic [ref=e3029]:
+          - term [ref=e3030]: 原始成本
+          - definition [ref=e3031]: $0.000000
+        - generic [ref=e3032]:
+          - term [ref=e3033]: 计费成本
+          - definition [ref=e3034]: $0.000000
+        - generic [ref=e3035]:
+          - term [ref=e3036]: 累计花费
+          - definition [ref=e3037]: $0.000000
+        - generic [ref=e3038]:
+          - term [ref=e3039]: 背景窗口
+          - definition [ref=e3040]: "- / -"
+        - generic [ref=e3041]:
+          - term [ref=e3042]: 创建时间
+          - definition [ref=e3043]: 2026/03/01 14:52:34
+        - generic [ref=e3044]:
+          - term [ref=e3045]: 更新时间
+          - definition [ref=e3046]: 2026/03/01 15:58:51
+        - generic [ref=e3047]:
+          - term [ref=e3048]: 开始时间
+          - definition [ref=e3049]: "-"
+        - generic [ref=e3050]:
+          - term [ref=e3051]: 完成时间
+          - definition [ref=e3052]: 2026/03/01 15:58:51
+        - generic [ref=e3053]:
+          - term [ref=e3054]: 最后心跳
+          - definition [ref=e3055]: 2026/03/01 15:58:51
+        - generic [ref=e3056]:
+          - term [ref=e3057]: 当前运行
+          - definition [ref=e3058]: run_7090d338e09e (#1)
+      - generic [ref=e3059]:
+        - heading "状态事件" [level=3] [ref=e3060]
+        - generic [ref=e3061]:
+          - paragraph [ref=e3062]: 第 1 / 1 · 共 4 条
+          - generic [ref=e3063]:
+            - button "上一页" [disabled] [ref=e3064]
+            - button "下一页" [disabled] [ref=e3065]
+        - list [ref=e3066]:
+          - listitem [ref=e3067]:
+            - generic [ref=e3068]:
+              - generic [ref=e3069]: task.status.changed
+              - time [ref=e3070]: 2026/03/01 15:58:51
+            - paragraph [ref=e3071]: "运行: run_7090d338e09e"
+            - code [ref=e3072]: "{\"from\":\"QUEUED\",\"to\":\"CANCELED\",\"action\":\"cancel\",\"run_id\":\"run_7090d338e09e\",\"run_sequence\":1}"
+          - listitem [ref=e3073]:
+            - generic [ref=e3074]:
+              - generic [ref=e3075]: task.message.appended
+              - time [ref=e3076]: 2026/03/01 14:52:34
+            - paragraph [ref=e3077]: "运行: run_7090d338e09e"
+            - code [ref=e3078]: "{\"message_id\":\"msg_3b4a6f7ced80\",\"message\":\"regression follow-up\",\"run_id\":\"run_7090d338e09e\",\"run_sequence\":1}"
+          - listitem [ref=e3079]:
+            - generic [ref=e3080]:
+              - generic [ref=e3081]: task.status.changed
+              - time [ref=e3082]: 2026/03/01 14:52:34
+            - paragraph [ref=e3083]: "运行: run_7090d338e09e"
+            - code [ref=e3084]: "{\"from\":null,\"to\":\"QUEUED\",\"reason\":\"task_created\",\"run_id\":\"run_7090d338e09e\",\"run_sequence\":1}"
+          - listitem [ref=e3085]:
+            - generic [ref=e3086]:
+              - generic [ref=e3087]: task.run.created
+              - time [ref=e3088]: 2026/03/01 14:52:34
+            - paragraph [ref=e3089]: "运行: run_7090d338e09e"
+            - code [ref=e3090]: "{\"run_id\":\"run_7090d338e09e\",\"run_sequence\":1,\"reason\":\"task_created\"}"
+      - generic [ref=e3091]:
+        - heading "执行日志" [level=3] [ref=e3092]
+        - generic [ref=e3093]:
+          - paragraph [ref=e3094]: 第 1 / 1 · 共 1 条
+          - generic [ref=e3095]:
+            - button "上一页" [disabled] [ref=e3096]
+            - button "下一页" [disabled] [ref=e3097]
+        - list [ref=e3098]:
+          - listitem [ref=e3099]:
+            - generic [ref=e3100]:
+              - generic [ref=e3101]: 系统 · run_7090
+              - time [ref=e3102]: 2026/03/01 15:58:51
+            - paragraph [ref=e3103]: "级别: info"
+            - code [ref=e3104]: task canceled by user
+  - alert [ref=e28]

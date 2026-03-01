@@ -1,0 +1,49 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - paragraph [ref=e6]: Pocket Codex
+          - heading "远程任务控制" [level=1] [ref=e7]
+        - button "English" [ref=e8] [cursor=pointer]
+      - paragraph [ref=e9]: 用手机监控并操作 Codex 任务。
+    - generic [ref=e709]:
+      - link "返回控制台" [ref=e710] [cursor=pointer]:
+        - /url: /
+      - generic [ref=e711]:
+        - heading "任务详情" [level=2] [ref=e712]
+        - generic [ref=e713]:
+          - generic [ref=e714]:
+            - button "背景信息窗口提示" [ref=e715] [cursor=pointer]: 上下文
+            - dialog "背景信息窗口":
+              - paragraph: 背景信息窗口
+              - paragraph: 未上报
+              - paragraph: 已用 - 标记，共 -
+          - generic [ref=e716]: 排队中
+      - generic [ref=e717]:
+        - button "对话" [ref=e718] [cursor=pointer]
+        - button "控制" [ref=e719] [cursor=pointer]
+        - button "成本" [ref=e720] [cursor=pointer]
+        - button "事件日志" [ref=e721] [cursor=pointer]
+      - generic [ref=e722]:
+        - heading "对话" [level=3] [ref=e723]
+        - list [ref=e724]:
+          - listitem [ref=e725]:
+            - generic [ref=e726]:
+              - strong [ref=e727]: 你
+              - time [ref=e728]: 2026/03/01 23:40:38
+            - paragraph [ref=e730]: QA regression task from playwright
+      - generic [ref=e731]:
+        - generic [ref=e732]:
+          - generic [ref=e733]: 追加指令
+          - textbox "追加指令" [ref=e734]:
+            - /placeholder: 补充指令...
+        - button "发送消息" [disabled] [ref=e736]
+  - status [ref=e699]:
+    - generic [ref=e700]:
+      - img [ref=e702]
+      - generic [ref=e704]:
+        - text: Static route
+        - button "Hide static indicator" [ref=e705] [cursor=pointer]:
+          - img [ref=e706]
+  - alert [ref=e42]

@@ -1,0 +1,76 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - paragraph [ref=e6]: Pocket Codex
+          - heading "远程任务控制" [level=1] [ref=e7]
+        - button "English" [ref=e8] [cursor=pointer]
+      - paragraph [ref=e9]: 用手机监控并操作 Codex 任务。
+    - generic [ref=e594]:
+      - link "返回控制台" [ref=e595] [cursor=pointer]:
+        - /url: /
+      - generic [ref=e596]:
+        - heading "任务详情" [level=2] [ref=e597]
+        - generic [ref=e598]:
+          - generic [ref=e599]:
+            - img "背景信息窗口提示" [ref=e600] [cursor=pointer]: i
+            - dialog "背景信息窗口":
+              - paragraph: 背景信息窗口
+              - paragraph: 未上报
+              - paragraph: 已用 - 标记，共 -
+          - generic [ref=e601]: 成功
+      - generic [ref=e602]:
+        - button "对话" [ref=e603] [cursor=pointer]
+        - button "控制" [ref=e604] [cursor=pointer]
+        - button "成本" [ref=e605] [cursor=pointer]
+        - button "事件日志" [ref=e606] [cursor=pointer]
+      - paragraph [ref=e656]: 实时流已断开，正在自动重连...
+      - generic [ref=e607]:
+        - heading "对话" [level=3] [ref=e608]
+        - list [ref=e609]:
+          - listitem [ref=e610]:
+            - generic [ref=e611]:
+              - strong [ref=e612]: 你
+              - time [ref=e613]: 2026/03/01 17:30:38
+            - paragraph [ref=e615]: mobile regression interaction check
+          - listitem [ref=e616]:
+            - generic [ref=e617]:
+              - strong [ref=e618]: 你
+              - time [ref=e619]: 2026/03/01 17:33:14
+            - paragraph [ref=e621]: 移动端发消息路径测试
+          - listitem [ref=e639]:
+            - generic [ref=e640]:
+              - strong [ref=e641]: 助手
+              - time [ref=e642]: 2026/03/01 17:34:14
+            - generic [ref=e643]:
+              - paragraph [ref=e644]: "**Mobile Regression Tests**"
+              - list [ref=e645]:
+                - listitem [ref=e646]: "Added `tests/test_mobile_auth_service.py` with asyncio-driven regression coverage for the request lifecycle: create/list, approval, single-use token consumption, and final status assertions to catch future interaction bugs."
+                - listitem [ref=e647]: Expanded coverage to rejection/cancel flows to ensure denied requests never mint tokens and record the acting user for audit parity.
+                - listitem [ref=e648]: "Verified cleanup logic by forcing an expired record and ensuring `_cleanup_locked` prunes it, guarding against stale mobile prompts lingering in memory."
+              - paragraph [ref=e649]: "**Testing**"
+              - list [ref=e650]:
+                - listitem [ref=e651]: "`pytest -q` (cannot run: `pytest` isn’t installed and pip cannot reach PyPI in the offline environment, so the suite couldn’t be executed)."
+              - paragraph [ref=e652]: "**Next Steps**"
+              - list [ref=e653]:
+                - listitem [ref=e654]: "1) Install `pytest` in the environment (or vendor it locally) and rerun `pytest -q` to verify the new regression tests. 2) If regular testing is expected here, consider adding a dev requirements list that includes `pytest` so it’s easier to bootstrap future runs."
+      - generic [ref=e628]:
+        - generic [ref=e629]:
+          - generic [ref=e630]: 追加指令
+          - textbox "追加指令" [ref=e631]:
+            - /placeholder: 补充指令...
+        - button "发送消息" [disabled] [ref=e633]
+      - generic [ref=e634]:
+        - button "对话" [ref=e635] [cursor=pointer]
+        - button "控制" [ref=e636] [cursor=pointer]
+        - button "重试" [ref=e655] [cursor=pointer]
+        - button "发消息" [ref=e638] [cursor=pointer]
+  - status [ref=e32]:
+    - generic [ref=e33]:
+      - img [ref=e35]
+      - generic [ref=e37]:
+        - text: Static route
+        - button "Hide static indicator" [ref=e38] [cursor=pointer]:
+          - img [ref=e39]
+  - alert [ref=e42]

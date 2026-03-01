@@ -1,0 +1,129 @@
+- generic [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - paragraph [ref=e6]: Pocket Codex
+          - heading "远程任务控制" [level=1] [ref=e7]
+        - button "English" [ref=e8] [cursor=pointer]
+      - paragraph [ref=e9]: 用手机监控并操作 Codex 任务。
+    - generic [ref=e1221]:
+      - link "返回控制台" [ref=e1222] [cursor=pointer]:
+        - /url: /
+      - generic [ref=e1223]:
+        - heading "任务详情" [level=2] [ref=e1224]
+        - generic [ref=e1225]:
+          - generic [ref=e1226]:
+            - button "背景信息窗口提示" [ref=e1227] [cursor=pointer]: 上下文
+            - dialog "背景信息窗口":
+              - paragraph: 背景信息窗口
+              - paragraph: 未上报
+              - paragraph: 已用 - 标记，共 -
+          - generic [ref=e1228]: 成功
+      - generic [ref=e1229]:
+        - button "对话" [ref=e1230] [cursor=pointer]
+        - button "控制" [ref=e1231] [cursor=pointer]
+        - button "成本" [ref=e1232] [cursor=pointer]
+        - button "事件日志" [active] [ref=e1233] [cursor=pointer]
+      - status [ref=e1270]: 消息已发送。
+      - generic [ref=e1350]:
+        - heading "状态事件" [level=3] [ref=e1351]
+        - generic [ref=e1352]:
+          - paragraph [ref=e1353]: 第 1 / 1 · 共 6 条
+          - generic [ref=e1354]:
+            - button "上一页" [disabled] [ref=e1355]
+            - button "下一页" [disabled] [ref=e1356]
+        - list [ref=e1357]:
+          - listitem [ref=e1358]:
+            - generic [ref=e1359]:
+              - generic [ref=e1360]: task.status.changed
+              - time [ref=e1361]: 2026/03/01 23:14:27
+            - paragraph [ref=e1362]: "运行: run_4e28f46c2bf7"
+            - code [ref=e1363]: "{\"from\":\"RUNNING\",\"to\":\"SUCCEEDED\",\"source\":\"worker\",\"run_id\":\"run_4e28f46c2bf7\",\"run_sequence\":1}"
+          - listitem [ref=e1364]:
+            - generic [ref=e1365]:
+              - generic [ref=e1366]: task.summary.updated
+              - time [ref=e1367]: 2026/03/01 23:14:27
+            - paragraph [ref=e1368]: "运行: run_4e28f46c2bf7"
+            - code [ref=e1369]: "{\"summary\":\"Task completed successfully (worker).\",\"run_id\":\"run_4e28f46c2bf7\",\"run_sequence\":1}"
+          - listitem [ref=e1370]:
+            - generic [ref=e1371]:
+              - generic [ref=e1372]: task.summary.updated
+              - time [ref=e1373]: 2026/03/01 23:14:26
+            - paragraph [ref=e1374]: "运行: run_4e28f46c2bf7"
+            - code [ref=e1375]: "{\"summary\":\"Execution is in progress (worker).\",\"run_id\":\"run_4e28f46c2bf7\",\"run_sequence\":1}"
+          - listitem [ref=e1376]:
+            - generic [ref=e1377]:
+              - generic [ref=e1378]: task.status.changed
+              - time [ref=e1379]: 2026/03/01 23:14:25
+            - paragraph [ref=e1380]: "运行: run_4e28f46c2bf7"
+            - code [ref=e1381]: "{\"from\":\"QUEUED\",\"to\":\"RUNNING\",\"source\":\"worker\",\"run_id\":\"run_4e28f46c2bf7\",\"run_sequence\":1}"
+          - listitem [ref=e1382]:
+            - generic [ref=e1383]:
+              - generic [ref=e1384]: task.status.changed
+              - time [ref=e1385]: 2026/03/01 23:14:24
+            - paragraph [ref=e1386]: "运行: run_4e28f46c2bf7"
+            - code [ref=e1387]: "{\"from\":null,\"to\":\"QUEUED\",\"reason\":\"task_created\",\"run_id\":\"run_4e28f46c2bf7\",\"run_sequence\":1}"
+          - listitem [ref=e1388]:
+            - generic [ref=e1389]:
+              - generic [ref=e1390]: task.run.created
+              - time [ref=e1391]: 2026/03/01 23:14:24
+            - paragraph [ref=e1392]: "运行: run_4e28f46c2bf7"
+            - code [ref=e1393]: "{\"run_id\":\"run_4e28f46c2bf7\",\"run_sequence\":1,\"reason\":\"task_created\"}"
+      - generic [ref=e1394]:
+        - heading "执行日志" [level=3] [ref=e1395]
+        - generic [ref=e1396]:
+          - paragraph [ref=e1397]: 第 1 / 1 · 共 6 条
+          - generic [ref=e1398]:
+            - button "上一页" [disabled] [ref=e1399]
+            - button "下一页" [disabled] [ref=e1400]
+        - list [ref=e1401]:
+          - listitem [ref=e1402]:
+            - generic [ref=e1403]:
+              - generic [ref=e1404]: 系统 · run_4e28
+              - time [ref=e1405]: 2026/03/01 23:14:27
+            - paragraph [ref=e1406]: "级别: info"
+            - code [ref=e1407]: execution finished
+          - listitem [ref=e1408]:
+            - generic [ref=e1409]:
+              - generic [ref=e1410]: 系统 · run_4e28
+              - time [ref=e1411]: 2026/03/01 23:14:27
+            - paragraph [ref=e1412]: "级别: info"
+            - code [ref=e1413]: execution step 4/4
+          - listitem [ref=e1414]:
+            - generic [ref=e1415]:
+              - generic [ref=e1416]: 系统 · run_4e28
+              - time [ref=e1417]: 2026/03/01 23:14:27
+            - paragraph [ref=e1418]: "级别: info"
+            - code [ref=e1419]: execution step 3/4
+          - listitem [ref=e1420]:
+            - generic [ref=e1421]:
+              - generic [ref=e1422]: 系统 · run_4e28
+              - time [ref=e1423]: 2026/03/01 23:14:26
+            - paragraph [ref=e1424]: "级别: info"
+            - code [ref=e1425]: execution step 2/4
+          - listitem [ref=e1426]:
+            - generic [ref=e1427]:
+              - generic [ref=e1428]: 系统 · run_4e28
+              - time [ref=e1429]: 2026/03/01 23:14:25
+            - paragraph [ref=e1430]: "级别: info"
+            - code [ref=e1431]: execution step 1/4
+          - listitem [ref=e1432]:
+            - generic [ref=e1433]:
+              - generic [ref=e1434]: 系统 · run_4e28
+              - time [ref=e1435]: 2026/03/01 23:14:25
+            - paragraph [ref=e1436]: "级别: info"
+            - code [ref=e1437]: execution started
+      - generic [ref=e1255]:
+        - button "对话" [ref=e1256] [cursor=pointer]
+        - button "控制" [ref=e1257] [cursor=pointer]
+        - button "重试" [ref=e1258] [cursor=pointer]
+        - button "发消息" [ref=e1259] [cursor=pointer]
+  - status [ref=e1260]:
+    - generic [ref=e1261]:
+      - img [ref=e1263]
+      - generic [ref=e1265]:
+        - text: Static route
+        - button "Hide static indicator" [ref=e1266] [cursor=pointer]:
+          - img [ref=e1267]
+  - alert [ref=e32]

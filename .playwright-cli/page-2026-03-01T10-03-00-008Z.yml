@@ -1,0 +1,55 @@
+- generic [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - paragraph [ref=e6]: Pocket Codex
+          - heading "远程任务控制" [level=1] [ref=e7]
+        - button "English" [ref=e8] [cursor=pointer]
+      - paragraph [ref=e9]: 用手机监控并操作 Codex 任务。
+    - generic [ref=e585]:
+      - link "返回控制台" [ref=e586] [cursor=pointer]:
+        - /url: /
+      - generic [ref=e587]:
+        - heading "任务详情" [level=2] [ref=e588]
+        - generic [ref=e589]:
+          - generic [ref=e590]:
+            - button "背景信息窗口提示" [ref=e591] [cursor=pointer]: 上下文
+            - dialog "背景信息窗口":
+              - paragraph: 背景信息窗口
+              - paragraph: 未上报
+              - paragraph: 已用 - 标记，共 -
+          - generic [ref=e592]: 等待输入
+      - generic [ref=e593]:
+        - button "对话" [ref=e594] [cursor=pointer]
+        - button "控制" [ref=e595] [cursor=pointer]
+        - button "成本" [ref=e596] [cursor=pointer]
+        - button "事件日志" [ref=e597] [cursor=pointer]
+      - status [ref=e667]: task paused
+      - generic [ref=e670]:
+        - heading "对话" [level=3] [ref=e671]
+        - list [ref=e672]:
+          - listitem [ref=e673]:
+            - generic [ref=e674]:
+              - strong [ref=e675]: 你
+              - time [ref=e676]: 2026/03/01 18:00:57
+            - paragraph [ref=e678]: 状态按钮复测任务
+      - generic [ref=e679]:
+        - generic [ref=e680]:
+          - generic [ref=e681]: 追加指令
+          - textbox "追加指令" [active] [ref=e682]:
+            - /placeholder: 补充指令...
+        - button "发送消息" [disabled] [ref=e684]
+      - generic [ref=e619]:
+        - button "对话" [ref=e620] [cursor=pointer]
+        - button "控制" [ref=e621] [cursor=pointer]
+        - button "继续" [ref=e669] [cursor=pointer]
+        - button "发消息" [ref=e623] [cursor=pointer]
+  - status [ref=e33]:
+    - generic [ref=e34]:
+      - img [ref=e36]
+      - generic [ref=e38]:
+        - text: Static route
+        - button "Hide static indicator" [ref=e39] [cursor=pointer]:
+          - img [ref=e40]
+  - alert [ref=e32]

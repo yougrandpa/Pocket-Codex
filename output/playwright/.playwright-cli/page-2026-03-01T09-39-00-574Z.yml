@@ -1,0 +1,660 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - paragraph [ref=e6]: Pocket Codex
+          - heading "远程任务控制" [level=1] [ref=e7]
+        - button "English" [ref=e8] [cursor=pointer]
+      - paragraph [ref=e9]: 用手机监控并操作 Codex 任务。
+    - generic [ref=e1594]:
+      - generic [ref=e1595]:
+        - generic [ref=e1596]:
+          - generic [ref=e1597]:
+            - heading "创建任务" [level=2] [ref=e1598]
+            - generic [ref=e1599]: 移动优先
+          - generic [ref=e1600]:
+            - generic [ref=e1601]:
+              - heading "模板库" [level=3] [ref=e1602]
+              - generic [ref=e1603]:
+                - generic [ref=e1604]:
+                  - generic [ref=e1605]:
+                    - generic [ref=e1606]: 已保存模板
+                    - combobox "已保存模板" [ref=e1607]:
+                      - option "暂无模板" [selected]
+                  - generic [ref=e1608]:
+                    - generic [ref=e1609]: 新模板名称
+                    - textbox "新模板名称" [ref=e1610]:
+                      - /placeholder: 例如：回归检查模板
+                - button "保存当前为模板" [ref=e1612] [cursor=pointer]
+            - generic [ref=e1613]:
+              - generic [ref=e1614]: 任务指令
+              - textbox "任务指令" [ref=e1615]:
+                - /placeholder: 请输入可执行的任务指令...
+            - generic [ref=e1616]:
+              - generic [ref=e1617]:
+                - generic [ref=e1618]: 优先级
+                - spinbutton "优先级" [ref=e1619]: "5"
+              - generic [ref=e1620]:
+                - generic [ref=e1621]: 超时(秒)
+                - 'spinbutton "超时(秒) 最小可用超时: 180s" [ref=e1622]': "180"
+                - generic [ref=e1623]: "最小可用超时: 180s"
+            - generic [ref=e1624]:
+              - generic [ref=e1625]:
+                - generic [ref=e1626]: 模型(可选)
+                - combobox "模型(可选)" [ref=e1627]:
+                  - option "gpt-5-codex" [selected]
+                  - option "gpt-5"
+              - generic [ref=e1628]:
+                - generic [ref=e1629]: 推理强度
+                - combobox "推理强度" [ref=e1630]:
+                  - option "中" [selected]
+            - generic [ref=e1631]:
+              - generic [ref=e1632]: 多代理并行执行
+              - checkbox "多代理并行执行" [ref=e1633]
+            - paragraph [ref=e1634]: "能力来源: codex"
+            - paragraph [ref=e1635]: 策略提示：低推理更快更省，高推理更稳；并行多代理通常更快但成本更高。
+            - generic [ref=e1636]:
+              - generic [ref=e1637]:
+                - generic [ref=e1638]: 历史目录快速选择
+                - combobox "历史目录快速选择" [disabled] [ref=e1639]:
+                  - option "暂无历史目录" [selected]
+              - generic [ref=e1640]:
+                - generic [ref=e1641]: 工作目录(可选)
+                - combobox "工作目录(可选)" [ref=e1642]
+            - paragraph [ref=e1643]: 先创建一次任务后即可在这里快速复用工作目录。
+            - button "创建任务" [disabled] [ref=e1645]
+        - generic [ref=e1646]:
+          - generic [ref=e1647]:
+            - heading "系统状态（高级）" [level=2] [ref=e1648]
+            - generic [ref=e1649]:
+              - button "展开" [ref=e1650] [cursor=pointer]
+              - button "刷新" [ref=e1651] [cursor=pointer]
+          - generic [ref=e1652]:
+            - generic [ref=e1653]:
+              - generic [ref=e1655]: 当前模式
+              - generic [ref=e1656]: Codex（真实执行）
+            - paragraph [ref=e1657]: "队列后端: local · 更新时间: 2026/03/01 17:38:52"
+        - generic [ref=e1658]:
+          - generic [ref=e1659]:
+            - heading "手机登录授权" [level=2] [ref=e1660]
+            - generic [ref=e1661]: "0"
+          - paragraph [ref=e1662]: 仅在你确认设备可信时授权，超时请求会自动失效。
+          - paragraph [ref=e1663]: 当前没有待处理的手机登录请求。
+        - generic [ref=e1664]:
+          - generic [ref=e1665]:
+            - heading "通知" [level=2] [ref=e1666]
+            - generic [ref=e1667]: "0"
+          - generic [ref=e1668]:
+            - paragraph [ref=e1669]: 暂无通知。
+            - link "创建任务后在这里查看状态更新" [ref=e1670] [cursor=pointer]:
+              - /url: "#create-task-panel"
+        - generic [ref=e1671]:
+          - generic [ref=e1672]:
+            - heading "会话" [level=2] [ref=e1673]
+            - generic [ref=e1674]: 已激活
+          - paragraph [ref=e1675]: 当前使用单用户 JWT 鉴权登录。
+          - button "退出登录" [ref=e1676] [cursor=pointer]
+      - generic [ref=e1678]:
+        - generic [ref=e1679]:
+          - generic [ref=e1680]:
+            - heading "任务队列" [level=2] [ref=e1681]
+            - generic [ref=e1682]: "81"
+          - generic [ref=e1683]:
+            - paragraph [ref=e1684]: 第 2 / 5 · 共 81 个任务
+            - generic [ref=e1685]:
+              - button "上一页" [ref=e1686] [cursor=pointer]
+              - button "下一页" [ref=e1687] [cursor=pointer]
+          - list [ref=e1689]:
+            - listitem [ref=e1690]:
+              - generic [ref=e1691]:
+                - generic [ref=e1692]: 成功
+                - time [ref=e1693]: 2026/03/01 16:27:26
+              - paragraph [ref=e1694]: 请总结README并输出3条改进建议
+              - generic [ref=e1695]:
+                - paragraph [ref=e1696]: "Tokens: - · 花费: $0.00"
+                - generic [ref=e1697]:
+                  - img "背景信息窗口提示" [ref=e1698] [cursor=pointer]: i
+                  - dialog "背景信息窗口":
+                    - paragraph: 背景信息窗口
+                    - paragraph: 未上报
+                    - paragraph: 已用 - 标记，共 -
+              - generic [ref=e1699]:
+                - generic [ref=e1700]: "#task_522"
+                - link "查看详情" [ref=e1701] [cursor=pointer]:
+                  - /url: /tasks/task_5227d38d6cd9?fromPage=2
+              - generic [ref=e1702]:
+                - button "重试" [ref=e1703] [cursor=pointer]
+                - button "复制任务ID" [ref=e1704] [cursor=pointer]
+            - listitem [ref=e1705]:
+              - generic [ref=e1706]:
+                - generic [ref=e1707]: 排队中
+                - time [ref=e1708]: 2026/03/01 16:18:30
+              - paragraph [ref=e1709]: regression pagination task 0
+              - generic [ref=e1710]:
+                - paragraph [ref=e1711]: "Tokens: - · 花费: $0.00"
+                - generic [ref=e1712]:
+                  - img "背景信息窗口提示" [ref=e1713] [cursor=pointer]: i
+                  - dialog "背景信息窗口":
+                    - paragraph: 背景信息窗口
+                    - paragraph: 未上报
+                    - paragraph: 已用 - 标记，共 -
+              - generic [ref=e1714]:
+                - generic [ref=e1715]: "#task_07e"
+                - link "查看详情" [ref=e1716] [cursor=pointer]:
+                  - /url: /tasks/task_07eb52d11b10?fromPage=2
+              - generic [ref=e1717]:
+                - button "取消" [ref=e1718] [cursor=pointer]
+                - button "复制任务ID" [ref=e1719] [cursor=pointer]
+            - listitem [ref=e1720]:
+              - generic [ref=e1721]:
+                - generic [ref=e1722]: 排队中
+                - time [ref=e1723]: 2026/03/01 16:18:30
+              - paragraph [ref=e1724]: regression pagination task 2
+              - generic [ref=e1725]:
+                - paragraph [ref=e1726]: "Tokens: - · 花费: $0.00"
+                - generic [ref=e1727]:
+                  - img "背景信息窗口提示" [ref=e1728] [cursor=pointer]: i
+                  - dialog "背景信息窗口":
+                    - paragraph: 背景信息窗口
+                    - paragraph: 未上报
+                    - paragraph: 已用 - 标记，共 -
+              - generic [ref=e1729]:
+                - generic [ref=e1730]: "#task_709"
+                - link "查看详情" [ref=e1731] [cursor=pointer]:
+                  - /url: /tasks/task_7090c1df47aa?fromPage=2
+              - generic [ref=e1732]:
+                - button "取消" [ref=e1733] [cursor=pointer]
+                - button "复制任务ID" [ref=e1734] [cursor=pointer]
+            - listitem [ref=e1735]:
+              - generic [ref=e1736]:
+                - generic [ref=e1737]: 排队中
+                - time [ref=e1738]: 2026/03/01 16:18:30
+              - paragraph [ref=e1739]: regression pagination task 1
+              - generic [ref=e1740]:
+                - paragraph [ref=e1741]: "Tokens: - · 花费: $0.00"
+                - generic [ref=e1742]:
+                  - img "背景信息窗口提示" [ref=e1743] [cursor=pointer]: i
+                  - dialog "背景信息窗口":
+                    - paragraph: 背景信息窗口
+                    - paragraph: 未上报
+                    - paragraph: 已用 - 标记，共 -
+              - generic [ref=e1744]:
+                - generic [ref=e1745]: "#task_be6"
+                - link "查看详情" [ref=e1746] [cursor=pointer]:
+                  - /url: /tasks/task_be6db8ac2bf4?fromPage=2
+              - generic [ref=e1747]:
+                - button "取消" [ref=e1748] [cursor=pointer]
+                - button "复制任务ID" [ref=e1749] [cursor=pointer]
+            - listitem [ref=e1750]:
+              - generic [ref=e1751]:
+                - generic [ref=e1752]: 成功
+                - time [ref=e1753]: 2026/03/01 16:18:29
+              - paragraph [ref=e1754]: local verify
+              - generic [ref=e1755]:
+                - paragraph [ref=e1756]: "Tokens: - · 花费: $0.00"
+                - generic [ref=e1757]:
+                  - img "背景信息窗口提示" [ref=e1758] [cursor=pointer]: i
+                  - dialog "背景信息窗口":
+                    - paragraph: 背景信息窗口
+                    - paragraph: 未上报
+                    - paragraph: 已用 - 标记，共 -
+              - generic [ref=e1759]:
+                - generic [ref=e1760]: "#task_669"
+                - link "查看详情" [ref=e1761] [cursor=pointer]:
+                  - /url: /tasks/task_6696128e85b3?fromPage=2
+              - generic [ref=e1762]:
+                - button "重试" [ref=e1763] [cursor=pointer]
+                - button "复制任务ID" [ref=e1764] [cursor=pointer]
+            - listitem [ref=e1765]:
+              - generic [ref=e1766]:
+                - generic [ref=e1767]: 已取消
+                - time [ref=e1768]: 2026/03/01 15:58:51
+              - paragraph [ref=e1769]: regression pagination task 0
+              - generic [ref=e1770]:
+                - paragraph [ref=e1771]: "Tokens: - · 花费: $0.00"
+                - generic [ref=e1772]:
+                  - img "背景信息窗口提示" [ref=e1773] [cursor=pointer]: i
+                  - dialog "背景信息窗口":
+                    - paragraph: 背景信息窗口
+                    - paragraph: 未上报
+                    - paragraph: 已用 - 标记，共 -
+              - generic [ref=e1774]:
+                - generic [ref=e1775]: "#task_b43"
+                - link "查看详情" [ref=e1776] [cursor=pointer]:
+                  - /url: /tasks/task_b43702e9e461?fromPage=2
+              - generic [ref=e1777]:
+                - button "重试" [ref=e1778] [cursor=pointer]
+                - button "复制任务ID" [ref=e1779] [cursor=pointer]
+            - listitem [ref=e1780]:
+              - generic [ref=e1781]:
+                - generic [ref=e1782]: 已取消
+                - time [ref=e1783]: 2026/03/01 15:58:47
+              - paragraph [ref=e1784]: regression pagination task 1
+              - generic [ref=e1785]:
+                - paragraph [ref=e1786]: "Tokens: - · 花费: $0.00"
+                - generic [ref=e1787]:
+                  - img "背景信息窗口提示" [ref=e1788] [cursor=pointer]: i
+                  - dialog "背景信息窗口":
+                    - paragraph: 背景信息窗口
+                    - paragraph: 未上报
+                    - paragraph: 已用 - 标记，共 -
+              - generic [ref=e1789]:
+                - generic [ref=e1790]: "#task_61c"
+                - link "查看详情" [ref=e1791] [cursor=pointer]:
+                  - /url: /tasks/task_61c1b1a44aa6?fromPage=2
+              - generic [ref=e1792]:
+                - button "重试" [ref=e1793] [cursor=pointer]
+                - button "复制任务ID" [ref=e1794] [cursor=pointer]
+            - listitem [ref=e1795]:
+              - generic [ref=e1796]:
+                - generic [ref=e1797]: 已取消
+                - time [ref=e1798]: 2026/03/01 15:58:45
+              - paragraph [ref=e1799]: regression pagination task 2
+              - generic [ref=e1800]:
+                - paragraph [ref=e1801]: "Tokens: - · 花费: $0.00"
+                - generic [ref=e1802]:
+                  - img "背景信息窗口提示" [ref=e1803] [cursor=pointer]: i
+                  - dialog "背景信息窗口":
+                    - paragraph: 背景信息窗口
+                    - paragraph: 未上报
+                    - paragraph: 已用 - 标记，共 -
+              - generic [ref=e1804]:
+                - generic [ref=e1805]: "#task_dff"
+                - link "查看详情" [ref=e1806] [cursor=pointer]:
+                  - /url: /tasks/task_dffe2ace966c?fromPage=2
+              - generic [ref=e1807]:
+                - button "重试" [ref=e1808] [cursor=pointer]
+                - button "复制任务ID" [ref=e1809] [cursor=pointer]
+            - listitem [ref=e1810]:
+              - generic [ref=e1811]:
+                - generic [ref=e1812]: 已取消
+                - time [ref=e1813]: 2026/03/01 15:58:26
+              - paragraph [ref=e1814]: regression pagination task 0
+              - generic [ref=e1815]:
+                - paragraph [ref=e1816]: "Tokens: - · 花费: $0.00"
+                - generic [ref=e1817]:
+                  - img "背景信息窗口提示" [ref=e1818] [cursor=pointer]: i
+                  - dialog "背景信息窗口":
+                    - paragraph: 背景信息窗口
+                    - paragraph: 未上报
+                    - paragraph: 已用 - 标记，共 -
+              - generic [ref=e1819]:
+                - generic [ref=e1820]: "#task_bb1"
+                - link "查看详情" [ref=e1821] [cursor=pointer]:
+                  - /url: /tasks/task_bb1944eac9fb?fromPage=2
+              - generic [ref=e1822]:
+                - button "重试" [ref=e1823] [cursor=pointer]
+                - button "复制任务ID" [ref=e1824] [cursor=pointer]
+            - listitem [ref=e1825]:
+              - generic [ref=e1826]:
+                - generic [ref=e1827]: 排队中
+                - time [ref=e1828]: 2026/03/01 15:18:57
+              - paragraph [ref=e1829]: regression pagination task 0
+              - generic [ref=e1830]:
+                - paragraph [ref=e1831]: "Tokens: - · 花费: $0.00"
+                - generic [ref=e1832]:
+                  - img "背景信息窗口提示" [ref=e1833] [cursor=pointer]: i
+                  - dialog "背景信息窗口":
+                    - paragraph: 背景信息窗口
+                    - paragraph: 未上报
+                    - paragraph: 已用 - 标记，共 -
+              - generic [ref=e1834]:
+                - generic [ref=e1835]: "#task_e94"
+                - link "查看详情" [ref=e1836] [cursor=pointer]:
+                  - /url: /tasks/task_e940d943f961?fromPage=2
+              - generic [ref=e1837]:
+                - button "取消" [ref=e1838] [cursor=pointer]
+                - button "复制任务ID" [ref=e1839] [cursor=pointer]
+            - listitem [ref=e1840]:
+              - generic [ref=e1841]:
+                - generic [ref=e1842]: 排队中
+                - time [ref=e1843]: 2026/03/01 15:18:57
+              - paragraph [ref=e1844]: regression pagination task 2
+              - generic [ref=e1845]:
+                - paragraph [ref=e1846]: "Tokens: - · 花费: $0.00"
+                - generic [ref=e1847]:
+                  - img "背景信息窗口提示" [ref=e1848] [cursor=pointer]: i
+                  - dialog "背景信息窗口":
+                    - paragraph: 背景信息窗口
+                    - paragraph: 未上报
+                    - paragraph: 已用 - 标记，共 -
+              - generic [ref=e1849]:
+                - generic [ref=e1850]: "#task_7c7"
+                - link "查看详情" [ref=e1851] [cursor=pointer]:
+                  - /url: /tasks/task_7c7cfcfecb5a?fromPage=2
+              - generic [ref=e1852]:
+                - button "取消" [ref=e1853] [cursor=pointer]
+                - button "复制任务ID" [ref=e1854] [cursor=pointer]
+            - listitem [ref=e1855]:
+              - generic [ref=e1856]:
+                - generic [ref=e1857]: 排队中
+                - time [ref=e1858]: 2026/03/01 15:18:57
+              - paragraph [ref=e1859]: regression pagination task 1
+              - generic [ref=e1860]:
+                - paragraph [ref=e1861]: "Tokens: - · 花费: $0.00"
+                - generic [ref=e1862]:
+                  - img "背景信息窗口提示" [ref=e1863] [cursor=pointer]: i
+                  - dialog "背景信息窗口":
+                    - paragraph: 背景信息窗口
+                    - paragraph: 未上报
+                    - paragraph: 已用 - 标记，共 -
+              - generic [ref=e1864]:
+                - generic [ref=e1865]: "#task_7fb"
+                - link "查看详情" [ref=e1866] [cursor=pointer]:
+                  - /url: /tasks/task_7fb7d151a49b?fromPage=2
+              - generic [ref=e1867]:
+                - button "取消" [ref=e1868] [cursor=pointer]
+                - button "复制任务ID" [ref=e1869] [cursor=pointer]
+            - listitem [ref=e1870]:
+              - generic [ref=e1871]:
+                - generic [ref=e1872]: 成功
+                - time [ref=e1873]: 2026/03/01 15:18:56
+              - paragraph [ref=e1874]: local verify
+              - generic [ref=e1875]:
+                - paragraph [ref=e1876]: "Tokens: - · 花费: $0.00"
+                - generic [ref=e1877]:
+                  - img "背景信息窗口提示" [ref=e1878] [cursor=pointer]: i
+                  - dialog "背景信息窗口":
+                    - paragraph: 背景信息窗口
+                    - paragraph: 未上报
+                    - paragraph: 已用 - 标记，共 -
+              - generic [ref=e1879]:
+                - generic [ref=e1880]: "#task_75b"
+                - link "查看详情" [ref=e1881] [cursor=pointer]:
+                  - /url: /tasks/task_75b2a94a1cbc?fromPage=2
+              - generic [ref=e1882]:
+                - button "重试" [ref=e1883] [cursor=pointer]
+                - button "复制任务ID" [ref=e1884] [cursor=pointer]
+            - listitem [ref=e1885]:
+              - generic [ref=e1886]:
+                - generic [ref=e1887]: 排队中
+                - time [ref=e1888]: 2026/03/01 15:17:33
+              - paragraph [ref=e1889]: regression pagination task 0
+              - generic [ref=e1890]:
+                - paragraph [ref=e1891]: "Tokens: - · 花费: $0.00"
+                - generic [ref=e1892]:
+                  - img "背景信息窗口提示" [ref=e1893] [cursor=pointer]: i
+                  - dialog "背景信息窗口":
+                    - paragraph: 背景信息窗口
+                    - paragraph: 未上报
+                    - paragraph: 已用 - 标记，共 -
+              - generic [ref=e1894]:
+                - generic [ref=e1895]: "#task_dce"
+                - link "查看详情" [ref=e1896] [cursor=pointer]:
+                  - /url: /tasks/task_dce879dcdbab?fromPage=2
+              - generic [ref=e1897]:
+                - button "取消" [ref=e1898] [cursor=pointer]
+                - button "复制任务ID" [ref=e1899] [cursor=pointer]
+            - listitem [ref=e1900]:
+              - generic [ref=e1901]:
+                - generic [ref=e1902]: 排队中
+                - time [ref=e1903]: 2026/03/01 15:17:33
+              - paragraph [ref=e1904]: regression pagination task 2
+              - generic [ref=e1905]:
+                - paragraph [ref=e1906]: "Tokens: - · 花费: $0.00"
+                - generic [ref=e1907]:
+                  - img "背景信息窗口提示" [ref=e1908] [cursor=pointer]: i
+                  - dialog "背景信息窗口":
+                    - paragraph: 背景信息窗口
+                    - paragraph: 未上报
+                    - paragraph: 已用 - 标记，共 -
+              - generic [ref=e1909]:
+                - generic [ref=e1910]: "#task_e8d"
+                - link "查看详情" [ref=e1911] [cursor=pointer]:
+                  - /url: /tasks/task_e8d746f7768a?fromPage=2
+              - generic [ref=e1912]:
+                - button "取消" [ref=e1913] [cursor=pointer]
+                - button "复制任务ID" [ref=e1914] [cursor=pointer]
+            - listitem [ref=e1915]:
+              - generic [ref=e1916]:
+                - generic [ref=e1917]: 排队中
+                - time [ref=e1918]: 2026/03/01 15:17:33
+              - paragraph [ref=e1919]: regression pagination task 1
+              - generic [ref=e1920]:
+                - paragraph [ref=e1921]: "Tokens: - · 花费: $0.00"
+                - generic [ref=e1922]:
+                  - img "背景信息窗口提示" [ref=e1923] [cursor=pointer]: i
+                  - dialog "背景信息窗口":
+                    - paragraph: 背景信息窗口
+                    - paragraph: 未上报
+                    - paragraph: 已用 - 标记，共 -
+              - generic [ref=e1924]:
+                - generic [ref=e1925]: "#task_085"
+                - link "查看详情" [ref=e1926] [cursor=pointer]:
+                  - /url: /tasks/task_085559ede897?fromPage=2
+              - generic [ref=e1927]:
+                - button "取消" [ref=e1928] [cursor=pointer]
+                - button "复制任务ID" [ref=e1929] [cursor=pointer]
+            - listitem [ref=e1930]:
+              - generic [ref=e1931]:
+                - generic [ref=e1932]: 成功
+                - time [ref=e1933]: 2026/03/01 15:17:32
+              - paragraph [ref=e1934]: local verify
+              - generic [ref=e1935]:
+                - paragraph [ref=e1936]: "Tokens: - · 花费: $0.00"
+                - generic [ref=e1937]:
+                  - img "背景信息窗口提示" [ref=e1938] [cursor=pointer]: i
+                  - dialog "背景信息窗口":
+                    - paragraph: 背景信息窗口
+                    - paragraph: 未上报
+                    - paragraph: 已用 - 标记，共 -
+              - generic [ref=e1939]:
+                - generic [ref=e1940]: "#task_a20"
+                - link "查看详情" [ref=e1941] [cursor=pointer]:
+                  - /url: /tasks/task_a20c790ba13e?fromPage=2
+              - generic [ref=e1942]:
+                - button "重试" [ref=e1943] [cursor=pointer]
+                - button "复制任务ID" [ref=e1944] [cursor=pointer]
+            - listitem [ref=e1945]:
+              - generic [ref=e1946]:
+                - generic [ref=e1947]: 成功
+                - time [ref=e1948]: 2026/03/01 14:59:09
+              - paragraph [ref=e1949]: local verify
+              - generic [ref=e1950]:
+                - paragraph [ref=e1951]: "Tokens: - · 花费: $0.00"
+                - generic [ref=e1952]:
+                  - img "背景信息窗口提示" [ref=e1953] [cursor=pointer]: i
+                  - dialog "背景信息窗口":
+                    - paragraph: 背景信息窗口
+                    - paragraph: 未上报
+                    - paragraph: 已用 - 标记，共 -
+              - generic [ref=e1954]:
+                - generic [ref=e1955]: "#task_396"
+                - link "查看详情" [ref=e1956] [cursor=pointer]:
+                  - /url: /tasks/task_396f587078c3?fromPage=2
+              - generic [ref=e1957]:
+                - button "重试" [ref=e1958] [cursor=pointer]
+                - button "复制任务ID" [ref=e1959] [cursor=pointer]
+            - listitem [ref=e1960]:
+              - generic [ref=e1961]:
+                - generic [ref=e1962]: 排队中
+                - time [ref=e1963]: 2026/03/01 14:52:34
+              - paragraph [ref=e1964]: regression pagination task 2
+              - generic [ref=e1965]:
+                - paragraph [ref=e1966]: "Tokens: - · 花费: $0.00"
+                - generic [ref=e1967]:
+                  - img "背景信息窗口提示" [ref=e1968] [cursor=pointer]: i
+                  - dialog "背景信息窗口":
+                    - paragraph: 背景信息窗口
+                    - paragraph: 未上报
+                    - paragraph: 已用 - 标记，共 -
+              - generic [ref=e1969]:
+                - generic [ref=e1970]: "#task_bfd"
+                - link "查看详情" [ref=e1971] [cursor=pointer]:
+                  - /url: /tasks/task_bfd97df51b8f?fromPage=2
+              - generic [ref=e1972]:
+                - button "取消" [ref=e1973] [cursor=pointer]
+                - button "复制任务ID" [ref=e1974] [cursor=pointer]
+            - listitem [ref=e1975]:
+              - generic [ref=e1976]:
+                - generic [ref=e1977]: 排队中
+                - time [ref=e1978]: 2026/03/01 14:52:34
+              - paragraph [ref=e1979]: regression pagination task 1
+              - generic [ref=e1980]:
+                - paragraph [ref=e1981]: "Tokens: - · 花费: $0.00"
+                - generic [ref=e1982]:
+                  - img "背景信息窗口提示" [ref=e1983] [cursor=pointer]: i
+                  - dialog "背景信息窗口":
+                    - paragraph: 背景信息窗口
+                    - paragraph: 未上报
+                    - paragraph: 已用 - 标记，共 -
+              - generic [ref=e1984]:
+                - generic [ref=e1985]: "#task_a37"
+                - link "查看详情" [ref=e1986] [cursor=pointer]:
+                  - /url: /tasks/task_a373feacc718?fromPage=2
+              - generic [ref=e1987]:
+                - button "取消" [ref=e1988] [cursor=pointer]
+                - button "复制任务ID" [ref=e1989] [cursor=pointer]
+        - generic [ref=e1990]:
+          - generic [ref=e1991]:
+            - heading "审计日志" [level=2] [ref=e1992]
+            - generic [ref=e1993]: "347"
+          - generic [ref=e1994]:
+            - generic [ref=e1995]:
+              - generic [ref=e1996]:
+                - generic [ref=e1997]: 操作者
+                - textbox "操作者" [ref=e1998]:
+                  - /placeholder: 按操作者检索
+              - generic [ref=e1999]:
+                - generic [ref=e2000]: 任务 ID
+                - textbox "任务 ID" [ref=e2001]:
+                  - /placeholder: 按任务 ID 检索
+              - generic [ref=e2002]:
+                - generic [ref=e2003]: 动作
+                - textbox "动作" [ref=e2004]:
+                  - /placeholder: 按动作检索
+            - generic [ref=e2005]:
+              - button "检索" [ref=e2006] [cursor=pointer]
+              - button "清空筛选" [ref=e2007] [cursor=pointer]
+              - button "导出 CSV" [ref=e2008] [cursor=pointer]
+              - button "导出 JSON" [ref=e2009] [cursor=pointer]
+          - generic [ref=e2010]:
+            - paragraph [ref=e2011]: 第 1 / 18 · 共 347 条日志
+            - generic [ref=e2012]:
+              - button "上一页" [disabled] [ref=e2013]
+              - button "下一页" [ref=e2014] [cursor=pointer]
+          - list [ref=e2016]:
+            - listitem [ref=e2017]:
+              - generic [ref=e2018]:
+                - strong [ref=e2019]: ui.event.task.detail.opened
+                - time [ref=e2020]: 2026/03/01 17:38:30
+              - paragraph [ref=e2021]: "操作者: admin | 任务: task_5227d38d6cd"
+              - code [ref=e2022]: "{\"source\":\"list\",\"list_click_count\":1}"
+            - listitem [ref=e2023]:
+              - generic [ref=e2024]:
+                - strong [ref=e2025]: ui.event.task.list.item.clicked
+                - time [ref=e2026]: 2026/03/01 17:38:30
+              - paragraph [ref=e2027]: "操作者: admin | 任务: task_5227d38d6cd"
+              - code [ref=e2028]: "{\"list_click_count\":1,\"page\":2,\"page_size\":20}"
+            - listitem [ref=e2029]:
+              - generic [ref=e2030]:
+                - strong [ref=e2031]: task.message.append
+                - time [ref=e2032]: 2026/03/01 17:36:57
+              - paragraph [ref=e2033]: "操作者: admin | 任务: task_7ee3200e116"
+              - code [ref=e2034]: "{\"message_id\":\"msg_bf4ba900fd4d\"}"
+            - listitem [ref=e2035]:
+              - generic [ref=e2036]:
+                - strong [ref=e2037]: ui.event.task.detail.opened
+                - time [ref=e2038]: 2026/03/01 17:36:04
+              - paragraph [ref=e2039]: "操作者: admin | 任务: task_7ee3200e116"
+              - code [ref=e2040]: "{\"source\":\"list\",\"list_click_count\":1}"
+            - listitem [ref=e2041]:
+              - generic [ref=e2042]:
+                - strong [ref=e2043]: ui.event.task.list.item.clicked
+                - time [ref=e2044]: 2026/03/01 17:36:03
+              - paragraph [ref=e2045]: "操作者: admin | 任务: task_7ee3200e116"
+              - code [ref=e2046]: "{\"list_click_count\":1,\"page\":1,\"page_size\":20}"
+            - listitem [ref=e2047]:
+              - generic [ref=e2048]:
+                - strong [ref=e2049]: task.message.append
+                - time [ref=e2050]: 2026/03/01 17:33:14
+              - paragraph [ref=e2051]: "操作者: admin | 任务: task_7ee3200e116"
+              - code [ref=e2052]: "{\"message_id\":\"msg_bf167a35516d\"}"
+            - listitem [ref=e2053]:
+              - generic [ref=e2054]:
+                - strong [ref=e2055]: ui.event.task.detail.opened
+                - time [ref=e2056]: 2026/03/01 17:33:12
+              - paragraph [ref=e2057]: "操作者: admin | 任务: task_7ee3200e116"
+              - code [ref=e2058]: "{\"source\":\"list\",\"list_click_count\":1}"
+            - listitem [ref=e2059]:
+              - generic [ref=e2060]:
+                - strong [ref=e2061]: ui.event.task.list.item.clicked
+                - time [ref=e2062]: 2026/03/01 17:33:12
+              - paragraph [ref=e2063]: "操作者: admin | 任务: task_7ee3200e116"
+              - code [ref=e2064]: "{\"list_click_count\":1,\"page\":1,\"page_size\":20}"
+            - listitem [ref=e2065]:
+              - generic [ref=e2066]:
+                - strong [ref=e2067]: task.control.resume
+                - time [ref=e2068]: 2026/03/01 17:32:48
+              - paragraph [ref=e2069]: "操作者: admin | 任务: task_7ee3200e116"
+              - code [ref=e2070]: "{\"accepted\":true,\"message\":\"task resumed\"}"
+            - listitem [ref=e2071]:
+              - generic [ref=e2072]:
+                - strong [ref=e2073]: task.control.pause
+                - time [ref=e2074]: 2026/03/01 17:31:58
+              - paragraph [ref=e2075]: "操作者: admin | 任务: task_7ee3200e116"
+              - code [ref=e2076]: "{\"accepted\":true,\"message\":\"task paused\"}"
+            - listitem [ref=e2077]:
+              - generic [ref=e2078]:
+                - strong [ref=e2079]: auth.login.succeeded
+                - time [ref=e2080]: 2026/03/01 17:31:50
+              - paragraph [ref=e2081]: "操作者: admin"
+              - code [ref=e2082]: "{\"request_ip\":\"127.0.0.1\"}"
+            - listitem [ref=e2083]:
+              - generic [ref=e2084]:
+                - strong [ref=e2085]: ui.event.task.detail.opened
+                - time [ref=e2086]: 2026/03/01 17:30:39
+              - paragraph [ref=e2087]: "操作者: admin | 任务: task_7ee3200e116"
+              - code [ref=e2088]: "{\"source\":\"create\",\"list_click_count\":0}"
+            - listitem [ref=e2089]:
+              - generic [ref=e2090]:
+                - strong [ref=e2091]: task.create
+                - time [ref=e2092]: 2026/03/01 17:30:38
+              - paragraph [ref=e2093]: "操作者: admin | 任务: task_7ee3200e116"
+              - code [ref=e2094]: "{\"priority\":5,\"workdir\":null,\"timeout_seconds\":180,\"model\":\"gpt-5-codex\",\"reasoning_effort\":\"medium\",\"enable_parallel_agents\":false}"
+            - listitem [ref=e2095]:
+              - generic [ref=e2096]:
+                - strong [ref=e2097]: auth.login.succeeded
+                - time [ref=e2098]: 2026/03/01 17:30:14
+              - paragraph [ref=e2099]: "操作者: admin"
+              - code [ref=e2100]: "{\"request_ip\":\"127.0.0.1\"}"
+            - listitem [ref=e2101]:
+              - generic [ref=e2102]:
+                - strong [ref=e2103]: auth.login.succeeded
+                - time [ref=e2104]: 2026/03/01 17:28:53
+              - paragraph [ref=e2105]: "操作者: admin"
+              - code [ref=e2106]: "{\"request_ip\":\"127.0.0.1\"}"
+            - listitem [ref=e2107]:
+              - generic [ref=e2108]:
+                - strong [ref=e2109]: auth.refresh
+                - time [ref=e2110]: 2026/03/01 17:27:18
+              - paragraph [ref=e2111]: "操作者: admin"
+            - listitem [ref=e2112]:
+              - generic [ref=e2113]:
+                - strong [ref=e2114]: auth.refresh
+                - time [ref=e2115]: 2026/03/01 17:27:18
+              - paragraph [ref=e2116]: "操作者: admin"
+            - listitem [ref=e2117]:
+              - generic [ref=e2118]:
+                - strong [ref=e2119]: auth.refresh
+                - time [ref=e2120]: 2026/03/01 17:27:18
+              - paragraph [ref=e2121]: "操作者: admin"
+            - listitem [ref=e2122]:
+              - generic [ref=e2123]:
+                - strong [ref=e2124]: auth.refresh
+                - time [ref=e2125]: 2026/03/01 17:27:18
+              - paragraph [ref=e2126]: "操作者: admin"
+            - listitem [ref=e2127]:
+              - generic [ref=e2128]:
+                - strong [ref=e2129]: auth.refresh
+                - time [ref=e2130]: 2026/03/01 17:27:18
+              - paragraph [ref=e2131]: "操作者: admin"
+  - status [ref=e1583]:
+    - generic [ref=e1584]:
+      - img [ref=e1586]
+      - generic [ref=e1588]:
+        - text: Static route
+        - button "Hide static indicator" [ref=e1589] [cursor=pointer]:
+          - img [ref=e1590]
+  - alert [ref=e131]

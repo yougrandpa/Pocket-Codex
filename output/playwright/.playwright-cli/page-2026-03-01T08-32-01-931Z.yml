@@ -1,0 +1,30 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - paragraph [ref=e6]: Pocket Codex
+          - heading "Remote Task Control" [level=1] [ref=e2051]
+        - button "中文" [ref=e2052] [cursor=pointer]
+      - paragraph [ref=e9]: Monitor and operate Codex jobs from your phone.
+    - generic [ref=e3124]:
+      - generic [ref=e3125]:
+        - heading "Sign In" [level=2] [ref=e3126]
+        - generic [ref=e3127]: Desktop Approval
+      - paragraph [ref=e3128]: Direct login is localhost-only by default. Mobile login requires desktop approval.
+      - generic [ref=e3129]:
+        - generic [ref=e3130]:
+          - generic [ref=e3131]: Username
+          - textbox "Username" [ref=e3132]
+        - generic [ref=e3133]:
+          - generic [ref=e3134]: Password
+          - textbox "Password" [ref=e3135]
+        - generic [ref=e3136]:
+          - generic [ref=e3137]: Mobile device name
+          - textbox "Mobile device name" [ref=e3138]:
+            - /placeholder: "Example: iPhone-15-Pro"
+            - text: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.0.0 Safari/5
+        - generic [ref=e3139]:
+          - button "Desktop direct sign-in" [disabled] [ref=e3140]
+          - button "Mobile sign-in (needs approval)" [disabled] [ref=e3141]
+  - alert [ref=e28]
