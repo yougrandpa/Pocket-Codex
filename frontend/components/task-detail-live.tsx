@@ -438,9 +438,11 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
             placeholder={bi("补充指令...", "Add follow-up instruction...")}
           />
         </label>
-        <button className="button" type="submit" disabled={busyMessage || !message.trim()}>
-          {busyMessage ? bi("发送中...", "Sending...") : bi("发送消息", "Send Message")}
-        </button>
+        <div className="mobile-sticky-actions">
+          <button className="button" type="submit" disabled={busyMessage || !message.trim()}>
+            {busyMessage ? bi("发送中...", "Sending...") : bi("发送消息", "Send Message")}
+          </button>
+        </div>
       </form>
 
       <dl className="meta-list">

@@ -34,7 +34,12 @@ export function AuditPanel({
       {loading ? <p className="muted">{bi("审计日志加载中...", "Loading audit logs...")}</p> : null}
       {!loading ? (
         total === 0 ? (
-          <p className="muted">{bi("暂无审计记录。", "No audit records yet.")}</p>
+          <div className="empty-cta">
+            <p className="muted">{bi("暂无审计记录。", "No audit records yet.")}</p>
+            <a className="link" href="#create-task-panel">
+              {bi("创建或操作任务后可在此追踪审计", "Create or operate tasks to see audit trail")}
+            </a>
+          </div>
         ) : (
           <>
             <div className="pagination-row">

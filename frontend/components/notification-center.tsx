@@ -64,7 +64,12 @@ export function NotificationCenter({ events }: NotificationCenterProps) {
         <span className="chip">{events.length}</span>
       </div>
       {events.length === 0 ? (
-        <p className="muted">{bi("暂无通知。", "No notifications yet.")}</p>
+        <div className="empty-cta">
+          <p className="muted">{bi("暂无通知。", "No notifications yet.")}</p>
+          <a className="link" href="#create-task-panel">
+            {bi("创建任务后在这里查看状态更新", "Create a task to receive updates here")}
+          </a>
+        </div>
       ) : (
         <>
           <div className="pagination-row">

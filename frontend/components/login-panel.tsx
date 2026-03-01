@@ -207,7 +207,7 @@ export function LoginPanel({ onLoggedIn }: LoginPanelProps) {
         {error ? <p className="error">{error}</p> : null}
         {note ? <p className="note">{note}</p> : null}
 
-        <div className="pagination-actions">
+        <div className="pagination-actions mobile-sticky-actions">
           <button className="button" type="submit" disabled={submitting || formInvalid || Boolean(pendingRequestId)}>
             {submitting ? bi("登录中...", "Signing in...") : bi("电脑端直接登录", "Desktop direct sign-in")}
           </button>

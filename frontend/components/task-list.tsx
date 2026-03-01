@@ -45,9 +45,14 @@ export function TaskList({ tasks, error = null, loading = false }: TaskListProps
       {loading ? <p className="muted">{bi("任务加载中...", "Loading tasks...")}</p> : null}
 
       {!loading && !error && tasks.length === 0 ? (
-        <p className="muted">
-          {bi("暂无任务，请先创建一个任务开始监控。", "No tasks yet. Create one to start monitoring from mobile.")}
-        </p>
+        <div className="empty-cta">
+          <p className="muted">
+            {bi("暂无任务，请先创建一个任务开始监控。", "No tasks yet. Create one to start monitoring from mobile.")}
+          </p>
+          <a className="link" href="#create-task-panel">
+            {bi("去创建首个任务", "Create your first task")}
+          </a>
+        </div>
       ) : null}
 
       {!loading && !error && tasks.length > 0 ? (

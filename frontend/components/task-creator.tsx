@@ -106,7 +106,7 @@ export function TaskCreator({ onCreated, workdirSuggestions = [] }: TaskCreatorP
   }
 
   return (
-    <section className="panel animate-rise">
+    <section className="panel animate-rise" id="create-task-panel">
       <div className="panel-title-row">
         <h2 className="panel-title">{bi("创建任务", "Create Task")}</h2>
         <span className="chip">{bi("移动优先", "Mobile First")}</span>
@@ -190,9 +190,11 @@ export function TaskCreator({ onCreated, workdirSuggestions = [] }: TaskCreatorP
 
         {error ? <p className="error">{error}</p> : null}
 
-        <button className="button" type="submit" disabled={disabled}>
-          {submitting ? bi("创建中...", "Creating...") : bi("创建任务", "Create Task")}
-        </button>
+        <div className="mobile-sticky-actions">
+          <button className="button" type="submit" disabled={disabled}>
+            {submitting ? bi("创建中...", "Creating...") : bi("创建任务", "Create Task")}
+          </button>
+        </div>
       </form>
     </section>
   );

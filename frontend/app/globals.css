@@ -194,6 +194,8 @@ textarea {
   cursor: pointer;
   font-size: 0.95rem;
   font-weight: 700;
+  min-height: 44px;
+  min-width: 44px;
   padding: 11px 14px;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
@@ -455,6 +457,18 @@ textarea {
   margin: 0;
 }
 
+.empty-cta {
+  display: grid;
+  gap: 6px;
+}
+
+.mobile-sticky-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
 .animate-rise {
   animation: fade-up 0.45s ease both;
 }
@@ -631,6 +645,23 @@ textarea {
   .panel {
     backdrop-filter: none;
     box-shadow: 0 8px 22px rgba(20, 33, 61, 0.06);
+  }
+
+  .mobile-sticky-actions {
+    backdrop-filter: blur(6px);
+    background: rgba(247, 243, 236, 0.92);
+    border: 1px solid rgba(20, 33, 61, 0.12);
+    border-radius: 12px;
+    bottom: max(8px, env(safe-area-inset-bottom));
+    display: grid;
+    gap: 8px;
+    padding: 8px;
+    position: sticky;
+    z-index: 5;
+  }
+
+  .mobile-sticky-actions .button {
+    width: 100%;
   }
 }
 
