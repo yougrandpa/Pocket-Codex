@@ -454,6 +454,20 @@ textarea {
   margin: 0 0 8px;
 }
 
+.pagination-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.pagination-actions {
+  display: flex;
+  gap: 8px;
+}
+
 .executor-status-row {
   display: grid;
   gap: 8px;

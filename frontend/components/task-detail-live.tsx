@@ -17,6 +17,8 @@ interface TaskDetailLiveProps {
   taskId: string;
 }
 
+const LOG_PAGE_SIZE = 20;
+
 function formatValue(value?: string | null): string {
   if (!value) {
     return "-";
@@ -168,6 +170,7 @@ function roleLabel(role: ConversationTurn["role"]): string {
 export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
   const [task, setTask] = useState<Task | null>(null);
   const [events, setEvents] = useState<TaskEvent[]>([]);
+  const [logPage, setLogPage] = useState(1);
   const [message, setMessage] = useState("");
   const [workingAction, setWorkingAction] = useState<TaskControlAction | null>(null);
   const [busyMessage, setBusyMessage] = useState(false);
@@ -232,6 +235,30 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
   }, [taskId]);
 
   const availableActions = useMemo(() => (task ? controlActions(task) : []), [task]);
+  const logEvents = useMemo(
+    () => events.filter((event) => event.event_type === "task.log.appended"),
+    [events]
+  );
+  const timelineEvents = useMemo(
+    () => events.filter((event) => event.event_type !== "task.log.appended"),
+    [events]
+  );
+  const totalLogPages = Math.max(1, Math.ceil(logEvents.length / LOG_PAGE_SIZE));
+  const pagedLogEvents = useMemo(() => {
+    const start = (logPage - 1) * LOG_PAGE_SIZE;
+    return logEvents.slice(start, start + LOG_PAGE_SIZE);
+  }, [logEvents, logPage]);
+
+  useEffect(() => {
+    setLogPage(1);
+  }, [taskId]);
+
+  useEffect(() => {
+    if (logPage > totalLogPages) {
+      setLogPage(totalLogPages);
+    }
+  }, [logPage, totalLogPages]);
+
   const conversationTurns = useMemo<ConversationTurn[]>(() => {
     if (!task) {
       return [];
@@ -449,12 +476,68 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
       </dl>
 
       <section className="event-panel">
-        <h3>{bi("最近事件", "Recent Events")}</h3>
-        {events.length === 0 ? (
-          <p className="muted">{bi("暂无事件。", "No events yet.")}</p>
+        <h3>{bi("执行日志", "Execution Logs")}</h3>
+        {logEvents.length === 0 ? (
+          <p className="muted">{bi("暂无执行日志。", "No execution logs yet.")}</p>
+        ) : (
+          <>
+            <div className="pagination-row">
+              <p className="muted">
+                {bi("第", "Page")} {logPage} / {totalLogPages} · {bi("共", "Total")} {logEvents.length}{" "}
+                {bi("条", "items")}
+              </p>
+              <div className="pagination-actions">
+                <button
+                  className="button button-secondary"
+                  type="button"
+                  disabled={logPage <= 1}
+                  onClick={() => setLogPage((previous) => Math.max(1, previous - 1))}
+                >
+                  {bi("上一页", "Previous")}
+                </button>
+                <button
+                  className="button button-secondary"
+                  type="button"
+                  disabled={logPage >= totalLogPages}
+                  onClick={() => setLogPage((previous) => Math.min(totalLogPages, previous + 1))}
+                >
+                  {bi("下一页", "Next")}
+                </button>
+              </div>
+            </div>
+            <ul className="notification-list">
+              {pagedLogEvents.map((event) => {
+                const source =
+                  typeof event.payload.source === "string" ? event.payload.source : bi("系统", "system");
+                const level =
+                  typeof event.payload.level === "string" ? event.payload.level : bi("信息", "info");
+                const messageText =
+                  typeof event.payload.message === "string"
+                    ? event.payload.message
+                    : JSON.stringify(event.payload);
+                return (
+                  <li key={`${event.id}-${event.seq}`} className="notification-item">
+                    <div className="task-item-top">
+                      <span className="chip">{source}</span>
+                      <time dateTime={event.timestamp}>{formatValue(event.timestamp)}</time>
+                    </div>
+                    <p className="muted">{bi("级别", "Level")}: {level}</p>
+                    <code>{messageText}</code>
+                  </li>
+                );
+              })}
+            </ul>
+          </>
+        )}
+      </section>
+
+      <section className="event-panel">
+        <h3>{bi("状态事件", "Lifecycle Events")}</h3>
+        {timelineEvents.length === 0 ? (
+          <p className="muted">{bi("暂无状态事件。", "No lifecycle events yet.")}</p>
         ) : (
           <ul className="notification-list">
-            {events.map((event) => (
+            {timelineEvents.map((event) => (
               <li key={`${event.id}-${event.seq}`} className="notification-item">
                 <div className="task-item-top">
                   <span className={`status status-${(event.status || "queued").toLowerCase()}`}>
