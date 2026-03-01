@@ -1,5 +1,7 @@
 # Pocket Codex
 
+Chinese version: `README.zh-CN.md`
+
 Pocket Codex is a mobile-first control panel for monitoring and operating Codex tasks remotely.
 
 ## Vision
@@ -59,3 +61,4 @@ Recommended startup order:
 - Implementation plan: `docs/IMPLEMENTATION_PLAN.md`
 - API contract: `docs/API_CONTRACT.md`
 - Local runbook: `docs/LOCAL_RUN.md`
+- Usage guide (Chinese): `docs/USAGE.zh-CN.md`
