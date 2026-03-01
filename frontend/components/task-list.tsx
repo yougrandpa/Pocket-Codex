@@ -76,25 +76,27 @@ export function TaskList({ tasks, error = null, loading = false }: TaskListProps
         </div>
       ) : null}
 
-      <ul className="task-list">
-        {pagedTasks.map((task) => (
-          <li key={task.id} className="task-item">
-            <div className="task-item-top">
-              <span className={`status status-${task.status.toLowerCase()}`}>
-                {statusText(task.status)}
-              </span>
-              <time dateTime={task.updated_at}>{formatDateTime(task.updated_at)}</time>
-            </div>
-            <p className="task-prompt">{task.prompt || bi("(空指令)", "(empty prompt)")}</p>
-            <div className="task-item-bottom">
-              <span className="muted">#{task.id.slice(0, 8)}</span>
-              <Link href={`/tasks/${task.id}`} className="link">
-                {bi("查看详情", "View detail")}
-              </Link>
-            </div>
-          </li>
-        ))}
-      </ul>
+      <div className="task-list-scroll">
+        <ul className="task-list">
+          {pagedTasks.map((task) => (
+            <li key={task.id} className="task-item">
+              <div className="task-item-top">
+                <span className={`status status-${task.status.toLowerCase()}`}>
+                  {statusText(task.status)}
+                </span>
+                <time dateTime={task.updated_at}>{formatDateTime(task.updated_at)}</time>
+              </div>
+              <p className="task-prompt">{task.prompt || bi("(空指令)", "(empty prompt)")}</p>
+              <div className="task-item-bottom">
+                <span className="muted">#{task.id.slice(0, 8)}</span>
+                <Link href={`/tasks/${task.id}`} className="link">
+                  {bi("查看详情", "View detail")}
+                </Link>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
     </section>
   );
 }

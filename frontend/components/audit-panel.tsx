@@ -18,15 +18,18 @@ export function AuditPanel({ logs }: AuditPanelProps) {
       ) : (
         <ul className="notification-list">
           {logs.map((log) => (
-            <li key={log.id} className="notification-item">
+            <li key={log.id} className="notification-item audit-item">
               <div className="task-item-top">
-                <strong>{log.action}</strong>
+                <strong className="audit-action">{log.action}</strong>
                 <time dateTime={log.timestamp}>{formatDateTime(log.timestamp)}</time>
               </div>
-              <p className="muted">
+              <p className="muted audit-meta">
                 {bi("操作者", "Actor")}: {log.actor}
                 {log.task_id ? ` | ${bi("任务", "Task")}: ${log.task_id.slice(0, 10)}` : ""}
               </p>
+              {Object.keys(log.detail || {}).length > 0 ? (
+                <code className="audit-detail">{JSON.stringify(log.detail)}</code>
+              ) : null}
             </li>
           ))}
         </ul>
