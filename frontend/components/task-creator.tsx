@@ -6,6 +6,7 @@ import { createTask, Task } from "@/lib/api";
 import { bi } from "@/lib/i18n";
 
 const DEFAULT_PRIORITY = 5;
+const DEFAULT_TIMEOUT_SECONDS = 180;
 
 interface TaskCreatorProps {
   onCreated?: (task: Task) => void;
@@ -15,7 +16,7 @@ export function TaskCreator({ onCreated }: TaskCreatorProps) {
   const router = useRouter();
   const [prompt, setPrompt] = useState("");
   const [priority, setPriority] = useState(DEFAULT_PRIORITY);
-  const [timeoutSeconds, setTimeoutSeconds] = useState(20);
+  const [timeoutSeconds, setTimeoutSeconds] = useState(DEFAULT_TIMEOUT_SECONDS);
   const [workdir, setWorkdir] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -92,7 +93,7 @@ export function TaskCreator({ onCreated }: TaskCreatorProps) {
               min={5}
               max={3600}
               value={timeoutSeconds}
-              onChange={(event) => setTimeoutSeconds(Number(event.target.value) || 20)}
+              onChange={(event) => setTimeoutSeconds(Number(event.target.value) || DEFAULT_TIMEOUT_SECONDS)}
             />
           </label>
         </div>

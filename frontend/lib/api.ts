@@ -72,6 +72,7 @@ export interface HealthStatus {
   timestamp: string;
   task_executor: string;
   execution_backend: string;
+  codex_min_timeout_seconds?: number;
   codex_cli_path?: string;
   codex_cli_exists?: boolean;
 }
@@ -283,6 +284,10 @@ function normalizeHealth(raw: unknown): HealthStatus {
     task_executor: typeof value.task_executor === "string" ? value.task_executor : "unknown",
     execution_backend:
       typeof value.execution_backend === "string" ? value.execution_backend : "unknown",
+    codex_min_timeout_seconds:
+      typeof value.codex_min_timeout_seconds === "number"
+        ? value.codex_min_timeout_seconds
+        : undefined,
     codex_cli_path: typeof value.codex_cli_path === "string" ? value.codex_cli_path : undefined,
     codex_cli_exists:
       typeof value.codex_cli_exists === "boolean" ? value.codex_cli_exists : undefined

@@ -108,6 +108,8 @@ class TaskService:
         actor: str = "system",
     ) -> Task:
         now = utc_now_iso()
+        base_timeout = timeout_seconds or settings.default_task_timeout_seconds
+        effective_timeout = self._normalize_timeout_for_executor(base_timeout)
         task = Task(
             id=new_id("task"),
             prompt=prompt,
@@ -117,7 +119,7 @@ class TaskService:
             created_at=now,
             updated_at=now,
             last_heartbeat_at=now,
-            timeout_seconds=timeout_seconds or settings.default_task_timeout_seconds,
+            timeout_seconds=effective_timeout,
         )
 
         async with self._lock:
@@ -455,6 +457,14 @@ class TaskService:
         reason: str,
         events_out: list[dict[str, Any]],
     ) -> None:
+        next_timeout = self._normalize_timeout_for_executor(task.timeout_seconds)
+        if next_timeout != task.timeout_seconds:
+            task.timeout_seconds = next_timeout
+            self._append_log_event_locked(
+                task=task,
+                message=f"timeout increased to {next_timeout}s for codex executor",
+                events_out=events_out,
+            )
         task.retry_count += 1
         task.paused_at = None
         task.finished_at = None
@@ -477,6 +487,13 @@ class TaskService:
             message=f"task scheduled for retry ({reason})",
             events_out=events_out,
         )
+
+    @staticmethod
+    def _normalize_timeout_for_executor(timeout_seconds: int) -> int:
+        normalized = max(5, int(timeout_seconds))
+        if settings.task_executor == "codex":
+            return max(normalized, settings.codex_min_timeout_seconds)
+        return normalized
 
     def _is_timed_out(self, task: Task) -> bool:
         started = _parse_iso(task.started_at)

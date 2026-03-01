@@ -109,6 +109,7 @@ class Settings:
     redis_url: str
     redis_queue_prefix: str
     task_executor: str
+    codex_min_timeout_seconds: int
     codex_cli_path: str
     codex_model: str | None
     codex_full_auto: bool
@@ -148,6 +149,10 @@ def load_settings() -> Settings:
         redis_url=os.getenv("REDIS_URL", "redis://localhost:6379/0"),
         redis_queue_prefix=os.getenv("REDIS_QUEUE_PREFIX", "pocket_codex:tasks"),
         task_executor=os.getenv("APP_TASK_EXECUTOR", "simulator").strip().lower() or "simulator",
+        codex_min_timeout_seconds=_as_int(
+            os.getenv("APP_CODEX_MIN_TIMEOUT_SECONDS", "180"),
+            fallback=180,
+        ),
         codex_cli_path=_resolve_codex_cli_path(os.getenv("CODEX_CLI_PATH", "codex")),
         codex_model=os.getenv("CODEX_MODEL", "").strip() or None,
         codex_full_auto=_as_bool(os.getenv("CODEX_FULL_AUTO", "true"), True),

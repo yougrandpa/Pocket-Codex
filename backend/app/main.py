@@ -46,12 +46,13 @@ async def _shutdown() -> None:
 
 
 @app.get("/healthz")
-async def healthz() -> dict[str, str | bool]:
+async def healthz() -> dict[str, str | bool | int]:
     return {
         "status": "ok",
         "timestamp": utc_now_iso(),
         "task_executor": settings.task_executor,
         "execution_backend": settings.execution_backend,
+        "codex_min_timeout_seconds": settings.codex_min_timeout_seconds,
         "codex_cli_path": settings.codex_cli_path,
         "codex_cli_exists": Path(settings.codex_cli_path).exists(),
     }

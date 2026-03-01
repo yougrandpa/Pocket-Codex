@@ -52,6 +52,7 @@ export function ExecutorStatusBar() {
   const executorMode = (health?.task_executor || "unknown").toLowerCase();
   const executorBackend = health?.execution_backend || "unknown";
   const checkedAt = formatHealthTimestamp(health?.timestamp || "");
+  const codexMinTimeout = health?.codex_min_timeout_seconds;
   const codexCliPath = health?.codex_cli_path || "codex";
   const codexCliExists = health?.codex_cli_exists;
 
@@ -97,6 +98,11 @@ export function ExecutorStatusBar() {
         <p className="muted executor-meta">
           {bi("Codex 路径", "Codex Path")}: <code>{codexCliPath}</code>
         </p>
+        {executorMode === "codex" && typeof codexMinTimeout === "number" ? (
+          <p className="muted executor-meta">
+            {bi("Codex 最小超时", "Codex Min Timeout")}: {codexMinTimeout}s
+          </p>
+        ) : null}
       </div>
       {executorMode === "simulator" ? (
         <p className="note">
