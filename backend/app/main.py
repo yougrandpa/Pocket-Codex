@@ -53,6 +53,7 @@ async def healthz() -> dict[str, str | bool | int]:
         "task_executor": settings.task_executor,
         "execution_backend": settings.execution_backend,
         "codex_min_timeout_seconds": settings.codex_min_timeout_seconds,
+        "codex_hard_timeout_seconds": settings.codex_hard_timeout_seconds,
         "codex_cli_path": settings.codex_cli_path,
         "codex_cli_exists": Path(settings.codex_cli_path).exists(),
     }

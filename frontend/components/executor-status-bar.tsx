@@ -53,6 +53,7 @@ export function ExecutorStatusBar() {
   const executorBackend = health?.execution_backend || "unknown";
   const checkedAt = formatHealthTimestamp(health?.timestamp || "");
   const codexMinTimeout = health?.codex_min_timeout_seconds;
+  const codexHardTimeout = health?.codex_hard_timeout_seconds;
   const codexCliPath = health?.codex_cli_path || "codex";
   const codexCliExists = health?.codex_cli_exists;
 
@@ -100,7 +101,12 @@ export function ExecutorStatusBar() {
         </p>
         {executorMode === "codex" && typeof codexMinTimeout === "number" ? (
           <p className="muted executor-meta">
-            {bi("Codex 最小超时", "Codex Min Timeout")}: {codexMinTimeout}s
+            {bi("Codex 空闲超时", "Codex Idle Timeout")}: {codexMinTimeout}s
+          </p>
+        ) : null}
+        {executorMode === "codex" && typeof codexHardTimeout === "number" ? (
+          <p className="muted executor-meta">
+            {bi("Codex 硬超时", "Codex Hard Timeout")}: {codexHardTimeout}s
           </p>
         ) : null}
       </div>

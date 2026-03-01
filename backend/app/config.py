@@ -110,6 +110,7 @@ class Settings:
     redis_queue_prefix: str
     task_executor: str
     codex_min_timeout_seconds: int
+    codex_hard_timeout_seconds: int
     codex_cli_path: str
     codex_model: str | None
     codex_full_auto: bool
@@ -152,6 +153,10 @@ def load_settings() -> Settings:
         codex_min_timeout_seconds=_as_int(
             os.getenv("APP_CODEX_MIN_TIMEOUT_SECONDS", "180"),
             fallback=180,
+        ),
+        codex_hard_timeout_seconds=_as_int(
+            os.getenv("APP_CODEX_HARD_TIMEOUT_SECONDS", "1800"),
+            fallback=1800,
         ),
         codex_cli_path=_resolve_codex_cli_path(os.getenv("CODEX_CLI_PATH", "codex")),
         codex_model=os.getenv("CODEX_MODEL", "").strip() or None,

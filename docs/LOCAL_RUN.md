@@ -43,6 +43,7 @@ pip install -r requirements.txt
 # 可选：启用本地 Codex 执行器（真正调用 codex CLI，而非模拟器）
 # export APP_TASK_EXECUTOR=codex
 # export APP_CODEX_MIN_TIMEOUT_SECONDS=180
+# export APP_CODEX_HARD_TIMEOUT_SECONDS=1800
 # export CODEX_CLI_PATH=codex
 # export CODEX_FULL_AUTO=true
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
@@ -206,4 +207,4 @@ Q9: 日志提示 `codex cli not found at 'codex'` 怎么办？
 A9: 先查看 `GET /healthz` 返回的 `codex_cli_path` 和 `codex_cli_exists`。如果 `codex_cli_exists=false`，请在 `backend/.env` 里设置绝对路径，例如 `CODEX_CLI_PATH=/Applications/Codex.app/Contents/Resources/codex`，然后重启后端。
 
 Q10: 为什么总是 `codex execution timeout`？  
-A10: 默认 `20s` 对真实 Codex 往往太短。当前版本在 `APP_TASK_EXECUTOR=codex` 时会自动把任务超时下限提升到 `APP_CODEX_MIN_TIMEOUT_SECONDS`（默认 `180s`）。可在 `GET /healthz` 查看该值，必要时上调后重启后端。
+A10: 默认 `20s` 对真实 Codex 往往太短。当前版本使用双超时机制：空闲超时（`APP_CODEX_MIN_TIMEOUT_SECONDS`，默认 `180s`，任务有持续输出就不会触发）+ 硬超时（`APP_CODEX_HARD_TIMEOUT_SECONDS`，默认 `1800s`）。可在 `GET /healthz` 查看这两个值，必要时上调后重启后端。

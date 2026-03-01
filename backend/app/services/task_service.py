@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import copy
+import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -658,35 +659,70 @@ class TaskService:
 
         self._active_processes[task_id] = process
         output_lines: list[str] = []
+        progress = {
+            "started_at": time.monotonic(),
+            "last_output_at": time.monotonic(),
+        }
         reader_tasks = []
         if process.stdout is not None:
             reader_tasks.append(
-                asyncio.create_task(self._stream_process_output(task_id, process.stdout, "stdout", output_lines))
+                asyncio.create_task(
+                    self._stream_process_output(
+                        task_id,
+                        process.stdout,
+                        "stdout",
+                        output_lines,
+                        progress,
+                    )
+                )
             )
         if process.stderr is not None:
             reader_tasks.append(
-                asyncio.create_task(self._stream_process_output(task_id, process.stderr, "stderr", output_lines))
+                asyncio.create_task(
+                    self._stream_process_output(
+                        task_id,
+                        process.stderr,
+                        "stderr",
+                        output_lines,
+                        progress,
+                    )
+                )
             )
 
         timed_out = False
+        timeout_reason = "codex execution timeout"
         return_code: int | None = None
-        try:
-            return_code = await asyncio.wait_for(process.wait(), timeout=task.timeout_seconds)
-        except asyncio.TimeoutError:
-            timed_out = True
-            process.kill()
-            await process.wait()
-        finally:
-            for read_task in reader_tasks:
-                read_task.cancel()
-                try:
-                    await read_task
-                except asyncio.CancelledError:
-                    pass
-            self._active_processes.pop(task_id, None)
+        while True:
+            try:
+                return_code = await asyncio.wait_for(process.wait(), timeout=1.0)
+                break
+            except asyncio.TimeoutError:
+                now = time.monotonic()
+                idle_elapsed = now - progress["last_output_at"]
+                total_elapsed = now - progress["started_at"]
+                if idle_elapsed > task.timeout_seconds:
+                    timed_out = True
+                    timeout_reason = f"codex execution timeout (idle>{task.timeout_seconds}s)"
+                elif total_elapsed > settings.codex_hard_timeout_seconds:
+                    timed_out = True
+                    timeout_reason = (
+                        "codex execution timeout "
+                        f"(hard>{settings.codex_hard_timeout_seconds}s)"
+                    )
+                if timed_out:
+                    process.kill()
+                    await process.wait()
+                    break
+        for read_task in reader_tasks:
+            read_task.cancel()
+            try:
+                await read_task
+            except asyncio.CancelledError:
+                pass
+        self._active_processes.pop(task_id, None)
 
         if timed_out:
-            await self._mark_task_timeout(task_id=task_id, reason="codex execution timeout")
+            await self._mark_task_timeout(task_id=task_id, reason=timeout_reason)
             return
 
         if return_code == 0:
@@ -702,6 +738,7 @@ class TaskService:
         stream: asyncio.StreamReader,
         stream_name: str,
         output_lines: list[str],
+        progress: dict[str, float],
     ) -> None:
         while True:
             line = await stream.readline()
@@ -710,6 +747,9 @@ class TaskService:
             text = line.decode(errors="replace").rstrip()
             if not text:
                 continue
+            if self._is_noise_log_line(text):
+                continue
+            progress["last_output_at"] = time.monotonic()
             output_lines.append(text)
             events_out: list[dict[str, Any]] = []
             async with self._lock:
@@ -727,6 +767,15 @@ class TaskService:
                 subscribers = self._collect_subscribers_locked(task.id)
             for event in events_out:
                 await self._broadcast(event, subscribers)
+
+    @staticmethod
+    def _is_noise_log_line(text: str) -> bool:
+        trimmed = text.strip()
+        if not trimmed:
+            return True
+        if len(trimmed) <= 2 and all(char in "{}[]()," for char in trimmed):
+            return True
+        return False
 
     async def _mark_task_succeeded(self, *, task_id: str, summary: str | None) -> None:
         events_out: list[dict[str, Any]] = []
