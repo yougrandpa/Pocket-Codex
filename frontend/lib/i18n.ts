@@ -49,7 +49,6 @@ function loadLanguageFromStorage(): void {
 }
 
 export function getLanguage(): Language {
-  loadLanguageFromStorage();
   return currentLanguage;
 }
 
@@ -63,7 +62,7 @@ export function setLanguage(language: Language): void {
 }
 
 export function useLanguage(): [Language, (language: Language) => void] {
-  const [language, setLanguageState] = useState<Language>(getLanguage());
+  const [language, setLanguageState] = useState<Language>(currentLanguage);
 
   useEffect(() => {
     loadLanguageFromStorage();
