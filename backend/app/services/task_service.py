@@ -1067,8 +1067,16 @@ class TaskService:
     def _build_codex_prompt(task: Task) -> str:
         if not task.messages:
             return task.prompt
-        followups = "\n".join(f"- {item.message}" for item in task.messages[-5:])
-        return f"{task.prompt}\n\nFollow-up messages:\n{followups}"
+        latest_followup = task.messages[-1].message.strip()
+        context_followups = "\n".join(f"- {item.message}" for item in task.messages[-5:])
+        return (
+            "Original task prompt:\n"
+            f"{task.prompt}\n\n"
+            "Latest follow-up message (highest priority; override conflicting earlier instructions):\n"
+            f"{latest_followup}\n\n"
+            "Recent follow-up history for context:\n"
+            f"{context_followups}"
+        )
 
     def _collect_subscribers_locked(self, task_id: str) -> list[asyncio.Queue[dict[str, Any]]]:
         combined = set(self._global_subscribers)
