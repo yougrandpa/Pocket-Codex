@@ -40,6 +40,7 @@ Use your phone to:
 
 ## Quick Start
 
+0. One-command local setup: `./scripts/setup_local_env.sh`
 1. Read implementation details: `docs/IMPLEMENTATION_PLAN.md`
 2. Read API contract: `docs/API_CONTRACT.md`
 3. Follow local setup and integration steps: `docs/LOCAL_RUN.md`

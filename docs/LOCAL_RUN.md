@@ -2,6 +2,12 @@
 
 本文档用于在本地同时启动 backend/frontend，并完成一轮基础联调。
 
+建议先执行一键初始化：
+
+```bash
+./scripts/setup_local_env.sh
+```
+
 ## 1. 目录约定
 
 - 后端目录：`backend/`
@@ -179,3 +185,6 @@ A4: 先确认任务当前状态（`RUNNING` 才能 `pause`，`WAITING_INPUT` 才
 
 Q5: 前端创建成功但列表不刷新？  
 A5: 优先检查轮询或刷新逻辑，其次检查 SSE 订阅是否连接成功。
+
+Q6: 如何快速确认本地环境是否已就绪？  
+A6: 运行 `./scripts/verify_local_env.sh`，会执行后端编译+API 烟测以及前端构建。

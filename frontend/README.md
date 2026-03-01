@@ -23,8 +23,8 @@ If omitted, the app defaults to `http://localhost:8000`.
 ## Run locally
 
 ```bash
+./scripts/setup_local_env.sh
 cd frontend
-npm install
 npm run dev
 ```
 
