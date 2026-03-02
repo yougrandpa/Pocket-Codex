@@ -44,6 +44,17 @@ function actionLabel(action: TaskControlAction): string {
   return action;
 }
 
+function humanizeTaskActionMessage(message: string): string {
+  const normalized = message.trim().toLowerCase();
+  if (normalized === "task scheduled for retry") {
+    return bi("任务已加入重试队列。", "Task scheduled for retry.");
+  }
+  if (normalized === "task canceled") {
+    return bi("任务已取消。", "Task canceled.");
+  }
+  return message;
+}
+
 async function copyToClipboard(value: string): Promise<void> {
   if (typeof window === "undefined") {
     return;
@@ -87,7 +98,9 @@ export function TaskList({
     setNote(null);
     try {
       const result = await controlTask(task.id, action);
-      setNote(result.message || bi("操作已提交。", "Action submitted."));
+      setNote(
+        result.message ? humanizeTaskActionMessage(result.message) : bi("操作已提交。", "Action submitted.")
+      );
       onTaskMutated?.();
     } catch (submitError) {
       setActionError(

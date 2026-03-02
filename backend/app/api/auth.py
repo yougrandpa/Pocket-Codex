@@ -31,8 +31,11 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 AUTH_RATE_LIMIT_WINDOW_SECONDS = 60
 LOGIN_RATE_LIMIT_MAX = 30
 MOBILE_REQUEST_RATE_LIMIT_MAX = 20
+LOGIN_RATE_LIMIT_PER_IP_MAX = 60
+MOBILE_REQUEST_RATE_LIMIT_PER_IP_MAX = 40
 AUTH_RATE_LIMIT_MAX_KEYS = 4096
 AUTH_RATE_LIMIT_SWEEP_SECONDS = 60
+AUTH_FAILED_AUDIT_WINDOW_SECONDS = 20
 
 
 class AuthRateLimiter:
@@ -77,6 +80,7 @@ class AuthRateLimiter:
 
 
 auth_rate_limiter = AuthRateLimiter()
+auth_failure_audit_limiter = AuthRateLimiter()
 
 
 def _normalize_ip_candidate(value: str | None) -> str:
@@ -193,14 +197,22 @@ async def _append_audit_async(
     )
 
 
-async def _verify_credentials(username: str, password: str) -> None:
+async def _verify_credentials(username: str, password: str, request_ip: str) -> None:
     if username != settings.username or password != settings.password:
-        await _append_audit_async(
-            actor=username,
-            action="auth.login.failed",
-            task_id=None,
-            detail={},
+        normalized_ip = _normalize_ip_candidate(request_ip)
+        normalized_user = username.strip().lower()
+        should_log, _ = await auth_failure_audit_limiter.check_and_record(
+            key=f"audit:failed:{normalized_ip}:{normalized_user}",
+            limit=1,
+            window_seconds=AUTH_FAILED_AUDIT_WINDOW_SECONDS,
         )
+        if should_log:
+            await _append_audit_async(
+                actor=username,
+                action="auth.login.failed",
+                task_id=None,
+                detail={"request_ip": request_ip},
+            )
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
 
@@ -208,15 +220,21 @@ async def _enforce_auth_rate_limit(request: Request, username: str, scope: str) 
     request_ip = _request_ip(request)
     normalized_ip = _normalize_ip_candidate(request_ip)
     normalized_user = username.strip().lower()
-    limit = LOGIN_RATE_LIMIT_MAX if scope == "login" else MOBILE_REQUEST_RATE_LIMIT_MAX
-    key = f"{scope}:{normalized_ip}:{normalized_user}"
-    allowed, retry_after = await auth_rate_limiter.check_and_record(
-        key=key,
-        limit=limit,
+    user_limit = LOGIN_RATE_LIMIT_MAX if scope == "login" else MOBILE_REQUEST_RATE_LIMIT_MAX
+    ip_limit = LOGIN_RATE_LIMIT_PER_IP_MAX if scope == "login" else MOBILE_REQUEST_RATE_LIMIT_PER_IP_MAX
+    allowed_user, retry_after_user = await auth_rate_limiter.check_and_record(
+        key=f"{scope}:user:{normalized_ip}:{normalized_user}",
+        limit=user_limit,
         window_seconds=AUTH_RATE_LIMIT_WINDOW_SECONDS,
     )
-    if allowed:
+    allowed_ip, retry_after_ip = await auth_rate_limiter.check_and_record(
+        key=f"{scope}:ip:{normalized_ip}",
+        limit=ip_limit,
+        window_seconds=AUTH_RATE_LIMIT_WINDOW_SECONDS,
+    )
+    if allowed_user and allowed_ip:
         return
+    retry_after = max(retry_after_user if not allowed_user else 0, retry_after_ip if not allowed_ip else 0, 1)
     raise HTTPException(
         status_code=status.HTTP_429_TOO_MANY_REQUESTS,
         detail="Too many authentication attempts, please retry later",
@@ -226,9 +244,9 @@ async def _enforce_auth_rate_limit(request: Request, username: str, scope: str) 
 
 @router.post("/login", response_model=TokenResponse)
 async def login(payload: LoginRequest, request: Request) -> TokenResponse:
-    await _enforce_auth_rate_limit(request, payload.username, "login")
-    await _verify_credentials(payload.username, payload.password)
     request_ip = _request_ip(request)
+    await _enforce_auth_rate_limit(request, payload.username, "login")
+    await _verify_credentials(payload.username, payload.password, request_ip)
 
     if settings.require_loopback_direct_login and not _is_loopback_request(request):
         await _append_audit_async(
@@ -261,9 +279,9 @@ async def create_mobile_login_request(
     payload: MobileLoginStartRequest,
     request: Request,
 ) -> MobileLoginStartResponse:
-    await _enforce_auth_rate_limit(request, payload.username, "mobile")
-    await _verify_credentials(payload.username, payload.password)
     request_ip = _request_ip(request)
+    await _enforce_auth_rate_limit(request, payload.username, "mobile")
+    await _verify_credentials(payload.username, payload.password, request_ip)
     record = await mobile_auth_service.create_request(
         username=payload.username,
         device_name=payload.device_name.strip() or "unknown-device",

@@ -11,6 +11,11 @@ interface LoginPanelProps {
 
 type LoginMode = "mobile" | "desktop";
 
+function isLoopbackHost(value: string): boolean {
+  const host = value.trim().toLowerCase();
+  return host === "127.0.0.1" || host === "localhost" || host === "::1" || host === "[::1]";
+}
+
 function defaultDeviceName(): string {
   if (typeof window === "undefined") {
     return "mobile-browser";
@@ -75,6 +80,12 @@ export function LoginPanel({ onLoggedIn }: LoginPanelProps) {
       return "http://localhost:3000";
     }
     return `${window.location.origin}/`;
+  }, []);
+  const shouldShowDesktopApprovePath = useMemo(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+    return !isLoopbackHost(window.location.hostname);
   }, []);
   const isMobileMode = loginMode === "mobile";
 
@@ -322,15 +333,17 @@ export function LoginPanel({ onLoggedIn }: LoginPanelProps) {
             required
           />
         </label>
-        <label className="field">
-          <span>{bi("手机设备名", "Mobile device name")}</span>
-          <input
-            type="text"
-            value={deviceName}
-            onChange={(event) => setDeviceName(event.target.value.slice(0, 120))}
-            placeholder={bi("例如：iPhone-15-Pro", "Example: iPhone-15-Pro")}
-          />
-        </label>
+        {isMobileMode ? (
+          <label className="field">
+            <span>{bi("手机设备名", "Mobile device name")}</span>
+            <input
+              type="text"
+              value={deviceName}
+              onChange={(event) => setDeviceName(event.target.value.slice(0, 120))}
+              placeholder={bi("例如：iPhone-15-Pro", "Example: iPhone-15-Pro")}
+            />
+          </label>
+        ) : null}
 
         {pendingRequestId ? (
           <div className="detail-block">
@@ -341,8 +354,17 @@ export function LoginPanel({ onLoggedIn }: LoginPanelProps) {
               {bi("到期", "Expires")}: {formatDateTime(pendingExpiresAt)}
             </p>
             <p className="muted">
-              {bi("请在电脑端打开并审批：", "Open on desktop and approve:")}{" "}
-              <code>{desktopApprovePath}</code>
+              {shouldShowDesktopApprovePath
+                ? (
+                    <>
+                      {bi("请在电脑端打开并审批：", "Open on desktop and approve:")}{" "}
+                      <code>{desktopApprovePath}</code>
+                    </>
+                  )
+                : bi(
+                    "请在已登录电脑端的控制台里审批该请求（手机登录授权卡片）。",
+                    "Approve this request on the signed-in desktop dashboard (Mobile Login Approvals card)."
+                  )}
             </p>
             <div className="pagination-actions" style={{ marginTop: "8px" }}>
               <button
@@ -382,18 +404,6 @@ export function LoginPanel({ onLoggedIn }: LoginPanelProps) {
               {submitting ? bi("登录中...", "Signing in...") : bi("直接登录", "Sign in directly")}
             </button>
           )}
-          {!isMobileMode ? (
-            <button
-              className="button button-secondary"
-              type="button"
-              disabled={submitting || formInvalid || Boolean(pendingRequestId)}
-              onClick={() => {
-                void handleMobileLoginRequest();
-              }}
-            >
-              {bi("改用手机授权", "Use mobile approval")}
-            </button>
-          ) : null}
           {pendingRequestId ? (
             <button
               className="button button-secondary"

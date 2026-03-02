@@ -716,6 +716,7 @@ function normalizeEvent(raw: unknown): TaskEvent {
 interface OpenEventStreamOptions {
   taskId?: string;
   onEvent: (event: TaskEvent) => void;
+  onOpen?: () => void;
   onError?: (error: Error) => void;
 }
 
@@ -988,6 +989,7 @@ export function bindTaskEventStream(
 export function openEventStream({
   taskId,
   onEvent,
+  onOpen,
   onError
 }: OpenEventStreamOptions): TaskEventStream {
   let closed = false;
@@ -1056,6 +1058,7 @@ export function openEventStream({
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
+      onOpen?.();
       reconnectAttempts = 0;
       const reader = response.body.getReader();
       const decoder = new TextDecoder();

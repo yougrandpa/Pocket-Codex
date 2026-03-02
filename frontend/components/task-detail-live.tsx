@@ -106,6 +106,23 @@ function actionLabel(action: TaskControlAction): string {
   return map[action];
 }
 
+function humanizeTaskMessage(message: string): string {
+  const normalized = message.trim().toLowerCase();
+  if (normalized === "task scheduled for retry") {
+    return bi("任务已加入重试队列。", "Task scheduled for retry.");
+  }
+  if (normalized === "task canceled") {
+    return bi("任务已取消。", "Task canceled.");
+  }
+  if (normalized === "task paused") {
+    return bi("任务已暂停。", "Task paused.");
+  }
+  if (normalized === "task resumed") {
+    return bi("任务已继续。", "Task resumed.");
+  }
+  return message;
+}
+
 function tabLabel(tab: TaskDetailTab): string {
   if (tab === "conversation") {
     return bi("对话", "Conversation");
@@ -146,6 +163,25 @@ function resolveDockPrimaryAction(task: Task | null, availableActions: TaskContr
 }
 
 const URL_PATTERN = /(https?:\/\/[^\s]+)/g;
+const ASSISTANT_NOISE_PATTERNS = [
+  /^mcp startup:/i,
+  /^tokens used:/i,
+  /^thinking$/i,
+  /^\/users\//i,
+  /^warning:/i
+];
+
+function sanitizeAssistantText(text: string): string {
+  const lines = text.split(/\r?\n/);
+  const cleaned = lines.filter((line) => {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      return true;
+    }
+    return !ASSISTANT_NOISE_PATTERNS.some((pattern) => pattern.test(trimmed));
+  });
+  return cleaned.join("\n").trim();
+}
 
 interface ConversationTurn {
   id: string;
@@ -264,6 +300,21 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
   const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
   const hasTrackedOpenRef = useRef(false);
   const messageInputRef = useRef<HTMLTextAreaElement | null>(null);
+  const noteTimerRef = useRef<number | null>(null);
+
+  const showNote = useCallback((text: string, durationMs = 4500): void => {
+    if (noteTimerRef.current) {
+      window.clearTimeout(noteTimerRef.current);
+      noteTimerRef.current = null;
+    }
+    setNote(text);
+    if (durationMs > 0) {
+      noteTimerRef.current = window.setTimeout(() => {
+        setNote(null);
+        noteTimerRef.current = null;
+      }, durationMs);
+    }
+  }, []);
 
   const loadTaskDetail = useCallback(
     async (options: { silent?: boolean; includeEvents?: boolean } = {}): Promise<void> => {
@@ -301,6 +352,15 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
   }, [loadTaskDetail]);
 
   useEffect(() => {
+    return () => {
+      if (noteTimerRef.current) {
+        window.clearTimeout(noteTimerRef.current);
+        noteTimerRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     if (!task || hasTrackedOpenRef.current) {
       return;
     }
@@ -323,12 +383,19 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
     try {
       stream = openEventStream({
         taskId,
+        onOpen: () => {
+          setStreamState("connected");
+          setLastSyncedAt(new Date().toISOString());
+        },
         onEvent: (event) => {
           setStreamState("connected");
           setLastSyncedAt(new Date().toISOString());
           setEvents((previous) => [event, ...previous].slice(0, 400));
           setTask((previous) => (previous ? mergeTaskFromStatus(previous, event) : previous));
           setError((previous) => (isTransientStreamError(previous) ? null : previous));
+          if (event.event_type === "task.status.changed") {
+            setNote(null);
+          }
         },
         onError: () => {
           setStreamState("reconnecting");
@@ -432,29 +499,49 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
     ];
 
     const orderedEvents = [...events].reverse();
+    let lastAssistantSummary = "";
     for (const event of orderedEvents) {
-      if (event.event_type !== "task.message.appended") {
-        continue;
+      if (event.event_type === "task.message.appended") {
+        const message = event.payload.message;
+        if (typeof message !== "string" || !message.trim()) {
+          continue;
+        }
+        turns.push({
+          id: event.id,
+          role: "user",
+          text: message,
+          timestamp: event.timestamp
+        });
       }
-      const message = event.payload.message;
-      if (typeof message !== "string" || !message.trim()) {
-        continue;
+      if (event.event_type === "task.summary.updated") {
+        const summary = event.payload.summary;
+        if (typeof summary !== "string" || !summary.trim()) {
+          continue;
+        }
+        const normalized = sanitizeAssistantText(summary);
+        if (!normalized || normalized === lastAssistantSummary) {
+          continue;
+        }
+        lastAssistantSummary = normalized;
+        turns.push({
+          id: `${event.id}-assistant`,
+          role: "assistant",
+          text: normalized,
+          timestamp: event.timestamp
+        });
       }
-      turns.push({
-        id: event.id,
-        role: "user",
-        text: message,
-        timestamp: event.timestamp
-      });
     }
 
     if (typeof task.summary === "string" && task.summary.trim()) {
-      turns.push({
-        id: `${task.id}-summary`,
-        role: "assistant",
-        text: task.summary,
-        timestamp: task.updated_at
-      });
+      const normalized = sanitizeAssistantText(task.summary);
+      if (normalized && normalized !== lastAssistantSummary) {
+        turns.push({
+          id: `${task.id}-summary`,
+          role: "assistant",
+          text: normalized,
+          timestamp: task.updated_at
+        });
+      }
     } else if (task.status === "RUNNING") {
       turns.push({
         id: `${task.id}-running`,
@@ -499,7 +586,7 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
             }
           : previous
       );
-      setNote(result.message);
+      showNote(humanizeTaskMessage(result.message));
     } catch (controlError) {
       setError(
         controlError instanceof Error
@@ -522,7 +609,7 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
     try {
       await appendTaskMessage(taskId, message.trim());
       setMessage("");
-      setNote(bi("消息已发送。", "Message sent."));
+      showNote(bi("消息已发送。", "Message sent."));
       await loadTaskDetail({ silent: true, includeEvents: true });
       window.setTimeout(() => {
         messageInputRef.current?.focus();
