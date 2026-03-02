@@ -1,0 +1,38 @@
+- generic [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - paragraph [ref=e6]: Pocket Codex
+          - heading "远程任务控制" [level=1] [ref=e7]
+        - button "English" [ref=e8] [cursor=pointer]
+      - paragraph [ref=e9]: 用手机监控并操作 Codex 任务。
+    - generic [ref=e10]:
+      - generic [ref=e11]:
+        - heading "登录" [level=2] [ref=e12]
+        - generic [ref=e13]: 电脑授权手机
+      - paragraph [ref=e14]: 手机端推荐流程：发起授权请求 -> 电脑端批准 -> 手机自动登录。
+      - list [ref=e15]:
+        - listitem [ref=e16]: 1) 输入账号密码，点击“发起手机授权”。
+        - listitem [ref=e17]: 2) 在电脑端“手机登录授权”里点击允许。
+        - listitem [ref=e18]: 3) 回到手机端自动完成登录。
+      - paragraph [ref=e19]: 提示：先填写用户名和密码，按钮才可点击。
+      - generic [ref=e20]:
+        - generic [ref=e21]:
+          - generic [ref=e22]: 用户名
+          - textbox "用户名" [ref=e23]: admin
+        - generic [ref=e24]:
+          - generic [ref=e25]: 密码
+          - textbox "密码" [active] [ref=e26]: admin123
+        - generic [ref=e27]:
+          - generic [ref=e28]: 手机设备名
+          - textbox "手机设备名" [ref=e29]:
+            - /placeholder: 例如：iPhone-15-Pro
+            - text: Mac Browser
+        - generic [ref=e30]:
+          - button "发起手机授权" [ref=e31] [cursor=pointer]
+          - group [ref=e43]:
+            - generic "电脑端入口" [ref=e44] [cursor=pointer]
+  - button "Open Next.js Dev Tools" [ref=e38] [cursor=pointer]:
+    - img [ref=e39]
+  - alert [ref=e42]

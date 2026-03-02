@@ -1,0 +1,172 @@
+- generic [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - paragraph [ref=e6]: Pocket Codex
+          - heading "远程任务控制" [level=1] [ref=e7]
+        - button "English" [ref=e8] [cursor=pointer]
+      - paragraph [ref=e9]: 用手机监控并操作 Codex 任务。
+    - generic [ref=e471]:
+      - link "返回控制台" [ref=e472] [cursor=pointer]:
+        - /url: /
+      - generic [ref=e473]:
+        - heading "任务详情" [level=2] [ref=e474]
+        - generic [ref=e475]:
+          - generic [ref=e476]:
+            - button "背景信息窗口提示" [ref=e477] [cursor=pointer]: 上下文
+            - dialog "背景信息窗口":
+              - paragraph: 背景信息窗口
+              - paragraph: 未上报
+              - paragraph: 已用 - 标记，共 -
+          - generic [ref=e478]: 执行中
+      - generic [ref=e479]:
+        - button "对话" [ref=e480] [cursor=pointer]
+        - button "控制" [ref=e481] [cursor=pointer]
+        - button "成本" [ref=e482] [cursor=pointer]
+        - button "事件日志" [active] [ref=e483] [cursor=pointer]
+      - generic [ref=e548]:
+        - heading "状态事件" [level=3] [ref=e549]
+        - generic [ref=e550]:
+          - paragraph [ref=e551]: 第 1 / 1 · 共 3 条
+          - generic [ref=e552]:
+            - button "上一页" [disabled] [ref=e553]
+            - button "下一页" [disabled] [ref=e554]
+        - list [ref=e555]:
+          - listitem [ref=e556]:
+            - generic [ref=e557]:
+              - generic [ref=e558]: task.status.changed
+              - time [ref=e559]: 2026/03/02 08:29:23
+            - paragraph [ref=e560]: "运行: run_4fa84a0f9a55"
+            - code [ref=e561]: "{\"from\":\"QUEUED\",\"to\":\"RUNNING\",\"source\":\"codex\",\"run_id\":\"run_4fa84a0f9a55\",\"run_sequence\":1}"
+          - listitem [ref=e562]:
+            - generic [ref=e563]:
+              - generic [ref=e564]: task.status.changed
+              - time [ref=e565]: 2026/03/02 08:29:23
+            - paragraph [ref=e566]: "运行: run_4fa84a0f9a55"
+            - code [ref=e567]: "{\"from\":null,\"to\":\"QUEUED\",\"reason\":\"task_created\",\"run_id\":\"run_4fa84a0f9a55\",\"run_sequence\":1}"
+          - listitem [ref=e568]:
+            - generic [ref=e569]:
+              - generic [ref=e570]: task.run.created
+              - time [ref=e571]: 2026/03/02 08:29:23
+            - paragraph [ref=e572]: "运行: run_4fa84a0f9a55"
+            - code [ref=e573]: "{\"run_id\":\"run_4fa84a0f9a55\",\"run_sequence\":1,\"reason\":\"task_created\"}"
+      - generic [ref=e574]:
+        - heading "执行日志" [level=3] [ref=e575]
+        - generic [ref=e576]:
+          - paragraph [ref=e577]: 第 1 / 1 · 共 18 条
+          - generic [ref=e578]:
+            - button "上一页" [disabled] [ref=e579]
+            - button "下一页" [disabled] [ref=e580]
+        - list [ref=e581]:
+          - listitem [ref=e582]:
+            - generic [ref=e583]:
+              - generic [ref=e584]: stderr · run_4fa8
+              - time [ref=e585]: 2026/03/02 08:29:24
+            - paragraph [ref=e586]: "级别: info"
+            - code [ref=e587]: "2026-03-02T00:29:24.121340Z WARN codex_core::shell_snapshot: Failed to delete shell snapshot at \"/Users/slg/.codex/shell_snapshots/019cabf3-22c2-7620-b564-09ffb71bed9f.tmp-1772411364040741000\": Os { code: 2, kind: NotFound, message: \"No such file or directory\" }"
+          - listitem [ref=e588]:
+            - generic [ref=e589]:
+              - generic [ref=e590]: stderr · run_4fa8
+              - time [ref=e591]: 2026/03/02 08:29:24
+            - paragraph [ref=e592]: "级别: info"
+            - code [ref=e593]: "mcp startup: no servers"
+          - listitem [ref=e594]:
+            - generic [ref=e595]:
+              - generic [ref=e596]: stderr · run_4fa8
+              - time [ref=e597]: 2026/03/02 08:29:24
+            - paragraph [ref=e598]: "级别: info"
+            - code [ref=e599]: 请输出一句话：hello from ux test 2026-03-02
+          - listitem [ref=e600]:
+            - generic [ref=e601]:
+              - generic [ref=e602]: stderr · run_4fa8
+              - time [ref=e603]: 2026/03/02 08:29:24
+            - paragraph [ref=e604]: "级别: info"
+            - code [ref=e605]: "Reasoning effort: medium"
+          - listitem [ref=e606]:
+            - generic [ref=e607]:
+              - generic [ref=e608]: stderr · run_4fa8
+              - time [ref=e609]: 2026/03/02 08:29:24
+            - paragraph [ref=e610]: "级别: info"
+            - code [ref=e611]: "Preferred model: gpt-5.3-codex"
+          - listitem [ref=e612]:
+            - generic [ref=e613]:
+              - generic [ref=e614]: stderr · run_4fa8
+              - time [ref=e615]: 2026/03/02 08:29:24
+            - paragraph [ref=e616]: "级别: info"
+            - code [ref=e617]: user
+          - listitem [ref=e618]:
+            - generic [ref=e619]:
+              - generic [ref=e620]: stderr · run_4fa8
+              - time [ref=e621]: 2026/03/02 08:29:24
+            - paragraph [ref=e622]: "级别: info"
+            - code [ref=e623]: "--------"
+          - listitem [ref=e624]:
+            - generic [ref=e625]:
+              - generic [ref=e626]: stderr · run_4fa8
+              - time [ref=e627]: 2026/03/02 08:29:24
+            - paragraph [ref=e628]: "级别: info"
+            - code [ref=e629]: "session id: 019cabf3-22c2-7620-b564-09ffb71bed9f"
+          - listitem [ref=e630]:
+            - generic [ref=e631]:
+              - generic [ref=e632]: stderr · run_4fa8
+              - time [ref=e633]: 2026/03/02 08:29:24
+            - paragraph [ref=e634]: "级别: info"
+            - code [ref=e635]: "reasoning summaries: none"
+          - listitem [ref=e636]:
+            - generic [ref=e637]:
+              - generic [ref=e638]: stderr · run_4fa8
+              - time [ref=e639]: 2026/03/02 08:29:24
+            - paragraph [ref=e640]: "级别: info"
+            - code [ref=e641]: "reasoning effort: medium"
+          - listitem [ref=e642]:
+            - generic [ref=e643]:
+              - generic [ref=e644]: stderr · run_4fa8
+              - time [ref=e645]: 2026/03/02 08:29:24
+            - paragraph [ref=e646]: "级别: info"
+            - code [ref=e647]: "sandbox: workspace-write [workdir, /tmp, $TMPDIR]"
+          - listitem [ref=e648]:
+            - generic [ref=e649]:
+              - generic [ref=e650]: stderr · run_4fa8
+              - time [ref=e651]: 2026/03/02 08:29:24
+            - paragraph [ref=e652]: "级别: info"
+            - code [ref=e653]: "approval: never"
+          - listitem [ref=e654]:
+            - generic [ref=e655]:
+              - generic [ref=e656]: stderr · run_4fa8
+              - time [ref=e657]: 2026/03/02 08:29:24
+            - paragraph [ref=e658]: "级别: info"
+            - code [ref=e659]: "provider: sub2api"
+          - listitem [ref=e660]:
+            - generic [ref=e661]:
+              - generic [ref=e662]: stderr · run_4fa8
+              - time [ref=e663]: 2026/03/02 08:29:24
+            - paragraph [ref=e664]: "级别: info"
+            - code [ref=e665]: "model: gpt-5.3-codex"
+          - listitem [ref=e666]:
+            - generic [ref=e667]:
+              - generic [ref=e668]: stderr · run_4fa8
+              - time [ref=e669]: 2026/03/02 08:29:24
+            - paragraph [ref=e670]: "级别: info"
+            - code [ref=e671]: "workdir: /Users/slg/workspace/Pocket-Codex"
+          - listitem [ref=e672]:
+            - generic [ref=e673]:
+              - generic [ref=e674]: stderr · run_4fa8
+              - time [ref=e675]: 2026/03/02 08:29:24
+            - paragraph [ref=e676]: "级别: info"
+            - code [ref=e677]: "--------"
+          - listitem [ref=e678]:
+            - generic [ref=e679]:
+              - generic [ref=e680]: stderr · run_4fa8
+              - time [ref=e681]: 2026/03/02 08:29:24
+            - paragraph [ref=e682]: "级别: info"
+            - code [ref=e683]: OpenAI Codex v0.107.0-alpha.5 (research preview)
+          - listitem [ref=e684]:
+            - generic [ref=e685]:
+              - generic [ref=e686]: 系统 · run_4fa8
+              - time [ref=e687]: 2026/03/02 08:29:23
+            - paragraph [ref=e688]: "级别: info"
+            - code [ref=e689]: starting codex executor
+  - button "Open Next.js Dev Tools" [ref=e38] [cursor=pointer]:
+    - img [ref=e39]
+  - alert [ref=e42]

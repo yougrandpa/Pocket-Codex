@@ -1,0 +1,59 @@
+- generic [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - paragraph [ref=e6]: Pocket Codex
+          - heading "远程任务控制" [level=1] [ref=e7]
+        - button "English" [ref=e8] [cursor=pointer]
+      - paragraph [ref=e9]: 用手机监控并操作 Codex 任务。
+    - generic [ref=e990]:
+      - link "返回控制台" [ref=e991] [cursor=pointer]:
+        - /url: /
+      - generic [ref=e992]:
+        - heading "任务详情" [level=2] [ref=e993]
+        - generic [ref=e994]:
+          - generic [ref=e995]:
+            - button "背景信息窗口提示" [ref=e996] [cursor=pointer]: 上下文
+            - dialog "背景信息窗口":
+              - paragraph: 背景信息窗口
+              - paragraph: 未上报
+              - paragraph: 已用 - 标记，共 -
+          - generic [ref=e997]: 排队中
+      - generic [ref=e998]:
+        - button "对话" [ref=e999] [cursor=pointer]
+        - button "控制" [ref=e1000] [cursor=pointer]
+        - button "成本" [ref=e1001] [cursor=pointer]
+        - button "事件日志" [active] [ref=e1002] [cursor=pointer]
+      - status [ref=e1023]: 消息已发送。
+      - generic [ref=e1024]:
+        - heading "状态事件" [level=3] [ref=e1025]
+        - generic [ref=e1026]:
+          - paragraph [ref=e1027]: 第 1 / 1 · 共 2 条
+          - generic [ref=e1028]:
+            - button "上一页" [disabled] [ref=e1029]
+            - button "下一页" [disabled] [ref=e1030]
+        - list [ref=e1031]:
+          - listitem [ref=e1032]:
+            - generic [ref=e1033]:
+              - generic [ref=e1034]: task.status.changed
+              - time [ref=e1035]: 2026/03/02 08:30:28
+            - paragraph [ref=e1036]: "运行: run_6e233888dd1b"
+            - code [ref=e1037]: "{\"from\":null,\"to\":\"QUEUED\",\"reason\":\"task_created\",\"run_id\":\"run_6e233888dd1b\",\"run_sequence\":1}"
+          - listitem [ref=e1038]:
+            - generic [ref=e1039]:
+              - generic [ref=e1040]: task.run.created
+              - time [ref=e1041]: 2026/03/02 08:30:28
+            - paragraph [ref=e1042]: "运行: run_6e233888dd1b"
+            - code [ref=e1043]: "{\"run_id\":\"run_6e233888dd1b\",\"run_sequence\":1,\"reason\":\"task_created\"}"
+      - generic [ref=e1044]:
+        - heading "执行日志" [level=3] [ref=e1045]
+        - paragraph [ref=e1046]: 暂无执行日志。
+      - generic [ref=e1018]:
+        - button "对话" [ref=e1019] [cursor=pointer]
+        - button "控制" [ref=e1020] [cursor=pointer]
+        - button "取消" [ref=e1021] [cursor=pointer]
+        - button "发消息" [ref=e1022] [cursor=pointer]
+  - button "Open Next.js Dev Tools" [ref=e38] [cursor=pointer]:
+    - img [ref=e39]
+  - alert [ref=e42]

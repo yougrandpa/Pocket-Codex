@@ -1,0 +1,49 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - paragraph [ref=e6]: Pocket Codex
+          - heading "Remote Task Control" [level=1] [ref=e7]
+        - button "中文" [ref=e8] [cursor=pointer]
+      - paragraph [ref=e9]: Monitor and operate Codex jobs from your phone.
+    - generic [ref=e428]:
+      - link "Back to dashboard" [ref=e429] [cursor=pointer]:
+        - /url: /
+      - generic [ref=e430]:
+        - heading "Task Detail" [level=2] [ref=e431]
+        - generic [ref=e432]:
+          - generic [ref=e433]:
+            - button "Context window hint" [ref=e434] [cursor=pointer]: Ctx
+            - dialog "Context Window":
+              - paragraph: Context Window
+              - paragraph: not reported
+              - paragraph: Used - tokens，of -
+          - generic [ref=e435]: Queued
+      - generic [ref=e436]:
+        - button "Conversation" [ref=e437] [cursor=pointer]
+        - button "Controls" [ref=e438] [cursor=pointer]
+        - button "Cost" [ref=e439] [cursor=pointer]
+        - button "Events" [ref=e440] [cursor=pointer]
+      - generic [ref=e441]:
+        - heading "Conversation" [level=3] [ref=e442]
+        - list [ref=e443]:
+          - listitem [ref=e444]:
+            - generic [ref=e445]:
+              - strong [ref=e446]: You
+              - time [ref=e447]: 03/02/2026, 08:34:57 AM
+            - paragraph [ref=e449]: QA_PROMPT_20260302_0034
+      - generic [ref=e450]:
+        - generic [ref=e451]:
+          - generic [ref=e452]: Append instruction
+          - textbox "Append instruction" [ref=e453]:
+            - /placeholder: Add follow-up instruction...
+        - button "Send Message" [disabled] [ref=e455]
+      - generic [ref=e456]:
+        - button "Chat" [ref=e457] [cursor=pointer]
+        - button "Control" [ref=e458] [cursor=pointer]
+        - button "cancel" [ref=e459] [cursor=pointer]
+        - button "Message" [ref=e460] [cursor=pointer]
+  - button "Open Next.js Dev Tools" [ref=e424] [cursor=pointer]:
+    - img [ref=e425]
+  - alert [ref=e110]

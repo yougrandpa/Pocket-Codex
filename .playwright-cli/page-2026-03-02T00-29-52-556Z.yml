@@ -1,0 +1,64 @@
+- generic [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - paragraph [ref=e6]: Pocket Codex
+          - heading "远程任务控制" [level=1] [ref=e7]
+        - button "English" [ref=e8] [cursor=pointer]
+      - paragraph [ref=e9]: 用手机监控并操作 Codex 任务。
+    - generic [ref=e475]:
+      - link "返回控制台" [ref=e476] [cursor=pointer]:
+        - /url: /
+      - generic [ref=e477]:
+        - heading "任务详情" [level=2] [ref=e478]
+        - generic [ref=e479]:
+          - generic [ref=e480]:
+            - button "背景信息窗口提示" [ref=e481] [cursor=pointer]: 上下文
+            - dialog "背景信息窗口":
+              - paragraph: 背景信息窗口
+              - paragraph: 未上报
+              - paragraph: 已用 - 标记，共 -
+          - generic [ref=e482]: 排队中
+      - generic [ref=e483]:
+        - button "对话" [ref=e484] [cursor=pointer]
+        - button "控制" [ref=e485] [cursor=pointer]
+        - button "成本" [ref=e486] [cursor=pointer]
+        - button "事件日志" [active] [ref=e487] [cursor=pointer]
+      - generic [ref=e514]:
+        - heading "状态事件" [level=3] [ref=e515]
+        - generic [ref=e516]:
+          - paragraph [ref=e517]: 第 1 / 1 · 共 3 条
+          - generic [ref=e518]:
+            - button "上一页" [disabled] [ref=e519]
+            - button "下一页" [disabled] [ref=e520]
+        - list [ref=e521]:
+          - listitem [ref=e522]:
+            - generic [ref=e523]:
+              - generic [ref=e524]: task.message.appended
+              - time [ref=e525]: 2026/03/02 08:13:39
+            - paragraph [ref=e526]: "运行: run_f958ad0fe339"
+            - code [ref=e527]: "{\"message_id\":\"msg_16ccc4b6d939\",\"message\":\"regression follow-up\",\"run_id\":\"run_f958ad0fe339\",\"run_sequence\":1}"
+          - listitem [ref=e528]:
+            - generic [ref=e529]:
+              - generic [ref=e530]: task.status.changed
+              - time [ref=e531]: 2026/03/02 08:13:39
+            - paragraph [ref=e532]: "运行: run_f958ad0fe339"
+            - code [ref=e533]: "{\"from\":null,\"to\":\"QUEUED\",\"reason\":\"task_created\",\"run_id\":\"run_f958ad0fe339\",\"run_sequence\":1}"
+          - listitem [ref=e534]:
+            - generic [ref=e535]:
+              - generic [ref=e536]: task.run.created
+              - time [ref=e537]: 2026/03/02 08:13:39
+            - paragraph [ref=e538]: "运行: run_f958ad0fe339"
+            - code [ref=e539]: "{\"run_id\":\"run_f958ad0fe339\",\"run_sequence\":1,\"reason\":\"task_created\"}"
+      - generic [ref=e540]:
+        - heading "执行日志" [level=3] [ref=e541]
+        - paragraph [ref=e542]: 暂无执行日志。
+      - generic [ref=e509]:
+        - button "对话" [ref=e510] [cursor=pointer]
+        - button "控制" [ref=e511] [cursor=pointer]
+        - button "取消" [ref=e512] [cursor=pointer]
+        - button "发消息" [ref=e513] [cursor=pointer]
+  - button "Open Next.js Dev Tools" [ref=e38] [cursor=pointer]:
+    - img [ref=e39]
+  - alert [ref=e42]

@@ -1,0 +1,49 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - paragraph [ref=e6]: Pocket Codex
+          - heading "远程任务控制" [level=1] [ref=e7]
+        - button "English" [ref=e8] [cursor=pointer]
+      - paragraph [ref=e9]: 用手机监控并操作 Codex 任务。
+    - generic [ref=e471]:
+      - link "返回控制台" [ref=e472] [cursor=pointer]:
+        - /url: /
+      - generic [ref=e473]:
+        - heading "任务详情" [level=2] [ref=e474]
+        - generic [ref=e475]:
+          - generic [ref=e476]:
+            - button "背景信息窗口提示" [ref=e477] [cursor=pointer]: 上下文
+            - dialog "背景信息窗口":
+              - paragraph: 背景信息窗口
+              - paragraph: 未上报
+              - paragraph: 已用 - 标记，共 -
+          - generic [ref=e478]: 执行中
+      - generic [ref=e479]:
+        - button "对话" [ref=e480] [cursor=pointer]
+        - button "控制" [ref=e481] [cursor=pointer]
+        - button "成本" [ref=e482] [cursor=pointer]
+        - button "事件日志" [ref=e483] [cursor=pointer]
+      - generic [ref=e484]:
+        - heading "对话" [level=3] [ref=e485]
+        - list [ref=e486]:
+          - listitem [ref=e487]:
+            - generic [ref=e488]:
+              - strong [ref=e489]: 你
+              - time [ref=e490]: 2026/03/02 08:29:23
+            - paragraph [ref=e492]: 请输出一句话：hello from ux test 2026-03-02
+          - listitem [ref=e493]:
+            - generic [ref=e494]:
+              - strong [ref=e495]: 助手
+              - time [ref=e496]: 2026/03/02 08:29:24
+            - paragraph [ref=e498]: 正在处理你的消息，请稍候...
+      - generic [ref=e499]:
+        - generic [ref=e500]:
+          - generic [ref=e501]: 追加指令
+          - textbox "追加指令" [ref=e502]:
+            - /placeholder: 补充指令...
+        - button "发送消息" [disabled] [ref=e504]
+  - button "Open Next.js Dev Tools" [ref=e38] [cursor=pointer]:
+    - img [ref=e39]
+  - alert [ref=e42]
