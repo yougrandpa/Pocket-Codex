@@ -327,6 +327,14 @@ textarea {
   word-break: break-word;
 }
 
+.task-prompt-clamp {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
 .task-usage-row {
   align-items: center;
   display: flex;

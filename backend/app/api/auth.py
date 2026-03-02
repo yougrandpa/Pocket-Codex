@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import asyncio
+import time
+from collections import OrderedDict, deque
 from ipaddress import ip_address
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -25,6 +27,56 @@ from ..services.task_service import task_service
 
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+AUTH_RATE_LIMIT_WINDOW_SECONDS = 60
+LOGIN_RATE_LIMIT_MAX = 30
+MOBILE_REQUEST_RATE_LIMIT_MAX = 20
+AUTH_RATE_LIMIT_MAX_KEYS = 4096
+AUTH_RATE_LIMIT_SWEEP_SECONDS = 60
+
+
+class AuthRateLimiter:
+    def __init__(self) -> None:
+        self._lock = asyncio.Lock()
+        self._buckets: dict[str, deque[float]] = {}
+        self._touched: OrderedDict[str, float] = OrderedDict()
+        self._last_sweep = 0.0
+
+    async def check_and_record(self, key: str, limit: int, window_seconds: int) -> tuple[bool, int]:
+        now = time.monotonic()
+        async with self._lock:
+            self._maybe_sweep_locked(now=now, window_seconds=window_seconds)
+            if key not in self._buckets and len(self._buckets) >= AUTH_RATE_LIMIT_MAX_KEYS:
+                if self._touched:
+                    oldest_key, _ = self._touched.popitem(last=False)
+                    self._buckets.pop(oldest_key, None)
+
+            bucket = self._buckets.setdefault(key, deque())
+            self._touched.pop(key, None)
+            self._touched[key] = now
+            cutoff = now - window_seconds
+            while bucket and bucket[0] < cutoff:
+                bucket.popleft()
+
+            if len(bucket) >= limit:
+                retry_after = max(1, int(window_seconds - (now - bucket[0])))
+                return False, retry_after
+
+            bucket.append(now)
+            return True, 0
+
+    def _maybe_sweep_locked(self, *, now: float, window_seconds: int) -> None:
+        if now - self._last_sweep < AUTH_RATE_LIMIT_SWEEP_SECONDS:
+            return
+        stale_before = now - max(window_seconds * 2, AUTH_RATE_LIMIT_SWEEP_SECONDS)
+        stale_keys = [key for key, touched_at in self._touched.items() if touched_at < stale_before]
+        for stale_key in stale_keys:
+            self._touched.pop(stale_key, None)
+            self._buckets.pop(stale_key, None)
+        self._last_sweep = now
+
+
+auth_rate_limiter = AuthRateLimiter()
 
 
 def _normalize_ip_candidate(value: str | None) -> str:
@@ -152,8 +204,29 @@ async def _verify_credentials(username: str, password: str) -> None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
 
+async def _enforce_auth_rate_limit(request: Request, username: str, scope: str) -> None:
+    request_ip = _request_ip(request)
+    normalized_ip = _normalize_ip_candidate(request_ip)
+    normalized_user = username.strip().lower()
+    limit = LOGIN_RATE_LIMIT_MAX if scope == "login" else MOBILE_REQUEST_RATE_LIMIT_MAX
+    key = f"{scope}:{normalized_ip}:{normalized_user}"
+    allowed, retry_after = await auth_rate_limiter.check_and_record(
+        key=key,
+        limit=limit,
+        window_seconds=AUTH_RATE_LIMIT_WINDOW_SECONDS,
+    )
+    if allowed:
+        return
+    raise HTTPException(
+        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+        detail="Too many authentication attempts, please retry later",
+        headers={"Retry-After": str(retry_after)},
+    )
+
+
 @router.post("/login", response_model=TokenResponse)
 async def login(payload: LoginRequest, request: Request) -> TokenResponse:
+    await _enforce_auth_rate_limit(request, payload.username, "login")
     await _verify_credentials(payload.username, payload.password)
     request_ip = _request_ip(request)
 
@@ -188,6 +261,7 @@ async def create_mobile_login_request(
     payload: MobileLoginStartRequest,
     request: Request,
 ) -> MobileLoginStartResponse:
+    await _enforce_auth_rate_limit(request, payload.username, "mobile")
     await _verify_credentials(payload.username, payload.password)
     request_ip = _request_ip(request)
     record = await mobile_auth_service.create_request(

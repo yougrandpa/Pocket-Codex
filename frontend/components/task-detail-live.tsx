@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { FormEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ContextWindowIndicator } from "@/components/context-window-indicator";
 import {
   Task,
@@ -29,6 +29,7 @@ interface TaskDetailLiveProps {
 
 const LOG_PAGE_SIZE = 20;
 const LIFECYCLE_PAGE_SIZE = 20;
+const ACTIVE_TASK_POLL_MS = 5000;
 type TaskDetailTab = "conversation" | "controls" | "cost" | "events";
 
 function mergeTaskFromStatus(task: Task, event: TaskEvent): Task {
@@ -257,32 +258,47 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
   const [busyMessage, setBusyMessage] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
+  const [streamState, setStreamState] = useState<"connecting" | "connected" | "reconnecting">(
+    "connecting"
+  );
+  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
   const hasTrackedOpenRef = useRef(false);
   const messageInputRef = useRef<HTMLTextAreaElement | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    getTask(taskId)
-      .then((detail) => {
-        if (cancelled) {
-          return;
-        }
+  const loadTaskDetail = useCallback(
+    async (options: { silent?: boolean; includeEvents?: boolean } = {}): Promise<void> => {
+      const { silent = false, includeEvents = true } = options;
+      try {
+        const detail = await getTask(taskId, {
+          includeEvents,
+          eventLimit: includeEvents ? 400 : undefined
+        });
         setTask(detail.task);
-        setEvents(detail.events.slice().reverse());
-      })
-      .catch((requestError) => {
-        if (!cancelled) {
+        if (includeEvents) {
+          setEvents(detail.events.slice().reverse());
+        }
+        setLastSyncedAt(new Date().toISOString());
+        if (silent) {
+          setError((previous) => (isTransientStreamError(previous) ? null : previous));
+        } else {
+          setError(null);
+        }
+      } catch (requestError) {
+        if (!silent) {
           setError(
             requestError instanceof Error
               ? requestError.message
               : bi("任务加载失败。", "Failed to load task.")
           );
         }
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [taskId]);
+      }
+    },
+    [taskId]
+  );
+
+  useEffect(() => {
+    void loadTaskDetail({ silent: false, includeEvents: true });
+  }, [loadTaskDetail]);
 
   useEffect(() => {
     if (!task || hasTrackedOpenRef.current) {
@@ -303,15 +319,19 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
 
   useEffect(() => {
     let stream: TaskEventStream | null = null;
+    setStreamState("connecting");
     try {
       stream = openEventStream({
         taskId,
         onEvent: (event) => {
+          setStreamState("connected");
+          setLastSyncedAt(new Date().toISOString());
           setEvents((previous) => [event, ...previous].slice(0, 400));
           setTask((previous) => (previous ? mergeTaskFromStatus(previous, event) : previous));
           setError((previous) => (isTransientStreamError(previous) ? null : previous));
         },
         onError: () => {
+          setStreamState("reconnecting");
           setError(
             bi(
               "网络波动，正在重连（不影响已提交操作）...",
@@ -334,6 +354,18 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
       stream?.close();
     };
   }, [taskId]);
+
+  useEffect(() => {
+    if (!task || !["QUEUED", "RUNNING", "WAITING_INPUT", "RETRYING"].includes(task.status)) {
+      return;
+    }
+    const timer = window.setInterval(() => {
+      void loadTaskDetail({ silent: true, includeEvents: false });
+    }, ACTIVE_TASK_POLL_MS);
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [loadTaskDetail, task]);
 
   const availableActions = useMemo(() => (task ? controlActions(task) : []), [task]);
   const logEvents = useMemo(
@@ -491,6 +523,7 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
       await appendTaskMessage(taskId, message.trim());
       setMessage("");
       setNote(bi("消息已发送。", "Message sent."));
+      await loadTaskDetail({ silent: true, includeEvents: true });
       window.setTimeout(() => {
         messageInputRef.current?.focus();
         messageInputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -550,6 +583,16 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
 
       {error ? <p className="error">{error}</p> : null}
       {note ? <p className="note" role="status" aria-live="polite">{note}</p> : null}
+      <p className="muted">
+        {bi("连接状态", "Stream")}:{" "}
+        {streamState === "connected"
+          ? bi("已连接", "Connected")
+          : streamState === "reconnecting"
+            ? bi("重连中", "Reconnecting")
+            : bi("连接中", "Connecting")}
+        {" · "}
+        {bi("最近同步", "Last sync")}: {formatDateTime(lastSyncedAt)}
+      </p>
 
       {showConversation ? (
         <>

@@ -9,6 +9,8 @@ interface LoginPanelProps {
   onLoggedIn: () => void;
 }
 
+type LoginMode = "mobile" | "desktop";
+
 function defaultDeviceName(): string {
   if (typeof window === "undefined") {
     return "mobile-browser";
@@ -36,13 +38,13 @@ export function LoginPanel({ onLoggedIn }: LoginPanelProps) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [deviceName, setDeviceName] = useState("");
+  const [loginMode, setLoginMode] = useState<LoginMode>("desktop");
   const [submitting, setSubmitting] = useState(false);
   const [pendingRequestId, setPendingRequestId] = useState<string | null>(null);
   const [pendingRequestToken, setPendingRequestToken] = useState<string | null>(null);
   const [pendingExpiresAt, setPendingExpiresAt] = useState<string | null>(null);
   const [pollIntervalSeconds, setPollIntervalSeconds] = useState(2);
   const [cancelPending, setCancelPending] = useState(false);
-  const [compactViewport, setCompactViewport] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
 
@@ -60,10 +62,12 @@ export function LoginPanel({ onLoggedIn }: LoginPanelProps) {
       return;
     }
     const media = window.matchMedia("(max-width: 719px)");
-    const sync = () => setCompactViewport(media.matches);
-    sync();
-    media.addEventListener("change", sync);
-    return () => media.removeEventListener("change", sync);
+    const syncMode = () => {
+      setLoginMode(media.matches ? "mobile" : "desktop");
+    };
+    syncMode();
+    media.addEventListener("change", syncMode);
+    return () => media.removeEventListener("change", syncMode);
   }, []);
 
   const desktopApprovePath = useMemo(() => {
@@ -72,6 +76,7 @@ export function LoginPanel({ onLoggedIn }: LoginPanelProps) {
     }
     return `${window.location.origin}/`;
   }, []);
+  const isMobileMode = loginMode === "mobile";
 
   const mapAuthError = useCallback((raw: unknown): string => {
     const message = raw instanceof Error ? raw.message : "";
@@ -187,6 +192,14 @@ export function LoginPanel({ onLoggedIn }: LoginPanelProps) {
     }
   }
 
+  function handleFormSubmit(event: FormEvent<HTMLFormElement>): void {
+    if (isMobileMode) {
+      event.preventDefault();
+      return;
+    }
+    void handleDesktopLogin(event);
+  }
+
   async function handleMobileLoginRequest(): Promise<void> {
     if (submitting || formInvalid || pendingRequestId) {
       return;
@@ -240,26 +253,55 @@ export function LoginPanel({ onLoggedIn }: LoginPanelProps) {
     <section className="panel animate-rise">
       <div className="panel-title-row">
         <h2 className="panel-title">{bi("登录", "Sign In")}</h2>
-        <span className="chip">{bi("电脑授权手机", "Desktop Approval")}</span>
+        <span className="chip">{bi("手机优先", "Mobile first")}</span>
       </div>
       <p className="muted">
-        {bi(
-          "手机端推荐流程：发起授权请求 -> 电脑端批准 -> 手机自动登录。",
-          "Recommended mobile flow: request approval -> approve on desktop -> mobile auto sign-in."
-        )}
+        {isMobileMode
+          ? bi(
+              "推荐手机授权：发起请求 -> 电脑端批准 -> 手机自动登录。",
+              "Recommended: request approval on phone -> approve on desktop -> auto sign in."
+            )
+          : bi(
+              "你正在电脑端，可直接登录；也可切换到手机授权流程。",
+              "You are on desktop and can sign in directly, or switch to mobile approval mode."
+            )}
       </p>
-      <ol className="muted login-steps">
-        <li>{bi("1) 输入账号密码，点击“发起手机授权”。", "1) Enter credentials and tap Request mobile approval.")}</li>
-        <li>{bi("2) 在电脑端“手机登录授权”里点击允许。", "2) Approve in desktop Mobile Login Approvals.")}</li>
-        <li>{bi("3) 回到手机端自动完成登录。", "3) Return to mobile and sign in automatically.")}</li>
-      </ol>
+      <div className="mode-switch-grid">
+        <button
+          className={`button button-secondary mode-switch-button ${isMobileMode ? "mode-switch-active" : ""}`}
+          type="button"
+          onClick={() => setLoginMode("mobile")}
+        >
+          {bi("手机授权模式", "Mobile approval")}
+        </button>
+        <button
+          className={`button button-secondary mode-switch-button ${!isMobileMode ? "mode-switch-active" : ""}`}
+          type="button"
+          onClick={() => setLoginMode("desktop")}
+        >
+          {bi("电脑直登模式", "Desktop direct")}
+        </button>
+      </div>
+      {isMobileMode ? (
+        <ol className="muted login-steps">
+          <li>{bi("1) 输入账号密码，点击“发起手机授权”。", "1) Enter credentials and tap Request mobile approval.")}</li>
+          <li>{bi("2) 在电脑端“手机登录授权”里点击允许。", "2) Approve in desktop Mobile Login Approvals.")}</li>
+          <li>{bi("3) 回到手机端自动完成登录。", "3) Return to mobile and sign in automatically.")}</li>
+        </ol>
+      ) : null}
       <p className="muted login-inline-tip">
         {bi(
           "提示：先填写用户名和密码，按钮才可点击。",
           "Tip: Username and password are required before actions are enabled."
         )}
       </p>
-      <form className="stack" onSubmit={handleDesktopLogin}>
+      <p className="muted login-inline-tip">
+        {bi(
+          "首次使用？请联系管理员获取账号，或参考 docs/LOCAL_RUN.md 的本地联调说明。",
+          "First time here? Ask your admin for credentials, or check docs/LOCAL_RUN.md."
+        )}
+      </p>
+      <form className="stack" onSubmit={handleFormSubmit}>
         <label className="field">
           <span>{bi("用户名", "Username")}</span>
           <input
@@ -324,32 +366,34 @@ export function LoginPanel({ onLoggedIn }: LoginPanelProps) {
         {note ? <p className="note">{note}</p> : null}
 
         <div className="pagination-actions mobile-sticky-actions">
-          <button
-            className="button"
-            type="button"
-            disabled={submitting || formInvalid || Boolean(pendingRequestId)}
-            onClick={() => {
-              void handleMobileLoginRequest();
-            }}
-          >
-            {submitting ? bi("提交中...", "Submitting...") : bi("发起手机授权", "Request mobile approval")}
-          </button>
-          {compactViewport ? (
-            <details className="login-desktop-entry">
-              <summary>{bi("电脑端入口", "Desktop entry")}</summary>
-              <button className="button button-secondary" type="submit" disabled={submitting || formInvalid}>
-                {submitting
-                  ? bi("登录中...", "Signing in...")
-                  : bi("我是电脑端，直接登录", "I'm on desktop, direct sign-in")}
-              </button>
-            </details>
+          {isMobileMode ? (
+            <button
+              className="button"
+              type="button"
+              disabled={submitting || formInvalid || Boolean(pendingRequestId)}
+              onClick={() => {
+                void handleMobileLoginRequest();
+              }}
+            >
+              {submitting ? bi("提交中...", "Submitting...") : bi("发起手机授权", "Request mobile approval")}
+            </button>
           ) : (
-            <button className="button button-secondary" type="submit" disabled={submitting || formInvalid}>
-              {submitting
-                ? bi("登录中...", "Signing in...")
-                : bi("我是电脑端，直接登录", "I'm on desktop, direct sign-in")}
+            <button className="button" type="submit" disabled={submitting || formInvalid}>
+              {submitting ? bi("登录中...", "Signing in...") : bi("直接登录", "Sign in directly")}
             </button>
           )}
+          {!isMobileMode ? (
+            <button
+              className="button button-secondary"
+              type="button"
+              disabled={submitting || formInvalid || Boolean(pendingRequestId)}
+              onClick={() => {
+                void handleMobileLoginRequest();
+              }}
+            >
+              {bi("改用手机授权", "Use mobile approval")}
+            </button>
+          ) : null}
           {pendingRequestId ? (
             <button
               className="button button-secondary"

@@ -1,16 +1,23 @@
 from __future__ import annotations
 
+import json
 from enum import Enum
 from typing import Any, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from .models import Task, TaskEvent, TaskMessage, TaskRun, TaskStatus
 
 
+MAX_PROMPT_CHARS = 20_000
+MAX_MESSAGE_CHARS = 8_000
+MAX_WORKDIR_CHARS = 512
+MAX_UI_DETAIL_BYTES = 8_192
+
+
 class LoginRequest(BaseModel):
-    username: str = Field(min_length=1)
-    password: str = Field(min_length=1)
+    username: str = Field(min_length=1, max_length=128)
+    password: str = Field(min_length=1, max_length=256)
 
 
 class RefreshTokenRequest(BaseModel):
@@ -25,8 +32,8 @@ class TokenResponse(BaseModel):
 
 
 class MobileLoginStartRequest(BaseModel):
-    username: str = Field(min_length=1)
-    password: str = Field(min_length=1)
+    username: str = Field(min_length=1, max_length=128)
+    password: str = Field(min_length=1, max_length=256)
     device_name: str = Field(default="unknown-device", min_length=1, max_length=120)
 
 
@@ -83,9 +90,9 @@ class MobileLoginDecisionResponse(BaseModel):
 
 
 class TaskCreateRequest(BaseModel):
-    prompt: str = Field(min_length=1)
+    prompt: str = Field(min_length=1, max_length=MAX_PROMPT_CHARS)
     priority: int = 0
-    workdir: Optional[str] = None
+    workdir: Optional[str] = Field(default=None, max_length=MAX_WORKDIR_CHARS)
     timeout_seconds: int = Field(default=20, ge=5, le=3600)
     model: Optional[str] = Field(default=None, max_length=80)
     reasoning_effort: Optional[str] = Field(default=None, max_length=16)
@@ -119,7 +126,7 @@ class TaskControlResponse(BaseModel):
 
 
 class TaskMessageRequest(BaseModel):
-    message: str = Field(min_length=1)
+    message: str = Field(min_length=1, max_length=MAX_MESSAGE_CHARS)
 
 
 class TaskMessageAckResponse(BaseModel):
@@ -133,6 +140,13 @@ class UiEventRequest(BaseModel):
     event_name: str = Field(min_length=1, max_length=80)
     task_id: Optional[str] = None
     detail: dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def validate_detail_size(self) -> "UiEventRequest":
+        raw = json.dumps(self.detail, ensure_ascii=False, separators=(",", ":"))
+        if len(raw.encode("utf-8")) > MAX_UI_DETAIL_BYTES:
+            raise ValueError(f"detail payload exceeds {MAX_UI_DETAIL_BYTES} bytes")
+        return self
 
 
 class UiEventAckResponse(BaseModel):

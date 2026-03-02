@@ -97,13 +97,21 @@ async def get_executor_options(_: str = Depends(get_current_user)) -> ExecutorCa
 
 
 @router.get("/{task_id}", response_model=TaskDetailResponse)
-async def get_task(task_id: str, _: str = Depends(get_current_user)) -> TaskDetailResponse:
+async def get_task(
+    task_id: str,
+    include_events: bool = Query(default=True),
+    event_limit: int = Query(default=200, ge=1, le=500),
+    _: str = Depends(get_current_user),
+) -> TaskDetailResponse:
     task = await task_service.get_task(task_id)
     if task is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
+    events = task.events if include_events else []
+    if include_events and event_limit > 0:
+        events = events[-event_limit:]
     return TaskDetailResponse(
         task=TaskResponse.from_model(task),
-        events=[TaskEventResponse.from_model(event) for event in task.events],
+        events=[TaskEventResponse.from_model(event) for event in events],
     )
 
 

@@ -501,7 +501,7 @@ export function TaskDashboard() {
             }}
             workdirSuggestions={workdirSuggestions}
           />
-          <ExecutorStatusBar />
+          {!isBeginnerMode ? <ExecutorStatusBar /> : null}
           <MobileLoginApprovals enabled={authed} />
           {isBeginnerMode ? (
             <section className="panel animate-rise delay-1">
@@ -510,7 +510,7 @@ export function TaskDashboard() {
                 <span className="chip">{bi("3 步", "3 steps")}</span>
               </div>
               <ol className="login-steps">
-                <li>{bi("填写任务并点击“发送任务”。", "Fill a prompt and submit the task.")}</li>
+                <li>{bi("填写任务并点击“创建任务”。", "Fill a prompt and create the task.")}</li>
                 <li>{bi("在任务列表点击任务进入详情。", "Open the task detail from the task list.")}</li>
                 <li>{bi("需要手机授权时在本卡片允许登录。", "Approve phone login requests in this panel.")}</li>
               </ol>

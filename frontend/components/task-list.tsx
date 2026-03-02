@@ -171,7 +171,12 @@ export function TaskList({
                 </span>
                 <time dateTime={task.updated_at}>{formatDateTime(task.updated_at)}</time>
               </div>
-              <p className="task-prompt">{task.prompt || bi("(空指令)", "(empty prompt)")}</p>
+              <p
+                className="task-prompt task-prompt-clamp"
+                title={task.prompt || bi("(空指令)", "(empty prompt)")}
+              >
+                {task.prompt || bi("(空指令)", "(empty prompt)")}
+              </p>
               <div className="task-usage-row">
                 <p className="muted task-usage-text">
                   {bi("Tokens", "Tokens")}: {formatTokenCompact(task.total_tokens)} ·{" "}

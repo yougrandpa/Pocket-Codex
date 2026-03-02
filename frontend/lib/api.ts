@@ -69,6 +69,11 @@ export interface TaskDetail {
   events: TaskEvent[];
 }
 
+interface GetTaskOptions {
+  includeEvents?: boolean;
+  eventLimit?: number;
+}
+
 export interface TaskListResult {
   total: number;
   limit: number;
@@ -525,26 +530,61 @@ async function refreshSession(refreshToken: string): Promise<SessionTokens> {
 
 async function authorizedFetchJson<T>(
   path: string,
-  init: RequestInit = {},
+  init: JsonRequestInit = {},
   retried = false
 ): Promise<T> {
+  const { timeoutMs = REQUEST_TIMEOUT_MS, signal, ...requestInit } = init;
   const session = readSession();
   if (!session?.accessToken) {
     throw new Error(bi("请先登录。", "Please sign in first."));
   }
 
-  const headers = new Headers(init.headers || {});
+  const headers = new Headers(requestInit.headers || {});
   headers.set("Authorization", `Bearer ${session.accessToken}`);
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...init,
-    headers
-  });
+  const controller = new AbortController();
+  let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
+  const abortFromOuterSignal = () => controller.abort(signal?.reason);
+  if (signal?.aborted) {
+    controller.abort(signal.reason);
+  } else if (signal) {
+    signal.addEventListener("abort", abortFromOuterSignal, { once: true });
+  }
+  if (timeoutMs > 0) {
+    timeoutHandle = setTimeout(() => {
+      controller.abort(new DOMException("timeout", "TimeoutError"));
+    }, timeoutMs);
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      ...requestInit,
+      headers,
+      signal: controller.signal
+    });
+  } catch (error) {
+    throw normalizeFetchFailure(error);
+  } finally {
+    if (timeoutHandle) {
+      clearTimeout(timeoutHandle);
+    }
+    signal?.removeEventListener("abort", abortFromOuterSignal);
+  }
 
   if (response.status === 401 && !retried && session.refreshToken) {
     try {
       await refreshSession(session.refreshToken);
-      return await authorizedFetchJson<T>(path, init, true);
+      return await authorizedFetchJson<T>(
+        path,
+        {
+          ...requestInit,
+          headers,
+          timeoutMs,
+          signal
+        },
+        true
+      );
     } catch {
       clearSession();
       throw new Error(bi("会话已过期，请重新登录。", "Session expired. Please sign in again."));
@@ -727,9 +767,19 @@ export async function getTasks(
   };
 }
 
-export async function getTask(taskId: string): Promise<TaskDetail> {
+export async function getTask(taskId: string, options: GetTaskOptions = {}): Promise<TaskDetail> {
+  const params = new URLSearchParams();
+  if (options.includeEvents === false) {
+    params.set("include_events", "false");
+  } else {
+    const rawLimit = options.eventLimit;
+    if (typeof rawLimit === "number" && Number.isFinite(rawLimit) && rawLimit > 0) {
+      params.set("event_limit", String(Math.max(1, Math.min(500, Math.floor(rawLimit)))));
+    }
+  }
+  const query = params.toString();
   const body = await authorizedFetchJson<{ task?: unknown; events?: unknown[] }>(
-    `/api/v1/tasks/${taskId}`,
+    `/api/v1/tasks/${taskId}${query ? `?${query}` : ""}`,
     { cache: "no-store" }
   );
   return {
