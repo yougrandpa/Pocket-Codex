@@ -605,6 +605,24 @@ textarea {
   margin-bottom: 12px;
 }
 
+.mode-switch-grid {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.mode-switch-button {
+  justify-content: center;
+  min-height: 44px;
+}
+
+.mode-switch-active {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-strong) 100%);
+  border: 0;
+  color: #fff;
+  font-weight: 700;
+}
+
 .notification-list {
   display: grid;
   gap: 8px;
@@ -636,6 +654,34 @@ textarea {
   font-size: 0.72rem;
   overflow-x: auto;
   padding: 8px;
+}
+
+.risk-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.risk-chip {
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 9px;
+}
+
+.risk-chip-high {
+  background: rgba(180, 35, 24, 0.14);
+  color: #912018;
+}
+
+.risk-chip-medium {
+  background: rgba(172, 103, 9, 0.16);
+  color: #8d4d00;
+}
+
+.risk-chip-low {
+  background: rgba(15, 118, 110, 0.14);
+  color: #0b5f58;
 }
 
 .audit-item {
@@ -975,6 +1021,10 @@ textarea {
     padding: 28px 24px 48px;
   }
 
+  .mode-switch-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
   .dashboard-columns {
     align-items: start;
     grid-template-columns: minmax(340px, 440px) minmax(0, 1fr);
@@ -983,6 +1033,10 @@ textarea {
   .task-audit-columns {
     align-items: start;
     grid-template-columns: minmax(340px, 1fr) minmax(340px, 1fr);
+  }
+
+  .task-audit-columns-single {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .row {

@@ -61,6 +61,15 @@ class MobileLoginPendingResponse(BaseModel):
     request_ip: str
     created_at: str
     expires_at: str
+    risk_level: str
+    risk_reasons: list[str] = Field(default_factory=list)
+    known_device: bool = False
+    known_ip: bool = False
+    device_approval_count: int = 0
+    device_last_approved_at: Optional[str] = None
+    ip_seen_count: int = 0
+    ip_last_seen_at: Optional[str] = None
+    ip_risk_level: str = "LOW"
 
 
 class MobileLoginPendingListResponse(BaseModel):

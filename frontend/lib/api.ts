@@ -145,6 +145,15 @@ export interface PendingMobileLoginRequest {
   request_ip: string;
   created_at: string;
   expires_at: string;
+  risk_level: "LOW" | "MEDIUM" | "HIGH";
+  risk_reasons: string[];
+  known_device: boolean;
+  known_ip: boolean;
+  device_approval_count: number;
+  device_last_approved_at?: string | null;
+  ip_seen_count: number;
+  ip_last_seen_at?: string | null;
+  ip_risk_level: "LOW" | "MEDIUM" | "HIGH";
 }
 
 export interface HealthStatus {
@@ -843,17 +852,35 @@ export async function getPendingMobileLoginRequests(): Promise<PendingMobileLogi
     { cache: "no-store" }
   );
   const items = Array.isArray(body.items) ? body.items : [];
-  return items.filter((item): item is PendingMobileLoginRequest => {
-    return (
-      typeof item?.request_id === "string" &&
-      typeof item?.status === "string" &&
-      typeof item?.username === "string" &&
-      typeof item?.device_name === "string" &&
-      typeof item?.request_ip === "string" &&
-      typeof item?.created_at === "string" &&
-      typeof item?.expires_at === "string"
-    );
-  });
+  return items
+    .filter((item): item is PendingMobileLoginRequest => {
+      return (
+        typeof item?.request_id === "string" &&
+        typeof item?.status === "string" &&
+        typeof item?.username === "string" &&
+        typeof item?.device_name === "string" &&
+        typeof item?.request_ip === "string" &&
+        typeof item?.created_at === "string" &&
+        typeof item?.expires_at === "string"
+      );
+    })
+    .map((item) => ({
+      ...item,
+      risk_level: item.risk_level === "HIGH" || item.risk_level === "MEDIUM" ? item.risk_level : "LOW",
+      risk_reasons: Array.isArray(item.risk_reasons)
+        ? item.risk_reasons.filter((value): value is string => typeof value === "string")
+        : [],
+      known_device: Boolean(item.known_device),
+      known_ip: Boolean(item.known_ip),
+      device_approval_count:
+        typeof item.device_approval_count === "number" ? Math.max(0, Math.floor(item.device_approval_count)) : 0,
+      device_last_approved_at:
+        typeof item.device_last_approved_at === "string" ? item.device_last_approved_at : null,
+      ip_seen_count: typeof item.ip_seen_count === "number" ? Math.max(0, Math.floor(item.ip_seen_count)) : 0,
+      ip_last_seen_at: typeof item.ip_last_seen_at === "string" ? item.ip_last_seen_at : null,
+      ip_risk_level:
+        item.ip_risk_level === "HIGH" || item.ip_risk_level === "MEDIUM" ? item.ip_risk_level : "LOW"
+    }));
 }
 
 export async function approveMobileLoginRequest(requestId: string): Promise<void> {

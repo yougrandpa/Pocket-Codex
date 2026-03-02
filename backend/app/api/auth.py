@@ -216,7 +216,7 @@ async def create_mobile_login_request(
 
 @router.get("/mobile/pending", response_model=MobileLoginPendingListResponse)
 async def list_mobile_login_requests(_: str = Depends(get_current_user)) -> MobileLoginPendingListResponse:
-    items = await mobile_auth_service.list_pending()
+    items = await mobile_auth_service.list_pending_with_risk()
     return MobileLoginPendingListResponse(
         total=len(items),
         items=[
@@ -228,8 +228,17 @@ async def list_mobile_login_requests(_: str = Depends(get_current_user)) -> Mobi
                 request_ip=item.request_ip,
                 created_at=item.created_at,
                 expires_at=item.expires_at,
+                risk_level=risk.risk_level,
+                risk_reasons=risk.risk_reasons,
+                known_device=risk.known_device,
+                known_ip=risk.known_ip,
+                device_approval_count=risk.device_approval_count,
+                device_last_approved_at=risk.device_last_approved_at,
+                ip_seen_count=risk.ip_seen_count,
+                ip_last_seen_at=risk.ip_last_seen_at,
+                ip_risk_level=risk.ip_risk_level,
             )
-            for item in items
+            for item, risk in items
         ],
     )
 

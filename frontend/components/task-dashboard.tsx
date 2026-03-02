@@ -29,6 +29,9 @@ import {
 const AUDIT_PAGE_SIZE = 20;
 const TASK_PAGE_SIZE = 20;
 const EXPORT_PAGE_SIZE = 500;
+const DASHBOARD_MODE_STORAGE_KEY = "pocket_codex_dashboard_mode";
+
+type DashboardMode = "beginner" | "advanced";
 
 function parseTaskPage(raw: string | null): number {
   if (!raw) {
@@ -157,6 +160,7 @@ function downloadTextFile(fileName: string, content: string, contentType: string
 export function TaskDashboard() {
   const [language] = useLanguage();
   const [authed, setAuthed] = useState(false);
+  const [mode, setMode] = useState<DashboardMode>("beginner");
   const [taskState, setTaskState] = useState<TaskListResult>({
     total: 0,
     limit: TASK_PAGE_SIZE,
@@ -187,6 +191,23 @@ export function TaskDashboard() {
     const session = readSession();
     setAuthed(Boolean(session?.accessToken));
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    const raw = window.localStorage.getItem(DASHBOARD_MODE_STORAGE_KEY);
+    if (raw === "beginner" || raw === "advanced") {
+      setMode(raw);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    window.localStorage.setItem(DASHBOARD_MODE_STORAGE_KEY, mode);
+  }, [mode]);
 
   const updateTaskPageQuery = useCallback((page: number): void => {
     if (typeof window === "undefined") {
@@ -435,8 +456,43 @@ export function TaskDashboard() {
     return <LoginPanel onLoggedIn={() => setAuthed(true)} />;
   }
 
+  const isBeginnerMode = mode === "beginner";
+  const taskAuditClassName = isBeginnerMode
+    ? "task-audit-columns task-audit-columns-single"
+    : "task-audit-columns";
+
   return (
     <div className="page-grid" data-lang={language}>
+      <section className="panel animate-rise">
+        <div className="panel-title-row">
+          <h2 className="panel-title">{bi("首页模式", "Home mode")}</h2>
+          <span className="chip">
+            {isBeginnerMode ? bi("新手", "Beginner") : bi("高级", "Advanced")}
+          </span>
+        </div>
+        <p className="muted">
+          {bi(
+            "新手模式聚焦核心操作，高级模式展示完整控制台。",
+            "Beginner mode keeps essentials only, while advanced mode shows the full console."
+          )}
+        </p>
+        <div className="mode-switch-grid">
+          <button
+            className={`button button-secondary mode-switch-button ${isBeginnerMode ? "mode-switch-active" : ""}`}
+            type="button"
+            onClick={() => setMode("beginner")}
+          >
+            {bi("新手模式", "Beginner mode")}
+          </button>
+          <button
+            className={`button button-secondary mode-switch-button ${!isBeginnerMode ? "mode-switch-active" : ""}`}
+            type="button"
+            onClick={() => setMode("advanced")}
+          >
+            {bi("高级模式", "Advanced mode")}
+          </button>
+        </div>
+      </section>
       <div className="dashboard-columns">
         <div className="dashboard-column">
           <TaskCreator
@@ -447,7 +503,21 @@ export function TaskDashboard() {
           />
           <ExecutorStatusBar />
           <MobileLoginApprovals enabled={authed} />
-          <NotificationCenter events={events} />
+          {isBeginnerMode ? (
+            <section className="panel animate-rise delay-1">
+              <div className="panel-title-row">
+                <h2 className="panel-title">{bi("新手引导", "Quick start")}</h2>
+                <span className="chip">{bi("3 步", "3 steps")}</span>
+              </div>
+              <ol className="login-steps">
+                <li>{bi("填写任务并点击“发送任务”。", "Fill a prompt and submit the task.")}</li>
+                <li>{bi("在任务列表点击任务进入详情。", "Open the task detail from the task list.")}</li>
+                <li>{bi("需要手机授权时在本卡片允许登录。", "Approve phone login requests in this panel.")}</li>
+              </ol>
+            </section>
+          ) : (
+            <NotificationCenter events={events} />
+          )}
           <section className="panel animate-rise delay-2">
             <div className="panel-title-row">
               <h2 className="panel-title">{bi("会话", "Session")}</h2>
@@ -483,7 +553,7 @@ export function TaskDashboard() {
         </div>
 
         <div className="dashboard-column dashboard-column-right">
-          <div className="task-audit-columns">
+          <div className={taskAuditClassName}>
             <TaskList
               tasks={sortedTasks}
               total={taskState.total}
@@ -498,25 +568,27 @@ export function TaskDashboard() {
                 void loadTaskPage(taskPageRef.current, true);
               }}
             />
-            <AuditPanel
-              logs={auditState.items}
-              total={auditState.total}
-              limit={auditState.limit || AUDIT_PAGE_SIZE}
-              offset={auditState.offset}
-              loading={auditLoading}
-              filters={auditFilters}
-              onFilterChange={(nextFilters) => {
-                const normalized = normalizeAuditFilters(nextFilters);
-                setAuditFilters(normalized);
-                void loadAuditPage(1, normalized);
-              }}
-              onPageChange={(page) => {
-                void loadAuditPage(page, auditFilters);
-              }}
-              onExport={(format) => {
-                void handleExportAudit(format);
-              }}
-            />
+            {!isBeginnerMode ? (
+              <AuditPanel
+                logs={auditState.items}
+                total={auditState.total}
+                limit={auditState.limit || AUDIT_PAGE_SIZE}
+                offset={auditState.offset}
+                loading={auditLoading}
+                filters={auditFilters}
+                onFilterChange={(nextFilters) => {
+                  const normalized = normalizeAuditFilters(nextFilters);
+                  setAuditFilters(normalized);
+                  void loadAuditPage(1, normalized);
+                }}
+                onPageChange={(page) => {
+                  void loadAuditPage(page, auditFilters);
+                }}
+                onExport={(format) => {
+                  void handleExportAudit(format);
+                }}
+              />
+            ) : null}
           </div>
         </div>
       </div>
