@@ -184,6 +184,10 @@ def main() -> None:
     )
     assert_true(usage is not None, "usage metrics should be extracted from two-line tokens-used format")
     assert_true(usage.total_tokens == 16_428, f"unexpected total tokens: {usage.total_tokens if usage else None}")
+    assert_true(
+        usage.prompt_tokens == usage.total_tokens,
+        f"prompt tokens fallback missing when only total is known: {usage.prompt_tokens if usage else None}",
+    )
     assert_true(usage.cost_usd > 0, f"cost should be estimated from total tokens: {usage.cost_usd if usage else None}")
     assert_true(
         usage.context_window_total_tokens and usage.context_window_total_tokens >= usage.total_tokens,

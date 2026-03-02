@@ -1643,6 +1643,13 @@ class TaskService:
         ):
             usage.total_tokens = usage.prompt_tokens + usage.completion_tokens + usage.cache_read_tokens
         if (
+            usage.total_tokens > 0
+            and usage.prompt_tokens <= 0
+            and usage.completion_tokens <= 0
+            and usage.cache_read_tokens <= 0
+        ):
+            usage.prompt_tokens = usage.total_tokens
+        if (
             usage.context_window_used_tokens is None
             and usage.context_window_total_tokens
             and context_percent is not None
