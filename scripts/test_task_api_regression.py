@@ -174,6 +174,22 @@ def main() -> None:
         object.__setattr__(settings, "sse_max_connections_global", original_global_limit)
         object.__setattr__(settings, "sse_max_connections_per_user", original_user_limit)
 
+    usage = TaskService._extract_usage_metrics(
+        [
+            "OpenAI Codex v0.107.0-alpha.5",
+            "tokens used",
+            "16,428",
+        ],
+        model_name="gpt-5.3-codex",
+    )
+    assert_true(usage is not None, "usage metrics should be extracted from two-line tokens-used format")
+    assert_true(usage.total_tokens == 16_428, f"unexpected total tokens: {usage.total_tokens if usage else None}")
+    assert_true(usage.cost_usd > 0, f"cost should be estimated from total tokens: {usage.cost_usd if usage else None}")
+    assert_true(
+        usage.context_window_total_tokens and usage.context_window_total_tokens >= usage.total_tokens,
+        f"context window fallback missing: {usage.context_window_total_tokens if usage else None}",
+    )
+
     print("task api regression test passed")
 
 

@@ -116,6 +116,11 @@ _COST_MULTIPLIER_PATTERN = re.compile(
     r"(?:multiplier|倍率)[^\d]*([\d.]+)x?",
     re.IGNORECASE,
 )
+_TOKENS_USED_LINE_PATTERN = re.compile(
+    r"^tokens\s+used(?:[:：]\s*([\d.,]+(?:[kKmM])?))?$",
+    re.IGNORECASE,
+)
+_NUMBER_ONLY_PATTERN = re.compile(r"^([\d.,]+(?:[kKmM])?)$")
 _CONTEXT_WINDOW_FRACTION_PATTERN = re.compile(
     r"(?:context(?:\s*window)?|背景信息窗口|已用)[^\d]*([\d.,]+(?:[kKmM])?)\s*/\s*([\d.,]+(?:[kKmM])?)",
     re.IGNORECASE,
@@ -131,9 +136,17 @@ _CONTEXT_WINDOW_PERCENT_PATTERN = re.compile(
 _REASONING_EFFORT_ALLOWED = {"low", "medium", "high"}
 _MODEL_PRICING_PER_1M_TOKENS: dict[str, tuple[float, float, float]] = {
     "gpt-5-codex": (1.50, 6.00, 0.15),
+    "gpt-5.3-codex": (1.50, 6.00, 0.15),
     "gpt-5": (1.25, 10.00, 0.125),
     "gpt-4.1": (2.00, 8.00, 0.20),
 }
+_MODEL_CONTEXT_WINDOWS: dict[str, int] = {
+    "gpt-5.3-codex": 272_000,
+    "gpt-5-codex": 272_000,
+    "gpt-5": 272_000,
+    "gpt-4.1": 128_000,
+}
+_ANSI_ESCAPE_PATTERN = re.compile(r"\x1B\[[0-?]*[ -/]*[@-~]")
 
 
 def _parse_iso(value: str | None) -> datetime | None:
@@ -178,6 +191,26 @@ def _parse_cost_value(raw: str | None) -> float | None:
     return max(0.0, value)
 
 
+def _strip_ansi(raw: str) -> str:
+    if not raw:
+        return ""
+    return _ANSI_ESCAPE_PATTERN.sub("", raw)
+
+
+def _next_number_only_value(lines: list[str], start_index: int) -> str | None:
+    for offset in range(start_index, min(start_index + 3, len(lines))):
+        candidate = _strip_ansi(lines[offset]).strip()
+        if not candidate:
+            continue
+        if len(candidate) <= 2 and all(char in "{}[]()," for char in candidate):
+            continue
+        number_match = _NUMBER_ONLY_PATTERN.match(candidate)
+        if number_match:
+            return number_match.group(1)
+        break
+    return None
+
+
 def _usd_from_tokens(tokens: int, price_per_million: float) -> float:
     if tokens <= 0 or price_per_million <= 0:
         return 0.0
@@ -191,6 +224,18 @@ def _price_tuple_for_model(model_name: str | None) -> tuple[float, float, float]
     if normalized in _MODEL_PRICING_PER_1M_TOKENS:
         return _MODEL_PRICING_PER_1M_TOKENS[normalized]
     for key, value in _MODEL_PRICING_PER_1M_TOKENS.items():
+        if key in normalized:
+            return value
+    return None
+
+
+def _context_window_for_model(model_name: str | None) -> int | None:
+    if not model_name:
+        return None
+    normalized = model_name.strip().lower()
+    if normalized in _MODEL_CONTEXT_WINDOWS:
+        return _MODEL_CONTEXT_WINDOWS[normalized]
+    for key, value in _MODEL_CONTEXT_WINDOWS.items():
         if key in normalized:
             return value
     return None
@@ -1482,7 +1527,18 @@ class TaskService:
         usage = UsageMetrics()
         context_percent: int | None = None
 
-        for line in lines:
+        for index, raw_line in enumerate(lines):
+            line = _strip_ansi(raw_line).strip()
+            if not line:
+                continue
+
+            tokens_used_match = _TOKENS_USED_LINE_PATTERN.match(line)
+            if tokens_used_match:
+                total_raw = tokens_used_match.group(1) or _next_number_only_value(lines, index + 1)
+                total_tokens = _parse_scaled_number(total_raw)
+                if total_tokens is not None:
+                    usage.total_tokens = max(usage.total_tokens, total_tokens)
+
             prompt_match = _PROMPT_TOKENS_PATTERN.search(line)
             if prompt_match:
                 prompt_tokens = _parse_scaled_number(prompt_match.group(1))
@@ -1587,6 +1643,11 @@ class TaskService:
             usage.context_window_used_tokens = int(
                 usage.context_window_total_tokens * (context_percent / 100.0)
             )
+        if usage.context_window_total_tokens is None and usage.total_tokens > 0:
+            context_total = _context_window_for_model(model_name)
+            if context_total is not None:
+                usage.context_window_total_tokens = context_total
+                usage.context_window_used_tokens = min(context_total, usage.total_tokens)
 
         pricing = _price_tuple_for_model(model_name)
         if pricing:
@@ -1597,6 +1658,19 @@ class TaskService:
                 usage.output_cost_usd = _usd_from_tokens(usage.completion_tokens, out_price)
             if usage.cache_read_cost_usd <= 0 and usage.cache_read_tokens > 0:
                 usage.cache_read_cost_usd = _usd_from_tokens(usage.cache_read_tokens, cache_price)
+            if (
+                usage.total_tokens > 0
+                and usage.prompt_tokens <= 0
+                and usage.completion_tokens <= 0
+                and usage.cache_read_tokens <= 0
+                and usage.input_cost_usd <= 0
+                and usage.output_cost_usd <= 0
+                and usage.cache_read_cost_usd <= 0
+                and usage.original_cost_usd <= 0
+                and usage.billed_cost_usd <= 0
+                and usage.cost_usd <= 0
+            ):
+                usage.input_cost_usd = _usd_from_tokens(usage.total_tokens, in_price)
 
         line_item_total = usage.input_cost_usd + usage.output_cost_usd + usage.cache_read_cost_usd
         if usage.original_cost_usd <= 0 and line_item_total > 0:

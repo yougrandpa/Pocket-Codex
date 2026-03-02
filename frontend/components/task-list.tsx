@@ -44,6 +44,27 @@ function actionLabel(action: TaskControlAction): string {
   return action;
 }
 
+function resolveDisplayTotalTokens(task: Task): number {
+  if (typeof task.total_tokens === "number" && task.total_tokens > 0) {
+    return task.total_tokens;
+  }
+  return (
+    Math.max(0, task.prompt_tokens ?? 0) +
+    Math.max(0, task.completion_tokens ?? 0) +
+    Math.max(0, task.cache_read_tokens ?? 0)
+  );
+}
+
+function resolveDisplayCost(task: Task): number | null | undefined {
+  if (typeof task.cost_usd === "number" && task.cost_usd > 0) {
+    return task.cost_usd;
+  }
+  if (typeof task.billed_cost_usd === "number" && task.billed_cost_usd > 0) {
+    return task.billed_cost_usd;
+  }
+  return null;
+}
+
 function humanizeTaskActionMessage(message: string): string {
   const normalized = message.trim().toLowerCase();
   if (message.includes("任务已加入重试队列")) {
@@ -198,7 +219,10 @@ export function TaskList({
 
       <div className="task-list-scroll">
         <ul className="task-list">
-          {tasks.map((task) => (
+          {tasks.map((task) => {
+            const displayTotalTokens = resolveDisplayTotalTokens(task);
+            const displayCost = resolveDisplayCost(task);
+            return (
             <li key={task.id} className="task-item">
               <div className="task-item-top">
                 <span className={`status status-${task.status.toLowerCase()}`}>
@@ -214,8 +238,8 @@ export function TaskList({
               </p>
               <div className="task-usage-row">
                 <p className="muted task-usage-text">
-                  {bi("Tokens", "Tokens")}: {formatTokenCompact(task.total_tokens)} ·{" "}
-                  {bi("花费", "Cost")}: {formatUsd(task.billed_cost_usd ?? task.cost_usd)}
+                  {bi("Tokens", "Tokens")}: {formatTokenCompact(displayTotalTokens)} ·{" "}
+                  {bi("花费", "Cost")}: {formatUsd(displayCost)}
                 </p>
                 <ContextWindowIndicator
                   usedTokens={task.context_window_used_tokens}
@@ -274,7 +298,8 @@ export function TaskList({
                 </button>
               </div>
             </li>
-          ))}
+            );
+          })}
         </ul>
       </div>
     </section>
