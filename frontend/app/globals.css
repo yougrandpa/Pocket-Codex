@@ -943,6 +943,14 @@ textarea {
     box-shadow: 0 8px 22px rgba(20, 33, 61, 0.06);
   }
 
+  .task-list-scroll,
+  .audit-list-scroll {
+    max-height: none;
+    min-height: 0;
+    overflow: visible;
+    padding-right: 0;
+  }
+
   .mobile-sticky-actions {
     background: rgba(247, 243, 236, 0.92);
     border: 1px solid rgba(20, 33, 61, 0.12);

@@ -46,11 +46,28 @@ function actionLabel(action: TaskControlAction): string {
 
 function humanizeTaskActionMessage(message: string): string {
   const normalized = message.trim().toLowerCase();
+  if (message.includes("任务已加入重试队列")) {
+    return bi("任务已加入重试队列。", "Task scheduled for retry.");
+  }
+  if (message.includes("任务已取消")) {
+    return bi("任务已取消。", "Task canceled.");
+  }
   if (normalized === "task scheduled for retry") {
     return bi("任务已加入重试队列。", "Task scheduled for retry.");
   }
   if (normalized === "task canceled") {
     return bi("任务已取消。", "Task canceled.");
+  }
+  return message;
+}
+
+function humanizeTaskActionError(message: string): string {
+  const normalized = message.trim().toLowerCase();
+  if (normalized.includes("task already in terminal state")) {
+    return bi("任务已结束，无法执行该操作。", "Task already finished. This action is unavailable.");
+  }
+  if (normalized.includes("task is not pending")) {
+    return bi("任务状态已变化，请刷新后重试。", "Task state changed. Refresh and retry.");
   }
   return message;
 }
@@ -105,7 +122,7 @@ export function TaskList({
     } catch (submitError) {
       setActionError(
         submitError instanceof Error
-          ? submitError.message
+          ? humanizeTaskActionError(submitError.message)
           : bi("任务操作失败。", "Task action failed.")
       );
     } finally {

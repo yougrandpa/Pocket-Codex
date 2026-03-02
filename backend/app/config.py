@@ -66,6 +66,21 @@ def _require_non_empty_env(name: str) -> str:
         f"Missing required env var {name}. Configure backend/.env before starting the server."
     )
 
+def _require_strong_jwt_secret() -> str:
+    value = _require_non_empty_env("APP_JWT_SECRET")
+    weak_values = {
+        "dev-secret-change-me",
+        "replace-with-a-random-32-plus-char-secret",
+        "changeme",
+        "password",
+    }
+    normalized = value.strip().lower()
+    if len(value) < 32 or normalized in weak_values:
+        raise RuntimeError(
+            "APP_JWT_SECRET is too weak. Use a random secret with at least 32 characters."
+        )
+    return value
+
 
 def _normalize_database_url(value: str) -> str:
     if not value.startswith("sqlite:///"):
@@ -207,7 +222,7 @@ def load_settings() -> Settings:
     return Settings(
         username=_require_non_empty_env("APP_USERNAME"),
         password=_require_non_empty_env("APP_PASSWORD"),
-        jwt_secret=os.getenv("APP_JWT_SECRET", "dev-secret-change-me"),
+        jwt_secret=_require_strong_jwt_secret(),
         jwt_algorithm="HS256",
         access_token_expires_minutes=_as_int(
             os.getenv("APP_ACCESS_TOKEN_EXPIRES_MINUTES", "30"),

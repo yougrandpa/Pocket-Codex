@@ -500,6 +500,7 @@ export function TaskDashboard() {
               void loadTaskPage(1, true);
             }}
             workdirSuggestions={workdirSuggestions}
+            compact={isBeginnerMode}
           />
           {!isBeginnerMode ? <ExecutorStatusBar /> : null}
           <MobileLoginApprovals enabled={authed} />

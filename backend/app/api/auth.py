@@ -138,6 +138,16 @@ def _extract_forwarded_ip_candidates(request: Request) -> list[str]:
     return candidates
 
 
+def _is_forwarded_host_loopback(request: Request) -> bool:
+    forwarded_host = (request.headers.get("x-forwarded-host") or "").strip().lower()
+    if not forwarded_host:
+        return False
+    host = forwarded_host.split(",", 1)[0].strip()
+    if ":" in host and not host.startswith("["):
+        host = host.split(":", 1)[0].strip()
+    return _is_loopback_host(host) or host == "localhost"
+
+
 def _request_ip(request: Request) -> str:
     direct_host = request.client.host if request.client is not None and request.client.host else "unknown"
     normalized_direct_host = _normalize_ip_candidate(direct_host)
@@ -160,6 +170,8 @@ def _request_ip(request: Request) -> str:
     if _is_loopback_host(direct_host) or normalized_direct_host == "unknown":
         for candidate in reversed(forwarded_candidates):
             return candidate
+        if _is_forwarded_host_loopback(request):
+            return normalized_direct_host
         return "untrusted-proxy"
     return normalized_direct_host
 

@@ -59,7 +59,7 @@ async def _shutdown() -> None:
 
 
 @app.get("/healthz")
-async def healthz() -> dict[str, str | bool | int | list[str]]:
+async def healthz() -> dict[str, str | bool | int]:
     cli_exists = Path(settings.codex_cli_path).exists() or shutil.which(settings.codex_cli_path) is not None
     return {
         "status": "ok",
@@ -68,10 +68,8 @@ async def healthz() -> dict[str, str | bool | int | list[str]]:
         "execution_backend": settings.execution_backend,
         "worker_concurrency": settings.worker_concurrency,
         "sse_replay_limit": settings.sse_replay_limit,
-        "workdir_whitelist": settings.workdir_whitelist,
         "codex_min_timeout_seconds": settings.codex_min_timeout_seconds,
         "codex_hard_timeout_seconds": settings.codex_hard_timeout_seconds,
-        "codex_cli_path": settings.codex_cli_path,
         "codex_cli_exists": cli_exists,
         "require_loopback_direct_login": settings.require_loopback_direct_login,
         "mobile_login_request_ttl_seconds": settings.mobile_login_request_ttl_seconds,

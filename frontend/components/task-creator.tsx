@@ -24,6 +24,7 @@ const MAX_TEMPLATES = 20;
 interface TaskCreatorProps {
   onCreated?: (task: Task) => void;
   workdirSuggestions?: string[];
+  compact?: boolean;
 }
 
 interface TaskTemplate {
@@ -77,7 +78,7 @@ function normalizeTemplate(raw: unknown): TaskTemplate | null {
   };
 }
 
-export function TaskCreator({ onCreated, workdirSuggestions = [] }: TaskCreatorProps) {
+export function TaskCreator({ onCreated, workdirSuggestions = [], compact = false }: TaskCreatorProps) {
   const router = useRouter();
   const [prompt, setPrompt] = useState("");
   const [priority, setPriority] = useState(DEFAULT_PRIORITY);
@@ -357,89 +358,91 @@ export function TaskCreator({ onCreated, workdirSuggestions = [] }: TaskCreatorP
         <span className="chip">{bi("移动优先", "Mobile First")}</span>
       </div>
       <form className="stack" onSubmit={handleSubmit}>
-        <div className="detail-block">
-          <h3>{bi("模板库", "Template Library")}</h3>
-          <div className="stack">
-            <div className="template-grid">
-              <label className="field">
-                <span>{bi("已保存模板", "Saved templates")}</span>
-                <select
-                  value={selectedTemplateId}
-                  onChange={(event) => {
-                    setSelectedTemplateId(event.target.value);
-                  }}
-                >
-                  <option value="">
-                    {templates.length > 0
-                      ? bi("选择模板", "Select template")
-                      : bi("暂无模板", "No templates yet")}
-                  </option>
-                  {templates.map((template) => (
-                    <option key={template.id} value={template.id}>
-                      {template.name}
+        {!compact ? (
+          <div className="detail-block">
+            <h3>{bi("模板库", "Template Library")}</h3>
+            <div className="stack">
+              <div className="template-grid">
+                <label className="field">
+                  <span>{bi("已保存模板", "Saved templates")}</span>
+                  <select
+                    value={selectedTemplateId}
+                    onChange={(event) => {
+                      setSelectedTemplateId(event.target.value);
+                    }}
+                  >
+                    <option value="">
+                      {templates.length > 0
+                        ? bi("选择模板", "Select template")
+                        : bi("暂无模板", "No templates yet")}
                     </option>
-                  ))}
-                </select>
-              </label>
-              <label className="field">
-                <span>{bi("新模板名称", "New template name")}</span>
-                <input
-                  type="text"
-                  value={templateName}
-                  onChange={(event) => setTemplateName(event.target.value)}
-                  placeholder={bi("例如：回归检查模板", "Example: Regression template")}
-                />
-              </label>
-            </div>
-            <div className="pagination-actions compact-actions">
-              <button
-                className="button button-secondary"
-                type="button"
-                onClick={handleSaveTemplate}
-                disabled={submitting}
-              >
-                {bi("保存当前为模板", "Save current as template")}
-              </button>
-              {selectedTemplate ? (
-                <>
-                  <button
-                    className="button button-secondary"
-                    type="button"
-                    disabled={submitting}
-                    onClick={() => {
-                      applyTemplate(selectedTemplate);
-                    }}
-                  >
-                    {bi("应用模板", "Apply template")}
-                  </button>
-                  <button
-                    className="button"
-                    type="button"
-                    disabled={submitting}
-                    onClick={() => {
-                      void handleCreateFromTemplate();
-                    }}
-                  >
-                    {bi("一键创建任务", "Create from template")}
-                  </button>
-                  <details className="template-more-actions">
-                    <summary className="link">{bi("更多操作", "More actions")}</summary>
-                    <div className="pagination-actions compact-actions">
-                      <button
-                        className="button button-secondary"
-                        type="button"
-                        disabled={submitting}
-                        onClick={handleDeleteTemplate}
-                      >
-                        {bi("删除模板", "Delete template")}
-                      </button>
-                    </div>
-                  </details>
-                </>
-              ) : null}
+                    {templates.map((template) => (
+                      <option key={template.id} value={template.id}>
+                        {template.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="field">
+                  <span>{bi("新模板名称", "New template name")}</span>
+                  <input
+                    type="text"
+                    value={templateName}
+                    onChange={(event) => setTemplateName(event.target.value)}
+                    placeholder={bi("例如：回归检查模板", "Example: Regression template")}
+                  />
+                </label>
+              </div>
+              <div className="pagination-actions compact-actions">
+                <button
+                  className="button button-secondary"
+                  type="button"
+                  onClick={handleSaveTemplate}
+                  disabled={submitting}
+                >
+                  {bi("保存当前为模板", "Save current as template")}
+                </button>
+                {selectedTemplate ? (
+                  <>
+                    <button
+                      className="button button-secondary"
+                      type="button"
+                      disabled={submitting}
+                      onClick={() => {
+                        applyTemplate(selectedTemplate);
+                      }}
+                    >
+                      {bi("应用模板", "Apply template")}
+                    </button>
+                    <button
+                      className="button"
+                      type="button"
+                      disabled={submitting}
+                      onClick={() => {
+                        void handleCreateFromTemplate();
+                      }}
+                    >
+                      {bi("一键创建任务", "Create from template")}
+                    </button>
+                    <details className="template-more-actions">
+                      <summary className="link">{bi("更多操作", "More actions")}</summary>
+                      <div className="pagination-actions compact-actions">
+                        <button
+                          className="button button-secondary"
+                          type="button"
+                          disabled={submitting}
+                          onClick={handleDeleteTemplate}
+                        >
+                          {bi("删除模板", "Delete template")}
+                        </button>
+                      </div>
+                    </details>
+                  </>
+                ) : null}
+              </div>
             </div>
           </div>
-        </div>
+        ) : null}
 
         <label className="field">
           <span>{bi("任务指令", "Prompt")}</span>
@@ -452,136 +455,267 @@ export function TaskCreator({ onCreated, workdirSuggestions = [] }: TaskCreatorP
           />
         </label>
 
-        <div className="row">
-          <label className="field">
-            <span>{bi("优先级", "Priority")}</span>
-            <input
-              type="number"
-              min={1}
-              max={10}
-              value={priority}
-              onChange={(event) => setPriority(Number(event.target.value) || DEFAULT_PRIORITY)}
-            />
-          </label>
-          <label className="field">
-            <span>{bi("超时(秒)", "Timeout (sec)")}</span>
-            <input
-              type="number"
-              min={minTimeoutSeconds}
-              max={3600}
-              value={timeoutSeconds}
-              onChange={(event) =>
-                setTimeoutSeconds(
-                  Math.max(minTimeoutSeconds, Number(event.target.value) || DEFAULT_TIMEOUT_SECONDS)
-                )
-              }
-            />
-            <small className="muted">
-              {bi("最小可用超时", "Minimum timeout")}: {minTimeoutSeconds}s
-            </small>
-          </label>
-        </div>
-
-        <div className="row">
-          <label className="field">
-            <span>{bi("模型(可选)", "Model (optional)")}</span>
-            <select
-              value={model}
-              onChange={(event) => setModel(event.target.value)}
-              disabled={modelOptions.length === 0}
-            >
-              {modelOptions.length === 0 ? (
-                <option value="">{bi("未获取到模型列表", "Model list unavailable")}</option>
-              ) : null}
-              {modelOptions.map((item) => (
-                <option key={item} value={item}>
-                  {item}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="field">
-            <span>{bi("推理强度", "Reasoning Effort")}</span>
-            <select
-              value={reasoningEffort}
-              onChange={(event) => setReasoningEffort(event.target.value)}
-              disabled={reasoningOptions.length === 0}
-            >
-              {reasoningOptions.map((item) => (
-                <option key={item} value={item}>
-                  {item === "low" ? bi("低", "Low") : item === "high" ? bi("高", "High") : bi("中", "Medium")}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-
-        <label className="field field-inline">
-          <span>{bi("多代理并行执行", "Parallel multi-agent execution")}</span>
-          <input
-            type="checkbox"
-            checked={enableParallelAgents}
-            disabled={executorCapabilities?.supports_parallel_agents === false}
-            onChange={(event) => setEnableParallelAgents(event.target.checked)}
-          />
-        </label>
-        {executorCapabilities ? (
-          <p className="muted">
-            {bi("能力来源", "Options source")}: {executorCapabilities.source}
-          </p>
+        {compact ? (
+          <details className="detail-block">
+            <summary className="link">{bi("高级设置", "Advanced settings")}</summary>
+            <div className="stack" style={{ marginTop: "10px" }}>
+              <div className="row">
+                <label className="field">
+                  <span>{bi("优先级", "Priority")}</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={10}
+                    value={priority}
+                    onChange={(event) => setPriority(Number(event.target.value) || DEFAULT_PRIORITY)}
+                  />
+                </label>
+                <label className="field">
+                  <span>{bi("超时(秒)", "Timeout (sec)")}</span>
+                  <input
+                    type="number"
+                    min={minTimeoutSeconds}
+                    max={3600}
+                    value={timeoutSeconds}
+                    onChange={(event) =>
+                      setTimeoutSeconds(
+                        Math.max(minTimeoutSeconds, Number(event.target.value) || DEFAULT_TIMEOUT_SECONDS)
+                      )
+                    }
+                  />
+                  <small className="muted">
+                    {bi("最小可用超时", "Minimum timeout")}: {minTimeoutSeconds}s
+                  </small>
+                </label>
+              </div>
+              <div className="row">
+                <label className="field">
+                  <span>{bi("模型(可选)", "Model (optional)")}</span>
+                  <select
+                    value={model}
+                    onChange={(event) => setModel(event.target.value)}
+                    disabled={modelOptions.length === 0}
+                  >
+                    {modelOptions.length === 0 ? (
+                      <option value="">{bi("未获取到模型列表", "Model list unavailable")}</option>
+                    ) : null}
+                    {modelOptions.map((item) => (
+                      <option key={item} value={item}>
+                        {item}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="field">
+                  <span>{bi("推理强度", "Reasoning Effort")}</span>
+                  <select
+                    value={reasoningEffort}
+                    onChange={(event) => setReasoningEffort(event.target.value)}
+                    disabled={reasoningOptions.length === 0}
+                  >
+                    {reasoningOptions.map((item) => (
+                      <option key={item} value={item}>
+                        {item === "low" ? bi("低", "Low") : item === "high" ? bi("高", "High") : bi("中", "Medium")}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <label className="field field-inline">
+                <span>{bi("多代理并行执行", "Parallel multi-agent execution")}</span>
+                <input
+                  type="checkbox"
+                  checked={enableParallelAgents}
+                  disabled={executorCapabilities?.supports_parallel_agents === false}
+                  onChange={(event) => setEnableParallelAgents(event.target.checked)}
+                />
+              </label>
+              <div className="row">
+                <label className="field">
+                  <span>{bi("历史目录快速选择", "Quick pick from history")}</span>
+                  <select
+                    defaultValue=""
+                    disabled={mergedWorkdirOptions.length === 0}
+                    onChange={(event) => {
+                      const selected = event.target.value;
+                      if (selected) {
+                        setWorkdir(selected);
+                      }
+                    }}
+                  >
+                    <option value="">
+                      {mergedWorkdirOptions.length > 0
+                        ? bi("请选择历史工作目录", "Select a previous workdir")
+                        : bi("暂无历史目录", "No workdir history yet")}
+                    </option>
+                    {mergedWorkdirOptions.map((path) => (
+                      <option key={path} value={path}>
+                        {path}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="field">
+                  <span>{bi("工作目录(可选)", "Workdir (optional)")}</span>
+                  <input
+                    type="text"
+                    value={workdir}
+                    onChange={(event) => setWorkdir(event.target.value)}
+                    list="workdir-history-options"
+                    placeholder="/Users/slg/workspace/Pocket-Codex"
+                  />
+                  <datalist id="workdir-history-options">
+                    {mergedWorkdirOptions.map((path) => (
+                      <option key={`hint-${path}`} value={path} />
+                    ))}
+                  </datalist>
+                </label>
+              </div>
+              {executorCapabilities ? (
+                <p className="muted">
+                  {bi("能力来源", "Options source")}: {executorCapabilities.source}
+                </p>
+              ) : (
+                <p className="muted">
+                  {bi("模型与推理强度暂未从 CLI 读取到，先使用默认值。", "Model and reasoning options are temporarily unavailable from CLI.")}
+                </p>
+              )}
+            </div>
+          </details>
         ) : (
-          <p className="muted">
-            {bi("模型与推理强度暂未从 CLI 读取到，先使用默认值。", "Model and reasoning options are temporarily unavailable from CLI.")}
-          </p>
-        )}
-        <p className="muted">
-          {bi(
-            "策略提示：低推理更快更省，高推理更稳；并行多代理通常更快但成本更高。",
-            "Strategy hint: low reasoning is faster/cheaper, high reasoning is steadier; parallel agents are usually faster but cost more."
-          )}
-        </p>
+          <>
+            <div className="row">
+              <label className="field">
+                <span>{bi("优先级", "Priority")}</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={10}
+                  value={priority}
+                  onChange={(event) => setPriority(Number(event.target.value) || DEFAULT_PRIORITY)}
+                />
+              </label>
+              <label className="field">
+                <span>{bi("超时(秒)", "Timeout (sec)")}</span>
+                <input
+                  type="number"
+                  min={minTimeoutSeconds}
+                  max={3600}
+                  value={timeoutSeconds}
+                  onChange={(event) =>
+                    setTimeoutSeconds(
+                      Math.max(minTimeoutSeconds, Number(event.target.value) || DEFAULT_TIMEOUT_SECONDS)
+                    )
+                  }
+                />
+                <small className="muted">
+                  {bi("最小可用超时", "Minimum timeout")}: {minTimeoutSeconds}s
+                </small>
+              </label>
+            </div>
 
-        <div className="row">
-          <label className="field">
-            <span>{bi("历史目录快速选择", "Quick pick from history")}</span>
-            <select
-              defaultValue=""
-              disabled={mergedWorkdirOptions.length === 0}
-              onChange={(event) => {
-                const selected = event.target.value;
-                if (selected) {
-                  setWorkdir(selected);
-                }
-              }}
-            >
-              <option value="">
-                {mergedWorkdirOptions.length > 0
-                  ? bi("请选择历史工作目录", "Select a previous workdir")
-                  : bi("暂无历史目录", "No workdir history yet")}
-              </option>
-              {mergedWorkdirOptions.map((path) => (
-                <option key={path} value={path}>
-                  {path}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="field">
-            <span>{bi("工作目录(可选)", "Workdir (optional)")}</span>
-            <input
-              type="text"
-              value={workdir}
-              onChange={(event) => setWorkdir(event.target.value)}
-              list="workdir-history-options"
-              placeholder="/Users/slg/workspace/Pocket-Codex"
-            />
-            <datalist id="workdir-history-options">
-              {mergedWorkdirOptions.map((path) => (
-                <option key={`hint-${path}`} value={path} />
-              ))}
-            </datalist>
-          </label>
-        </div>
+            <div className="row">
+              <label className="field">
+                <span>{bi("模型(可选)", "Model (optional)")}</span>
+                <select
+                  value={model}
+                  onChange={(event) => setModel(event.target.value)}
+                  disabled={modelOptions.length === 0}
+                >
+                  {modelOptions.length === 0 ? (
+                    <option value="">{bi("未获取到模型列表", "Model list unavailable")}</option>
+                  ) : null}
+                  {modelOptions.map((item) => (
+                    <option key={item} value={item}>
+                      {item}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="field">
+                <span>{bi("推理强度", "Reasoning Effort")}</span>
+                <select
+                  value={reasoningEffort}
+                  onChange={(event) => setReasoningEffort(event.target.value)}
+                  disabled={reasoningOptions.length === 0}
+                >
+                  {reasoningOptions.map((item) => (
+                    <option key={item} value={item}>
+                      {item === "low" ? bi("低", "Low") : item === "high" ? bi("高", "High") : bi("中", "Medium")}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            <label className="field field-inline">
+              <span>{bi("多代理并行执行", "Parallel multi-agent execution")}</span>
+              <input
+                type="checkbox"
+                checked={enableParallelAgents}
+                disabled={executorCapabilities?.supports_parallel_agents === false}
+                onChange={(event) => setEnableParallelAgents(event.target.checked)}
+              />
+            </label>
+            {executorCapabilities ? (
+              <p className="muted">
+                {bi("能力来源", "Options source")}: {executorCapabilities.source}
+              </p>
+            ) : (
+              <p className="muted">
+                {bi("模型与推理强度暂未从 CLI 读取到，先使用默认值。", "Model and reasoning options are temporarily unavailable from CLI.")}
+              </p>
+            )}
+            <p className="muted">
+              {bi(
+                "策略提示：低推理更快更省，高推理更稳；并行多代理通常更快但成本更高。",
+                "Strategy hint: low reasoning is faster/cheaper, high reasoning is steadier; parallel agents are usually faster but cost more."
+              )}
+            </p>
+
+            <div className="row">
+              <label className="field">
+                <span>{bi("历史目录快速选择", "Quick pick from history")}</span>
+                <select
+                  defaultValue=""
+                  disabled={mergedWorkdirOptions.length === 0}
+                  onChange={(event) => {
+                    const selected = event.target.value;
+                    if (selected) {
+                      setWorkdir(selected);
+                    }
+                  }}
+                >
+                  <option value="">
+                    {mergedWorkdirOptions.length > 0
+                      ? bi("请选择历史工作目录", "Select a previous workdir")
+                      : bi("暂无历史目录", "No workdir history yet")}
+                  </option>
+                  {mergedWorkdirOptions.map((path) => (
+                    <option key={path} value={path}>
+                      {path}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="field">
+                <span>{bi("工作目录(可选)", "Workdir (optional)")}</span>
+                <input
+                  type="text"
+                  value={workdir}
+                  onChange={(event) => setWorkdir(event.target.value)}
+                  list="workdir-history-options"
+                  placeholder="/Users/slg/workspace/Pocket-Codex"
+                />
+                <datalist id="workdir-history-options">
+                  {mergedWorkdirOptions.map((path) => (
+                    <option key={`hint-${path}`} value={path} />
+                  ))}
+                </datalist>
+              </label>
+            </div>
+          </>
+        )}
         {mergedWorkdirOptions.length === 0 ? (
           <p className="muted">
             {bi(

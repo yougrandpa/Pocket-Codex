@@ -108,6 +108,18 @@ function actionLabel(action: TaskControlAction): string {
 
 function humanizeTaskMessage(message: string): string {
   const normalized = message.trim().toLowerCase();
+  if (message.includes("任务已加入重试队列")) {
+    return bi("任务已加入重试队列。", "Task scheduled for retry.");
+  }
+  if (message.includes("任务已取消")) {
+    return bi("任务已取消。", "Task canceled.");
+  }
+  if (message.includes("任务已暂停")) {
+    return bi("任务已暂停。", "Task paused.");
+  }
+  if (message.includes("任务已继续")) {
+    return bi("任务已继续。", "Task resumed.");
+  }
   if (normalized === "task scheduled for retry") {
     return bi("任务已加入重试队列。", "Task scheduled for retry.");
   }
@@ -119,6 +131,17 @@ function humanizeTaskMessage(message: string): string {
   }
   if (normalized === "task resumed") {
     return bi("任务已继续。", "Task resumed.");
+  }
+  return message;
+}
+
+function humanizeTaskError(message: string): string {
+  const normalized = message.trim().toLowerCase();
+  if (normalized.includes("task already in terminal state")) {
+    return bi("任务已结束，无法继续执行该操作。", "Task already finished. This action is no longer available.");
+  }
+  if (normalized.includes("task is not pending")) {
+    return bi("任务状态已变化，请刷新后重试。", "Task state changed. Refresh and retry.");
   }
   return message;
 }
@@ -590,7 +613,7 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
     } catch (controlError) {
       setError(
         controlError instanceof Error
-          ? controlError.message
+          ? humanizeTaskError(controlError.message)
           : bi("控制动作执行失败。", "Control action failed.")
       );
     } finally {

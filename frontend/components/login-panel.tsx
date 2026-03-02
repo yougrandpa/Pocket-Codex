@@ -68,6 +68,10 @@ export function LoginPanel({ onLoggedIn }: LoginPanelProps) {
     }
     const media = window.matchMedia("(max-width: 719px)");
     const syncMode = () => {
+      if (isLoopbackHost(window.location.hostname)) {
+        setLoginMode("desktop");
+        return;
+      }
       setLoginMode(media.matches ? "mobile" : "desktop");
     };
     syncMode();
