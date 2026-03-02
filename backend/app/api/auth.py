@@ -8,7 +8,7 @@ from ipaddress import ip_address
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from jwt import InvalidTokenError
 
-from ..auth import create_access_token, create_refresh_token, decode_token
+from ..auth import create_access_token, decode_token, issue_refresh_token, rotate_refresh_token
 from ..config import settings
 from ..dependencies import get_current_user
 from ..schemas import (
@@ -281,7 +281,7 @@ async def login(payload: LoginRequest, request: Request) -> TokenResponse:
 
     return TokenResponse(
         access_token=create_access_token(payload.username),
-        refresh_token=create_refresh_token(payload.username),
+        refresh_token=issue_refresh_token(payload.username),
         expires_in_seconds=settings.access_token_expires_minutes * 60,
     )
 
@@ -470,6 +470,20 @@ async def refresh(payload: RefreshTokenRequest) -> TokenResponse:
             detail="Invalid token subject",
         )
 
+    if not isinstance(token_payload.get("sid"), str) or not isinstance(token_payload.get("jti"), str):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token is not rotatable, please login again",
+        )
+
+    try:
+        next_refresh_token = rotate_refresh_token(token_payload)
+    except InvalidTokenError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired refresh token",
+        ) from exc
+
     await _append_audit_async(
         actor=username,
         action="auth.refresh",
@@ -479,6 +493,6 @@ async def refresh(payload: RefreshTokenRequest) -> TokenResponse:
 
     return TokenResponse(
         access_token=create_access_token(username),
-        refresh_token=create_refresh_token(username),
+        refresh_token=next_refresh_token,
         expires_in_seconds=settings.access_token_expires_minutes * 60,
     )

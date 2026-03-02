@@ -98,10 +98,10 @@ function controlActions(task: Task): TaskControlAction[] {
 
 function actionLabel(action: TaskControlAction): string {
   const map: Record<TaskControlAction, string> = {
-    pause: bi("暂停", "pause"),
-    resume: bi("继续", "resume"),
-    cancel: bi("取消", "cancel"),
-    retry: bi("重试", "retry")
+    pause: bi("暂停", "Pause"),
+    resume: bi("继续", "Resume"),
+    cancel: bi("取消", "Cancel"),
+    retry: bi("重试", "Retry")
   };
   return map[action];
 }
@@ -188,7 +188,7 @@ function resolveDockPrimaryAction(task: Task | null, availableActions: TaskContr
 const URL_PATTERN = /(https?:\/\/[^\s]+)/g;
 const ASSISTANT_NOISE_PATTERNS = [
   /^mcp startup:/i,
-  /^tokens used:/i,
+  /^tokens used\b/i,
   /^thinking$/i,
   /^\/users\//i,
   /^warning:/i
@@ -382,6 +382,10 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
       }
     };
   }, []);
+
+  useEffect(() => {
+    setNote(null);
+  }, [language]);
 
   useEffect(() => {
     if (!task || hasTrackedOpenRef.current) {
@@ -600,12 +604,16 @@ export function TaskDetailLive({ taskId }: TaskDetailLiveProps) {
     setNote(null);
     try {
       const result = await controlTask(taskId, action);
+      const nowIso = new Date().toISOString();
       setTask((previous) =>
         previous
           ? {
               ...previous,
               status: result.status,
-              updated_at: new Date().toISOString()
+              updated_at: nowIso,
+              finished_at: ["SUCCEEDED", "FAILED", "CANCELED", "TIMEOUT"].includes(result.status)
+                ? nowIso
+                : previous.finished_at
             }
           : previous
       );

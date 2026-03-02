@@ -68,6 +68,10 @@ class UsageMetrics:
         )
 
 
+class SubscriptionLimitError(RuntimeError):
+    pass
+
+
 _PROMPT_TOKENS_PATTERN = re.compile(
     r"(?:prompt|input|输入)\s*(?:tokens?|token|标记)[^\d]*([\d.,]+(?:[kKmM])?)",
     re.IGNORECASE,
@@ -199,6 +203,8 @@ class TaskService:
         self._lock = asyncio.Lock()
         self._global_subscribers: set[asyncio.Queue[dict[str, Any]]] = set()
         self._task_subscribers: dict[str, set[asyncio.Queue[dict[str, Any]]]] = {}
+        self._subscriber_users: dict[asyncio.Queue[dict[str, Any]], str] = {}
+        self._subscriber_count_by_user: dict[str, int] = {}
         self._execution_queue = create_execution_queue()
         self._worker_tasks: list[asyncio.Task[None]] = []
         self._active_processes: dict[str, asyncio.subprocess.Process] = {}
@@ -562,14 +568,26 @@ class TaskService:
         task_id: Optional[str] = None,
         *,
         last_event_id: str | None = None,
+        user: str | None = None,
     ) -> tuple[asyncio.Queue[dict[str, Any]], list[dict[str, Any]]]:
         queue: asyncio.Queue[dict[str, Any]] = asyncio.Queue(maxsize=200)
+        user_key = (user or "").strip().lower()
+        if not user_key:
+            user_key = "unknown"
         replay_events: list[dict[str, Any]] = []
         async with self._lock:
+            active_global = len(self._subscriber_users)
+            if active_global >= settings.sse_max_connections_global:
+                raise SubscriptionLimitError("SSE connection limit reached, please retry later")
+            active_for_user = self._subscriber_count_by_user.get(user_key, 0)
+            if active_for_user >= settings.sse_max_connections_per_user:
+                raise SubscriptionLimitError("Too many SSE connections for this account")
             if task_id:
                 self._task_subscribers.setdefault(task_id, set()).add(queue)
             else:
                 self._global_subscribers.add(queue)
+            self._subscriber_users[queue] = user_key
+            self._subscriber_count_by_user[user_key] = active_for_user + 1
             replay_events = self._collect_replay_events_locked(
                 task_id=task_id,
                 last_event_id=last_event_id,
@@ -580,6 +598,13 @@ class TaskService:
         self, queue: asyncio.Queue[dict[str, Any]], task_id: Optional[str] = None
     ) -> None:
         async with self._lock:
+            user_key = self._subscriber_users.pop(queue, None)
+            if user_key is not None:
+                remaining = self._subscriber_count_by_user.get(user_key, 0) - 1
+                if remaining > 0:
+                    self._subscriber_count_by_user[user_key] = remaining
+                else:
+                    self._subscriber_count_by_user.pop(user_key, None)
             if task_id:
                 watchers = self._task_subscribers.get(task_id)
                 if watchers and queue in watchers:

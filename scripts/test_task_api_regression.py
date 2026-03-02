@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import asyncio
 import os
 
 from fastapi.testclient import TestClient
 
+from app.config import settings
 from app.main import app
+from app.services.task_service import SubscriptionLimitError, TaskService
 
 
 def assert_true(condition: bool, message: str) -> None:
@@ -32,7 +35,32 @@ def main() -> None:
         )
         assert_true(login.status_code == 200, f"login failed: {login.status_code} {login.text}")
         token = login.json()["access_token"]
+        refresh_token = login.json()["refresh_token"]
         headers = {"Authorization": f"Bearer {token}"}
+
+        refreshed = client.post(
+            "/api/v1/auth/refresh",
+            json={"refresh_token": refresh_token},
+        )
+        assert_true(refreshed.status_code == 200, f"refresh failed: {refreshed.status_code} {refreshed.text}")
+        next_refresh_token = refreshed.json()["refresh_token"]
+        assert_true(
+            next_refresh_token and next_refresh_token != refresh_token,
+            "refresh rotation should return a new refresh token",
+        )
+        replay = client.post(
+            "/api/v1/auth/refresh",
+            json={"refresh_token": refresh_token},
+        )
+        assert_true(replay.status_code == 401, f"refresh replay should fail: {replay.status_code} {replay.text}")
+        refreshed_again = client.post(
+            "/api/v1/auth/refresh",
+            json={"refresh_token": next_refresh_token},
+        )
+        assert_true(
+            refreshed_again.status_code == 401,
+            f"rotated session should be revoked after replay: {refreshed_again.status_code} {refreshed_again.text}",
+        )
 
         created_ids: list[str] = []
         options = client.get("/api/v1/tasks/executor/options", headers=headers)
@@ -110,6 +138,41 @@ def main() -> None:
             all(target_task_id[:10] in (item.get("task_id") or "") for item in task_payload.get("items", [])),
             f"task_id filter mismatch: {task_payload}",
         )
+
+    original_global_limit = settings.sse_max_connections_global
+    original_user_limit = settings.sse_max_connections_per_user
+    object.__setattr__(settings, "sse_max_connections_global", 2)
+    object.__setattr__(settings, "sse_max_connections_per_user", 1)
+    try:
+        service = TaskService()
+
+        async def validate_sse_limits() -> None:
+            queue1, _ = await service.subscribe(user=username)
+            try:
+                try:
+                    await service.subscribe(user=username)
+                    raise AssertionError("per-user SSE limit should block second connection")
+                except SubscriptionLimitError:
+                    pass
+            finally:
+                await service.unsubscribe(queue1)
+
+            queue2, _ = await service.subscribe(user=f"{username}-a")
+            queue3, _ = await service.subscribe(user=f"{username}-b")
+            try:
+                try:
+                    await service.subscribe(user=f"{username}-c")
+                    raise AssertionError("global SSE limit should block overflow connection")
+                except SubscriptionLimitError:
+                    pass
+            finally:
+                await service.unsubscribe(queue2)
+                await service.unsubscribe(queue3)
+
+        asyncio.run(validate_sse_limits())
+    finally:
+        object.__setattr__(settings, "sse_max_connections_global", original_global_limit)
+        object.__setattr__(settings, "sse_max_connections_per_user", original_user_limit)
 
     print("task api regression test passed")
 

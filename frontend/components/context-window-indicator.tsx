@@ -30,7 +30,10 @@ export function ContextWindowIndicator({
           {context.percent !== null ? `${context.percent}% ${bi("已用", "used")}` : bi("未上报", "not reported")}
         </p>
         <p className="context-window-detail">
-          {bi("已用", "Used")} {context.usedText} {bi("标记", "tokens")}，{bi("共", "of")} {context.totalText}
+          {bi(
+            `已用 ${context.usedText} 标记，共 ${context.totalText}`,
+            `Used ${context.usedText} tokens, of ${context.totalText}`
+          )}
         </p>
       </div>
     </div>

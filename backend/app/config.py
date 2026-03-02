@@ -183,6 +183,9 @@ class Settings:
     codex_full_auto: bool
     auto_rerun_on_message: bool
     sse_replay_limit: int
+    sse_max_connections_global: int
+    sse_max_connections_per_user: int
+    sse_connection_max_seconds: int
     workdir_whitelist: list[str]
     require_loopback_direct_login: bool
     trust_proxy_headers: bool
@@ -204,6 +207,21 @@ def load_settings() -> Settings:
         fallback=500,
     )
     sse_replay_limit = max(10, min(sse_replay_limit, 5000))
+    sse_max_connections_global = _as_int(
+        os.getenv("APP_SSE_MAX_CONNECTIONS_GLOBAL", "200"),
+        fallback=200,
+    )
+    sse_max_connections_global = max(10, min(sse_max_connections_global, 5000))
+    sse_max_connections_per_user = _as_int(
+        os.getenv("APP_SSE_MAX_CONNECTIONS_PER_USER", "8"),
+        fallback=8,
+    )
+    sse_max_connections_per_user = max(1, min(sse_max_connections_per_user, 100))
+    sse_connection_max_seconds = _as_int(
+        os.getenv("APP_SSE_CONNECTION_MAX_SECONDS", "1800"),
+        fallback=1800,
+    )
+    sse_connection_max_seconds = max(30, min(sse_connection_max_seconds, 86400))
     mobile_login_request_ttl_seconds = _as_int(
         os.getenv("APP_MOBILE_LOGIN_REQUEST_TTL_SECONDS", "180"),
         fallback=180,
@@ -266,6 +284,9 @@ def load_settings() -> Settings:
         codex_full_auto=_as_bool(os.getenv("CODEX_FULL_AUTO", "true"), True),
         auto_rerun_on_message=_as_bool(os.getenv("APP_AUTO_RERUN_ON_MESSAGE", "true"), True),
         sse_replay_limit=sse_replay_limit,
+        sse_max_connections_global=sse_max_connections_global,
+        sse_max_connections_per_user=sse_max_connections_per_user,
+        sse_connection_max_seconds=sse_connection_max_seconds,
         workdir_whitelist=workdir_whitelist,
         require_loopback_direct_login=_as_bool(
             os.getenv("APP_REQUIRE_LOOPBACK_DIRECT_LOGIN", "true"),

@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ContextWindowIndicator } from "@/components/context-window-indicator";
 import { Task, TaskControlAction, controlTask } from "@/lib/api";
 import { formatDateTime } from "@/lib/datetime";
-import { bi, statusText } from "@/lib/i18n";
+import { bi, statusText, useLanguage } from "@/lib/i18n";
 import { formatTokenCompact, formatUsd } from "@/lib/usage";
 import {
   fireAndForgetUiEvent,
@@ -101,9 +101,14 @@ export function TaskList({
   onPageChange,
   onTaskMutated
 }: TaskListProps) {
+  const [language] = useLanguage();
   const [workingKey, setWorkingKey] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setNote(null);
+  }, [language]);
 
   const safeLimit = Math.max(1, limit || 20);
   const currentPage = Math.floor(Math.max(0, offset) / safeLimit) + 1;
