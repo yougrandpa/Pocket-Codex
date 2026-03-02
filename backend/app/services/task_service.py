@@ -109,7 +109,7 @@ _BILLED_COST_PATTERN = re.compile(
     re.IGNORECASE,
 )
 _GENERIC_COST_PATTERN = re.compile(
-    r"(?:cost|费用|usd)[^\d$]*\$?\s*([\d.,]+)",
+    r"(?:\bcost\b|\busd\b|费用)\s*(?:[:：=]|is)\s*\$?\s*([\d.,]+(?:\.\d+)?)",
     re.IGNORECASE,
 )
 _COST_MULTIPLIER_PATTERN = re.compile(
@@ -133,6 +133,7 @@ _CONTEXT_WINDOW_PERCENT_PATTERN = re.compile(
     r"(\d{1,3})\s*%\s*(?:已用|used)?",
     re.IGNORECASE,
 )
+_MODEL_LINE_PATTERN = re.compile(r"^\s*model\s*:\s*([a-z0-9][a-z0-9._-]*)\s*$", re.IGNORECASE)
 _REASONING_EFFORT_ALLOWED = {"low", "medium", "high"}
 _MODEL_PRICING_PER_1M_TOKENS: dict[str, tuple[float, float, float]] = {
     "gpt-5-codex": (1.50, 6.00, 0.15),
@@ -1526,11 +1527,17 @@ class TaskService:
     def _extract_usage_metrics(lines: list[str], model_name: str | None = None) -> UsageMetrics | None:
         usage = UsageMetrics()
         context_percent: int | None = None
+        inferred_model_name: str | None = None
 
         for index, raw_line in enumerate(lines):
             line = _strip_ansi(raw_line).strip()
             if not line:
                 continue
+
+            if inferred_model_name is None:
+                model_match = _MODEL_LINE_PATTERN.match(line)
+                if model_match:
+                    inferred_model_name = model_match.group(1).strip()
 
             tokens_used_match = _TOKENS_USED_LINE_PATTERN.match(line)
             if tokens_used_match:
@@ -1643,13 +1650,14 @@ class TaskService:
             usage.context_window_used_tokens = int(
                 usage.context_window_total_tokens * (context_percent / 100.0)
             )
+        effective_model_name = model_name or inferred_model_name
         if usage.context_window_total_tokens is None and usage.total_tokens > 0:
-            context_total = _context_window_for_model(model_name)
+            context_total = _context_window_for_model(effective_model_name)
             if context_total is not None:
                 usage.context_window_total_tokens = context_total
                 usage.context_window_used_tokens = min(context_total, usage.total_tokens)
 
-        pricing = _price_tuple_for_model(model_name)
+        pricing = _price_tuple_for_model(effective_model_name)
         if pricing:
             in_price, out_price, cache_price = pricing
             if usage.input_cost_usd <= 0 and usage.prompt_tokens > 0:

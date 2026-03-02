@@ -190,6 +190,47 @@ def main() -> None:
         f"context window fallback missing: {usage.context_window_total_tokens if usage else None}",
     )
 
+    noisy_usage = TaskService._extract_usage_metrics(
+        [
+            "请只回复：QUEUE_QA_TOKEN_COST_CONTEXT_20260302_1353",
+            "tokens used",
+            "15,554",
+        ],
+        model_name="gpt-5.3-codex",
+    )
+    assert_true(noisy_usage is not None, "usage metrics should survive noisy prompt lines")
+    assert_true(noisy_usage.total_tokens == 15_554, f"unexpected noisy total tokens: {noisy_usage.total_tokens if noisy_usage else None}")
+    assert_true(
+        noisy_usage.cost_usd < 1,
+        f"generic cost parser should not treat prompt suffix as usd amount: {noisy_usage.cost_usd if noisy_usage else None}",
+    )
+
+    explicit_cost_usage = TaskService._extract_usage_metrics(
+        [
+            "Total cost: $0.1234",
+        ],
+        model_name="gpt-5.3-codex",
+    )
+    assert_true(explicit_cost_usage is not None, "explicit cost lines should be parsed")
+    assert_true(
+        abs(explicit_cost_usage.cost_usd - 0.1234) < 1e-9,
+        f"unexpected explicit cost parsing: {explicit_cost_usage.cost_usd if explicit_cost_usage else None}",
+    )
+
+    inferred_model_usage = TaskService._extract_usage_metrics(
+        [
+            "model: gpt-5.3-codex",
+            "tokens used",
+            "16,529",
+        ],
+        model_name=None,
+    )
+    assert_true(inferred_model_usage is not None, "model should be inferred from executor logs")
+    assert_true(
+        inferred_model_usage.cost_usd > 0,
+        f"cost estimation should work when task model is unset: {inferred_model_usage.cost_usd if inferred_model_usage else None}",
+    )
+
     print("task api regression test passed")
 
 
